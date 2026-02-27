@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ application.get('name', 'Application') }} - WaaS Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+    <h2><i class="bi bi-globe"></i> {{ application.get('name', 'Application') }}</h2>
+    <div>
+        <a href="{{ url_for('proxy.view_proxy', account_id=account.id, app_id=app_id) }}" class="btn btn-outline-info"><i class="bi bi-diagram-3"></i> Proxy Settings</a>
+        <a href="{{ url_for('applications.list_applications', account_id=account.id) }}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> {{ error }}</div>
+{% endif %}
+
+{% if application %}
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">Application Details</h5></div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr><th style="width:40%">Name</th><td>{{ application.get('name', 'N/A') }}</td></tr>
+                    <tr><th>ID</th><td><code>{{ application.get('id', 'N/A') }}</code></td></tr>
+                    <tr><th>Status</th><td>
+                        {% if application.get('status') == 'on' or application.get('status') == 'active' %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ application.get('status', 'Unknown') }}</span>
+                        {% endif %}
+                    </td></tr>
+                    <tr><th>Account</th><td>{{ account.account_name }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header"><h5 class="mb-0">Endpoints</h5></div>
+            <div class="card-body">
+                {% if application.get('endpoints') %}
+                <ul class="list-group list-group-flush">
+                    {% for ep in application.get('endpoints', []) %}
+                    <li class="list-group-item">
+                        <code>{{ ep.get('hostname', ep) if ep is mapping else ep }}</code>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted mb-0">No endpoints configured.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Raw Application Data -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <a class="text-decoration-none" data-bs-toggle="collapse" href="#rawData" role="button">
+                <i class="bi bi-code-slash"></i> Raw API Data
+            </a>
+        </h5>
+    </div>
+    <div class="collapse" id="rawData">
+        <div class="card-body">
+            <pre class="mb-0 bg-light p-3 rounded"><code>{{ application|tojson(indent=2) }}</code></pre>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

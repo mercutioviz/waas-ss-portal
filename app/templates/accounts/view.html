@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ account.account_name }} - WaaS Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+    <h2><i class="bi bi-key"></i> {{ account.account_name }}</h2>
+    <div>
+        <a href="{{ url_for('accounts.edit_account', account_id=account.id) }}" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Edit</a>
+        <a href="{{ url_for('accounts.verify_account', account_id=account.id) }}" class="btn btn-outline-primary"><i class="bi bi-check-circle"></i> Verify</a>
+        <a href="{{ url_for('accounts.list_accounts') }}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">Account Details</h5></div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr><th style="width:40%">Account Name</th><td>{{ account.account_name }}</td></tr>
+                    <tr><th>WaaS Account ID</th><td><code>{{ account.waas_account_id or 'Not verified' }}</code></td></tr>
+                    <tr><th>Status</th><td>{% if account.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-danger">Inactive</span>{% endif %}</td></tr>
+                    <tr><th>Description</th><td>{{ account.description or 'None' }}</td></tr>
+                    <tr><th>Created</th><td>{{ account.created_at|datetime_format }}</td></tr>
+                    <tr><th>Last Verified</th><td>{{ account.last_verified|datetime_format if account.last_verified else 'Never' }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header"><h5 class="mb-0">Quick Links</h5></div>
+            <div class="list-group list-group-flush">
+                <a href="{{ url_for('applications.list_applications', account_id=account.id) }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-globe text-success"></i> View Applications
+                </a>
+                <a href="{{ url_for('certificates.list_certificates', account_id=account.id) }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-file-earmark-lock text-info"></i> View Certificates
+                </a>
+                <a href="{{ url_for('logs.index', account_id=account.id) }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-journal-text text-warning"></i> View Logs
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Add Account - WaaS Portal{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-plus-circle"></i> Add WaaS Account</h5></div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        <label for="account_name" class="form-label">Account Name</label>
+                        {{ form.account_name(class="form-control", placeholder="e.g. Production Account") }}
+                        <div class="form-text">A friendly name to identify this account.</div>
+                        {% for error in form.account_name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="api_key" class="form-label">API Key (Token)</label>
+                        {{ form.api_key(class="form-control font-monospace", placeholder="Enter WaaS API token") }}
+                        <div class="form-text">Your Barracuda WaaS API token. This will be encrypted at rest.</div>
+                        {% for error in form.api_key.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description (Optional)</label>
+                        {{ form.description(class="form-control", rows=3, placeholder="Optional description") }}
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Add Account</button>
+                    <a href="{{ url_for('accounts.list_accounts') }}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

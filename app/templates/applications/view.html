@@ -10,50 +10,212 @@
     </div>
 </div>
 
-{% if error %}
-<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> {{ error }}</div>
-{% endif %}
-
 {% if application %}
+{% set servers = application.get('servers', []) %}
+{% set up_count = servers | selectattr('health', 'equalto', 'Up') | list | length %}
+{% set total_count = servers | length %}
+
 <div class="row g-4">
+    <!-- Application Details -->
     <div class="col-md-6">
         <div class="card">
             <div class="card-header"><h5 class="mb-0">Application Details</h5></div>
             <div class="card-body">
                 <table class="table table-borderless mb-0">
                     <tr><th style="width:40%">Name</th><td>{{ application.get('name', 'N/A') }}</td></tr>
-                    <tr><th>ID</th><td><code>{{ application.get('id', 'N/A') }}</code></td></tr>
-                    <tr><th>Status</th><td>
-                        {% if application.get('status') == 'on' or application.get('status') == 'active' %}
-                        <span class="badge bg-success">Active</span>
+                    <tr><th>Group</th><td>
+                        {% if application.get('app_group') %}
+                        <span class="badge bg-info">{{ application.get('app_group') }}</span>
                         {% else %}
-                        <span class="badge bg-secondary">{{ application.get('status', 'Unknown') }}</span>
+                        <span class="text-muted">N/A</span>
                         {% endif %}
                     </td></tr>
                     <tr><th>Account</th><td>{{ account.account_name }}</td></tr>
+                    <tr><th>Total Servers</th><td>{{ total_count }}</td></tr>
+                    <tr><th>Server Health</th><td>
+                        {% if total_count > 0 %}
+                            {% if up_count == total_count %}
+                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> All Up ({{ total_count }})</span>
+                            {% elif up_count > 0 %}
+                            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle"></i> {{ up_count }}/{{ total_count }} Up</span>
+                            {% else %}
+                            <span class="badge bg-danger"><i class="bi bi-x-circle"></i> All Down</span>
+                            {% endif %}
+                        {% else %}
+                        <span class="text-muted">No servers</span>
+                        {% endif %}
+                    </td></tr>
                 </table>
             </div>
         </div>
     </div>
+
+    <!-- Quick Actions -->
     <div class="col-md-6">
         <div class="card h-100">
-            <div class="card-header"><h5 class="mb-0">Endpoints</h5></div>
+            <div class="card-header"><h5 class="mb-0">Quick Actions</h5></div>
             <div class="card-body">
-                {% if application.get('endpoints') %}
-                <ul class="list-group list-group-flush">
-                    {% for ep in application.get('endpoints', []) %}
-                    <li class="list-group-item">
-                        <code>{{ ep.get('hostname', ep) if ep is mapping else ep }}</code>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="text-muted mb-0">No endpoints configured.</p>
-                {% endif %}
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('proxy.view_proxy', account_id=account.id, app_id=app_id) }}" class="btn btn-outline-info">
+                        <i class="bi bi-diagram-3"></i> View Proxy Settings
+                    </a>
+                    <a href="{{ url_for('logs.index') }}" class="btn btn-outline-warning">
+                        <i class="bi bi-file-text"></i> View Logs
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Backend Servers -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-server"></i> Backend Servers ({{ total_count }})</h5>
+    </div>
+    {% if servers %}
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Server Name</th>
+                        <th>Host</th>
+                        <th>Port</th>
+                        <th>Protocol</th>
+                        <th>Mode</th>
+                        <th>Health</th>
+                        <th>Weight</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for server in servers %}
+                    <tr>
+                        <td><strong>{{ server.get('name', 'N/A') }}</strong>
+                            {% if server.get('is_backup') %}
+                            <span class="badge bg-secondary ms-1">Backup</span>
+                            {% endif %}
+                        </td>
+                        <td><code>{{ server.get('host', 'N/A') }}</code></td>
+                        <td>{{ server.get('port', 'N/A') }}</td>
+                        <td>{{ server.get('protocol', 'N/A') }}</td>
+                        <td>
+                            {% if server.get('mode') == 'In Service' %}
+                            <span class="badge bg-success">{{ server.get('mode') }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ server.get('mode', 'Unknown') }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if server.get('health') == 'Up' %}
+                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Up</span>
+                            {% elif server.get('health') == 'Down' %}
+                            <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Down</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ server.get('health', 'Unknown') }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ server.get('weight', 1) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="card-body text-center py-4">
+        <p class="text-muted mb-0">No backend servers configured.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Server Details (expandable per server) -->
+{% for server in servers %}
+<div class="card mt-3">
+    <div class="card-header">
+        <h6 class="mb-0">
+            <a class="text-decoration-none" data-bs-toggle="collapse" href="#server-{{ loop.index }}" role="button">
+                <i class="bi bi-chevron-down"></i> {{ server.get('name', 'Server') }} — Details
+            </a>
+        </h6>
+    </div>
+    <div class="collapse" id="server-{{ loop.index }}">
+        <div class="card-body">
+            <div class="row">
+                <!-- SSL Settings -->
+                {% if server.get('ssl') %}
+                <div class="col-md-4">
+                    <h6 class="text-muted">SSL/TLS</h6>
+                    <table class="table table-sm table-borderless">
+                        <tr><td>TLS 1.0</td><td>{{ '✅' if server.ssl.get('protocol_tls_1_0_enabled') else '❌' }}</td></tr>
+                        <tr><td>TLS 1.1</td><td>{{ '✅' if server.ssl.get('protocol_tls_1_1_enabled') else '❌' }}</td></tr>
+                        <tr><td>TLS 1.2</td><td>{{ '✅' if server.ssl.get('protocol_tls_1_2_enabled') else '❌' }}</td></tr>
+                        <tr><td>TLS 1.3</td><td>{{ '✅' if server.ssl.get('protocol_tls_1_3_enabled') else '❌' }}</td></tr>
+                        <tr><td>Validate Cert</td><td>{{ '✅' if server.ssl.get('validate_ssl_certificate') else '❌' }}</td></tr>
+                        <tr><td>HTTP/2</td><td>{{ '✅' if server.ssl.get('enable_http2') else '❌' }}</td></tr>
+                        <tr><td>SNI</td><td>{{ '✅' if server.ssl.get('enable_sni') else '❌' }}</td></tr>
+                    </table>
+                </div>
+                {% endif %}
+
+                <!-- Health Check Settings -->
+                {% if server.get('health_checks') %}
+                <div class="col-md-4">
+                    <h6 class="text-muted">Health Checks</h6>
+                    <table class="table table-sm table-borderless">
+                        <tr><td>OOB Enabled</td><td>{{ '✅' if server.health_checks.get('enable_oob_health_checks') else '❌' }}</td></tr>
+                        <tr><td>Interval</td><td>{{ server.health_checks.get('oob_health_check_interval', 'N/A') }}s</td></tr>
+                        <tr><td>URL</td><td><code>{{ server.health_checks.get('healthcheck_http_request_url', '/') }}</code></td></tr>
+                        <tr><td>Method</td><td>{{ server.health_checks.get('healthcheck_method', 'GET') }}</td></tr>
+                        <tr><td>Expected Status</td><td>{{ server.health_checks.get('healthcheck_status_code', 200) }}</td></tr>
+                    </table>
+                </div>
+                {% endif %}
+
+                <!-- Advanced Settings -->
+                {% if server.get('advanced') %}
+                <div class="col-md-4">
+                    <h6 class="text-muted">Connection Settings</h6>
+                    <table class="table table-sm table-borderless">
+                        <tr><td>Max Connections</td><td>{{ server.advanced.get('advanced_timing_max_connections', 'N/A') }}</td></tr>
+                        <tr><td>Max Requests</td><td>{{ server.advanced.get('advanced_timing_max_requests', 'N/A') }}</td></tr>
+                        <tr><td>Timeout (ms)</td><td>{{ server.advanced.get('advanced_timing_timeout', 'N/A') }}</td></tr>
+                        <tr><td>Connection Pooling</td><td>{{ '✅' if server.advanced.get('connection_pooling') else '❌' }}</td></tr>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Backend Test Results -->
+            {% if server.get('backend_test_result') %}
+            {% set test_result = server.get('backend_test_result', {}) %}
+            {% set overall = test_result.get('overall_test_result', {}) %}
+            <hr>
+            <h6 class="text-muted">Backend Connectivity Test</h6>
+            <div>
+                <span class="me-3">TCP: 
+                    {% if overall.get('overall_tcp_pass') %}
+                    <span class="badge bg-success">Pass</span>
+                    {% else %}
+                    <span class="badge bg-danger">Fail</span>
+                    {% endif %}
+                </span>
+                <span>Application: 
+                    {% if overall.get('overall_application_pass') %}
+                    <span class="badge bg-success">Pass</span>
+                    {% else %}
+                    <span class="badge bg-danger">Fail</span>
+                    {% endif %}
+                </span>
+                {% if server.get('last_test_time') %}
+                <span class="text-muted ms-3"><small>Last tested: {{ server.get('last_test_time') }}</small></span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endfor %}
 
 <!-- Raw Application Data -->
 <div class="card mt-4">
@@ -66,7 +228,7 @@
     </div>
     <div class="collapse" id="rawData">
         <div class="card-body">
-            <pre class="mb-0 bg-light p-3 rounded"><code>{{ application|tojson(indent=2) }}</code></pre>
+            <pre class="mb-0 bg-light p-3 rounded" style="max-height: 500px; overflow-y: auto;"><code>{{ application|tojson(indent=2) }}</code></pre>
         </div>
     </div>
 </div>

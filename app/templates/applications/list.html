@@ -38,27 +38,44 @@
                     <thead class="table-light">
                         <tr>
                             <th>Application Name</th>
-                            <th>ID</th>
-                            <th>Status</th>
-                            <th>Endpoints</th>
+                            <th>Group</th>
+                            <th>Servers</th>
+                            <th>Server Health</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for app in applications %}
+                        {% set servers = app.get('servers', []) %}
+                        {% set up_count = servers | selectattr('health', 'equalto', 'Up') | list | length %}
+                        {% set total_count = servers | length %}
                         <tr>
                             <td><strong>{{ app.get('name', 'Unnamed') }}</strong></td>
-                            <td><code>{{ app.get('id', 'N/A') }}</code></td>
                             <td>
-                                {% if app.get('status') == 'on' or app.get('status') == 'active' %}
-                                <span class="badge bg-success">Active</span>
+                                {% if app.get('app_group') %}
+                                <span class="badge bg-info">{{ app.get('app_group') }}</span>
                                 {% else %}
-                                <span class="badge bg-secondary">{{ app.get('status', 'Unknown') }}</span>
+                                <span class="text-muted">—</span>
                                 {% endif %}
                             </td>
-                            <td>{{ app.get('endpoints', [])|length if app.get('endpoints') else '—' }}</td>
+                            <td>{{ total_count }}</td>
                             <td>
-                                <a href="{{ url_for('applications.view_application', account_id=selected_account.id, app_id=app.get('id')) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> View</a>
+                                {% if total_count > 0 %}
+                                    {% if up_count == total_count %}
+                                    <span class="badge bg-success"><i class="bi bi-check-circle"></i> All Up ({{ total_count }})</span>
+                                    {% elif up_count > 0 %}
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle"></i> {{ up_count }}/{{ total_count }} Up</span>
+                                    {% else %}
+                                    <span class="badge bg-danger"><i class="bi bi-x-circle"></i> All Down</span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if app.get('name') %}
+                                <a href="{{ url_for('applications.view_application', account_id=selected_account.id, app_id=app.get('name')) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> View</a>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}

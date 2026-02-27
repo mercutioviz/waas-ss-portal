@@ -1,3 +1,4 @@
+import logging
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -13,6 +14,12 @@ def create_app(config_name='default'):
     """Application factory pattern"""
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+
+    # Configure logging - ensure WaaS API client logs are visible
+    logging.basicConfig(level=logging.DEBUG if app.debug else logging.INFO)
+    # Set WaaS client logger to DEBUG so we see request/response details
+    waas_logger = logging.getLogger('app.waas_client')
+    waas_logger.setLevel(logging.DEBUG)
 
     # Initialize config-specific setup
     config[config_name].init_app(app)

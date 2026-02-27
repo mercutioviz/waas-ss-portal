@@ -1,7 +1,10 @@
+import logging
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from app.models import WaasAccount, AuditLog
 from app.waas_client import WaasClient, WaasApiError
+
+logger = logging.getLogger(__name__)
 
 bp = Blueprint('applications', __name__, url_prefix='/applications')
 
@@ -30,7 +33,24 @@ def list_applications():
         if client:
             try:
                 result = client.list_applications()
-                applications = result if isinstance(result, list) else result.get('results', result.get('data', []))
+                logger.info(f'API list_applications raw result type: {type(result).__name__}')
+                if isinstance(result, list):
+                    applications = result
+                elif isinstance(result, dict):
+                    # Try common wrapper keys
+                    applications = result.get('results', result.get('data', result.get('applications', [])))
+                    if not isinstance(applications, list):
+                        applications = [result]  # Single result, wrap in list
+                else:
+                    applications = []
+
+                # Log the first application's keys so we can see the field names
+                if applications:
+                    first_app = applications[0]
+                    logger.info(f'First application keys: {list(first_app.keys()) if isinstance(first_app, dict) else type(first_app).__name__}')
+                    logger.debug(f'First application data: {first_app}')
+                else:
+                    logger.info('No applications returned from API')
             except WaasApiError as e:
                 error = str(e)
         else:
@@ -64,7 +84,8 @@ def view_application(account_id, app_id):
     return render_template(
         'applications/view.html',
         account=account,
-        application=application
+        application=application,
+        app_id=app_id
     )
 
 

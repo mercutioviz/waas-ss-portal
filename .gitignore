@@ -195,7 +195,7 @@ cython_debug/
 .pypirc
 
 # Cline
-.clinerules
+# .clinerules - tracked in version control for project context
 
 # Cursor
 #  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to

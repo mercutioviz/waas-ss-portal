@@ -21,10 +21,6 @@
                         <div class="form-text">Your Barracuda WaaS API token. This will be encrypted at rest.</div>
                         {% for error in form.api_key.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description (Optional)</label>
-                        {{ form.description(class="form-control", rows=3, placeholder="Optional description") }}
-                    </div>
                     <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Add Account</button>
                     <a href="{{ url_for('accounts.list_accounts') }}" class="btn btn-secondary">Cancel</a>
                 </form>

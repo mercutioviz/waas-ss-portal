@@ -66,6 +66,34 @@ def view_account(account_id):
     return render_template('accounts/view.html', account=account)
 
 
+@bp.route('/<int:account_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_account(account_id):
+    """Edit a WaaS account"""
+    account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id).first_or_404()
+    form = WaasAccountForm(obj=account)
+
+    if form.validate_on_submit():
+        account.account_name = form.account_name.data
+        if form.api_key.data:
+            account.api_key = form.api_key.data
+        db.session.commit()
+
+        AuditLog.log(
+            user_id=current_user.id,
+            action='account_edit',
+            resource_type='waas_account',
+            resource_id=account.id,
+            details=f'Edited WaaS account: {account.account_name}',
+            ip_address=request.remote_addr
+        )
+
+        flash(f'Account "{account.account_name}" updated.', 'success')
+        return redirect(url_for('accounts.view_account', account_id=account.id))
+
+    return render_template('accounts/edit.html', form=form, account=account)
+
+
 @bp.route('/<int:account_id>/verify', methods=['POST'])
 @login_required
 def verify_account(account_id):

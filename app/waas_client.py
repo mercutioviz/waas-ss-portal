@@ -125,8 +125,11 @@ class WaasClient:
         return self._make_request('GET', '/applications/', params=params)
 
     def get_application(self, app_id):
-        """Get a single application by ID"""
-        return self._make_request('GET', f'/applications/{app_id}/')
+        """Get a single application export (full config) by name"""
+        return self._make_request('GET', f'/applications/{app_id}/export/', params={
+            'include_servers': 'true',
+            'include_endpoints': 'true'
+        })
 
     def create_application(self, data):
         """Create a new application"""

@@ -217,6 +217,114 @@
 </div>
 {% endfor %}
 
+<!-- Endpoints / Deployment -->
+{% set ep = application.get('endpoints', {}) %}
+{% if ep and ep is mapping %}
+{% set ports = ep.get('ports', []) %}
+{% set domains = ep.get('domains', []) %}
+{% set deployment = ep.get('deployment', {}) %}
+{% set cname = ep.get('cname', '') %}
+{% set cert_info = ep.get('certificate', {}) %}
+
+<div class="row g-4 mt-2">
+    <!-- Ports -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-plug"></i> Ports ({{ ports | length }})</h5></div>
+            {% if ports %}
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr><th>Port</th><th>Protocol</th><th>WAF</th><th>HTTP/2</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for p in ports %}
+                            <tr>
+                                <td><strong>{{ p.get('port', 'N/A') }}</strong></td>
+                                <td>{{ p.get('protocol', 'N/A') }}</td>
+                                <td>{{ '✅' if p.get('advanced_configuration', {}).get('enable_web_application_firewall') else '❌' }}</td>
+                                <td>{{ '✅' if p.get('advanced_configuration', {}).get('enable_http2') else '❌' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% else %}
+            <div class="card-body text-center py-3"><span class="text-muted">No ports configured.</span></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Deployment -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-cloud"></i> Deployment &amp; CNAME</h5></div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    {% if cname %}
+                    <tr><th style="width:40%">CNAME</th><td><code>{{ cname }}</code></td></tr>
+                    {% endif %}
+                    {% if deployment %}
+                    <tr><th>Primary Region</th><td>{{ deployment.get('primary', 'N/A') }}</td></tr>
+                    <tr><th>Secondary Region</th><td>{{ deployment.get('secondary', 'N/A') }}</td></tr>
+                    <tr><th>Auto Region</th><td>{{ '✅' if deployment.get('is_auto_region') else '❌' }}</td></tr>
+                    <tr><th>Dedicated IP</th><td>{{ '✅' if deployment.get('is_dedicated_ip') else '❌' }}</td></tr>
+                    {% endif %}
+                    {% if cert_info and cert_info is mapping %}
+                    <tr><th>Auto Certificate</th><td>{{ '✅' if cert_info.get('use_automatic') else '❌' }}</td></tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Domains -->
+{% if domains %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-globe2"></i> Domains ({{ domains | length }})</h5>
+    </div>
+    <div class="card-body">
+        {% for domain in domains %}
+        <span class="badge bg-secondary me-1 mb-1" style="font-size: 0.9em;"><code class="text-white">{{ domain }}</code></span>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- HTTPS / TLS Settings -->
+{% set https_cfg = ep.get('https', {}) %}
+{% if https_cfg %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-shield-lock"></i> Frontend TLS Settings</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr><td>SSL 3.0</td><td>{{ '✅' if https_cfg.get('enable_ssl_3') else '❌' }}</td></tr>
+                    <tr><td>TLS 1.0</td><td>{{ '✅' if https_cfg.get('enable_tls_1') else '❌' }}</td></tr>
+                    <tr><td>TLS 1.1</td><td>{{ '✅' if https_cfg.get('enable_tls_1_1') else '❌' }}</td></tr>
+                    <tr><td>TLS 1.2</td><td>{{ '✅' if https_cfg.get('enable_tls_1_2') else '❌' }}</td></tr>
+                    <tr><td>TLS 1.3</td><td>{{ '✅' if https_cfg.get('enable_tls_1_3') else '❌' }}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr><td>PFS</td><td>{{ '✅' if https_cfg.get('enable_pfs') else '❌' }}</td></tr>
+                    <tr><td>Cipher Suite</td><td><code>{{ https_cfg.get('cipher_suite_name', 'N/A') }}</code></td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
 <!-- Raw Application Data -->
 <div class="card mt-4">
     <div class="card-header">

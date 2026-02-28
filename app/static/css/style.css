@@ -13,6 +13,11 @@ body {
     min-height: 100vh;
 }
 
+/* Main content offset for fixed-top navbar */
+.main-content {
+    padding-top: 70px;
+}
+
 /* Navbar */
 .navbar-brand {
     font-weight: 700;

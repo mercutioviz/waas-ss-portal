@@ -9,19 +9,37 @@ Steps to start the portal after a server reboot.
 
 ## Startup Steps
 
-### 1. Navigate to the project directory
+### 1. Start Nginx
+
+```bash
+sudo systemctl start nginx
+```
+
+To enable Nginx to start automatically on system boot:
+
+```bash
+sudo systemctl enable nginx
+```
+
+Verify Nginx is running:
+
+```bash
+sudo systemctl status nginx
+```
+
+### 2. Navigate to the project directory
 
 ```bash
 cd /home/admin/waas-ss-portal
 ```
 
-### 2. Activate the Python virtual environment
+### 3. Activate the Python virtual environment
 
 ```bash
 source venv/bin/activate
 ```
 
-### 3. Start the Flask application
+### 4. Start the Flask application
 
 ```bash
 python3 run.py

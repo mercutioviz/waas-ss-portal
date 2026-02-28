@@ -2,6 +2,7 @@ import logging
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from werkzeug.middleware.proxy_fix import ProxyFix
 from config import config
 from datetime import datetime
 
@@ -14,6 +15,9 @@ def create_app(config_name='default'):
     """Application factory pattern"""
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+
+    # Trust the nginx reverse proxy headers
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     # Configure logging - ensure WaaS API client logs are visible
     logging.basicConfig(level=logging.DEBUG if app.debug else logging.INFO)

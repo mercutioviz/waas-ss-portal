@@ -164,6 +164,74 @@ class AuditLog(db.Model):
         }
 
 
+class ProxySession(db.Model):
+    """Model for noVNC browser proxy sessions"""
+    __tablename__ = 'proxy_sessions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    account_id = db.Column(db.Integer, db.ForeignKey('waas_accounts.id'), nullable=False, index=True)
+    app_id = db.Column(db.String(200), nullable=False)
+    domain = db.Column(db.String(255), nullable=False)
+    cname = db.Column(db.String(255))
+    cname_ip = db.Column(db.String(45))
+
+    # Process resources
+    display_number = db.Column(db.Integer)
+    vnc_port = db.Column(db.Integer)
+    websocket_port = db.Column(db.Integer)
+
+    # Process IDs
+    xvfb_pid = db.Column(db.Integer)
+    chromium_pid = db.Column(db.Integer)
+    vnc_pid = db.Column(db.Integer)
+    websockify_pid = db.Column(db.Integer)
+
+    # Status: starting, active, stopped, error
+    status = db.Column(db.String(20), nullable=False, default='starting', index=True)
+    started_at = db.Column(db.DateTime, default=datetime.utcnow)
+    stopped_at = db.Column(db.DateTime)
+
+    # Relationships
+    user = db.relationship('User', backref=db.backref('proxy_sessions', lazy='dynamic'))
+    account = db.relationship('WaasAccount', backref=db.backref('proxy_sessions', lazy='dynamic'))
+
+    def __repr__(self):
+        return f'<ProxySession {self.id}: {self.domain} [{self.status}]>'
+
+    @property
+    def is_active(self):
+        """Check if session is currently active"""
+        return self.status in ('starting', 'active')
+
+    @property
+    def elapsed_seconds(self):
+        """Return seconds since session started"""
+        if not self.started_at:
+            return 0
+        end = self.stopped_at or datetime.utcnow()
+        return int((end - self.started_at).total_seconds())
+
+    def to_dict(self):
+        """Convert to dictionary"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'account_id': self.account_id,
+            'app_id': self.app_id,
+            'domain': self.domain,
+            'cname': self.cname,
+            'cname_ip': self.cname_ip,
+            'display_number': self.display_number,
+            'vnc_port': self.vnc_port,
+            'websocket_port': self.websocket_port,
+            'status': self.status,
+            'started_at': self.started_at.isoformat() if self.started_at else None,
+            'stopped_at': self.stopped_at.isoformat() if self.stopped_at else None,
+            'elapsed_seconds': self.elapsed_seconds,
+        }
+
+
 class SystemSettings(db.Model):
     """Model for storing system-wide settings"""
     __tablename__ = 'system_settings'

@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}Proxy Session - {{ session.domain }} - WaaS Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <h2><i class="bi bi-display"></i> Proxy Session: <code>{{ session.domain }}</code></h2>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('proxy.launch', account_id=account.id, app_id=app_id) }}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+        <form method="POST" action="{{ url_for('proxy.stop', account_id=account.id, app_id=app_id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Stop this proxy session?')">
+                <i class="bi bi-stop-circle"></i> Stop Session
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Session Info Bar -->
+<div class="d-flex flex-wrap gap-3 mb-3 text-muted small">
+    <span><i class="bi bi-globe"></i> <strong>{{ session.domain }}</strong> → {{ session.cname_ip }}</span>
+    <span><i class="bi bi-hdd-network"></i> CNAME: <code>{{ session.cname }}</code></span>
+    <span><i class="bi bi-clock"></i> Started: {{ session.started_at|datetime_format }}</span>
+    <span>
+        <i class="bi bi-circle-fill text-success"></i>
+        <span id="session-status">{{ session.status|title }}</span>
+        — <span id="elapsed-time">{{ (session.elapsed_seconds // 60) }}m {{ (session.elapsed_seconds % 60) }}s</span>
+    </span>
+</div>
+
+<!-- noVNC + WAF Logs Split View -->
+<div class="row g-3">
+    <!-- noVNC iframe -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center py-2">
+                <span><i class="bi bi-display"></i> Browser View</span>
+                <div>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="reloadVnc()" title="Reload noVNC">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="toggleFullscreen()" title="Fullscreen">
+                        <i class="bi bi-arrows-fullscreen"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <iframe id="vnc-iframe"
+                        src="{{ novnc_url }}"
+                        style="width:100%; height:600px; border:none;"
+                        allow="clipboard-read; clipboard-write"
+                        loading="eager">
+                </iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- WAF Logs Panel -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center py-2">
+                <span><i class="bi bi-shield-exclamation"></i> WAF Logs</span>
+                <div>
+                    <span id="log-count" class="badge bg-secondary me-1">0</span>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="refreshLogs()" title="Refresh now">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="waf-logs-container" style="height:600px; overflow-y:auto; font-size:0.85rem;">
+                    <div id="waf-logs-loading" class="text-center text-muted p-4">
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                        Loading WAF logs...
+                    </div>
+                    <div id="waf-logs-empty" class="text-center text-muted p-4" style="display:none;">
+                        <i class="bi bi-shield-check" style="font-size:2rem;"></i>
+                        <p class="mt-2 mb-0">No WAF events detected yet.<br>
+                        <small>Logs refresh automatically every 5 seconds.</small></p>
+                    </div>
+                    <table id="waf-logs-table" class="table table-sm table-hover mb-0" style="display:none;">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Time</th>
+                                <th>Action</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="waf-logs-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const WAF_LOG_URL = "{{ url_for('proxy.waf_logs', account_id=account.id, app_id=app_id) }}";
+const SESSION_STARTED = {{ session.elapsed_seconds }};
+let elapsedSeconds = SESSION_STARTED;
+let logRefreshInterval = null;
+let elapsedInterval = null;
+
+// --- noVNC helpers ---
+function reloadVnc() {
+    const iframe = document.getElementById('vnc-iframe');
+    iframe.src = iframe.src;
+}
+
+function toggleFullscreen() {
+    const iframe = document.getElementById('vnc-iframe');
+    if (iframe.requestFullscreen) {
+        iframe.requestFullscreen();
+    } else if (iframe.webkitRequestFullscreen) {
+        iframe.webkitRequestFullscreen();
+    }
+}
+
+// --- Elapsed time updater ---
+function updateElapsed() {
+    elapsedSeconds++;
+    const mins = Math.floor(elapsedSeconds / 60);
+    const secs = elapsedSeconds % 60;
+    const el = document.getElementById('elapsed-time');
+    if (el) el.textContent = mins + 'm ' + secs + 's';
+}
+
+// --- WAF Log polling ---
+function refreshLogs() {
+    fetch(WAF_LOG_URL)
+        .then(r => r.json())
+        .then(data => {
+            const loading = document.getElementById('waf-logs-loading');
+            const empty = document.getElementById('waf-logs-empty');
+            const table = document.getElementById('waf-logs-table');
+            const tbody = document.getElementById('waf-logs-body');
+            const countBadge = document.getElementById('log-count');
+
+            loading.style.display = 'none';
+
+            if (data.error && data.error !== 'No active session') {
+                empty.innerHTML = '<i class="bi bi-exclamation-triangle text-warning" style="font-size:2rem;"></i><p class="mt-2 mb-0">Error loading logs:<br><small>' + data.error + '</small></p>';
+                empty.style.display = 'block';
+                table.style.display = 'none';
+                return;
+            }
+
+            const logs = data.logs || [];
+            countBadge.textContent = logs.length;
+
+            if (logs.length === 0) {
+                empty.style.display = 'block';
+                table.style.display = 'none';
+                return;
+            }
+
+            empty.style.display = 'none';
+            table.style.display = 'table';
+
+            // Build rows (newest first)
+            let html = '';
+            const reversed = logs.slice().reverse();
+            for (const log of reversed) {
+                const time = log.timestamp || log.time || log.date || '';
+                const action = log.action || log.attack_action || log.type || '';
+                const attackType = log.attack_type || log.rule || log.category || '';
+                const url = log.url || log.request_url || log.path || '';
+
+                // Action badge color
+                let actionClass = 'bg-secondary';
+                const actionLower = action.toLowerCase();
+                if (actionLower.includes('block') || actionLower.includes('deny')) {
+                    actionClass = 'bg-danger';
+                } else if (actionLower.includes('allow') || actionLower.includes('pass')) {
+                    actionClass = 'bg-success';
+                } else if (actionLower.includes('log') || actionLower.includes('detect')) {
+                    actionClass = 'bg-warning text-dark';
+                }
+
+                // Format timestamp
+                let shortTime = time;
+                try {
+                    const d = new Date(time);
+                    shortTime = d.toLocaleTimeString();
+                } catch (e) {}
+
+                html += '<tr>';
+                html += '<td class="text-nowrap"><small>' + shortTime + '</small></td>';
+                html += '<td><span class="badge ' + actionClass + '">' + action + '</span></td>';
+                html += '<td><small>';
+                if (attackType) html += '<strong>' + attackType + '</strong><br>';
+                if (url) html += '<code class="text-truncate d-inline-block" style="max-width:180px;" title="' + url + '">' + url + '</code>';
+                html += '</small></td>';
+                html += '</tr>';
+            }
+            tbody.innerHTML = html;
+
+            // Scroll to top to show newest
+            document.getElementById('waf-logs-container').scrollTop = 0;
+        })
+        .catch(err => {
+            console.error('WAF log fetch error:', err);
+        });
+}
+
+// Start polling
+document.addEventListener('DOMContentLoaded', function() {
+    refreshLogs();
+    logRefreshInterval = setInterval(refreshLogs, 5000);
+    elapsedInterval = setInterval(updateElapsed, 1000);
+});
+</script>
+{% endblock %}

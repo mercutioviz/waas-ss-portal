@@ -23,7 +23,7 @@ def list_certificates():
         if account:
             selected_account = account
             try:
-                client = WaasClient(account.api_key)
+                client = WaasClient.from_account(account)
                 result = client.list_certificates()
                 certificates = result if isinstance(result, list) else result.get('results', result.get('data', []))
             except WaasApiError as e:
@@ -54,7 +54,7 @@ def upload_certificate(account_id):
 
     if form.validate_on_submit():
         try:
-            client = WaasClient(account.api_key)
+            client = WaasClient.from_account(account)
 
             files = {}
             cert_file = form.certificate_file.data
@@ -101,7 +101,7 @@ def view_certificate(account_id, cert_id):
     account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id, is_active=True).first_or_404()
 
     try:
-        client = WaasClient(account.api_key)
+        client = WaasClient.from_account(account)
         certificate = client.get_certificate(cert_id)
     except WaasApiError as e:
         flash(f'Failed to load certificate: {e}', 'danger')
@@ -125,7 +125,7 @@ def delete_certificate(account_id, cert_id):
     account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id, is_active=True).first_or_404()
 
     try:
-        client = WaasClient(account.api_key)
+        client = WaasClient.from_account(account)
         client.delete_certificate(cert_id)
 
         AuditLog.log(

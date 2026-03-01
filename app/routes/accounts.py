@@ -27,21 +27,37 @@ def add_account():
             user_id=current_user.id,
             account_name=form.account_name.data,
         )
-        account.api_key = form.api_key.data
 
-        # Verify the API key by testing connection
-        try:
-            client = WaasClient(form.api_key.data)
-            account_info = client.verify_account()
-            account.waas_account_id = account_info.get('id', account_info.get('account_id'))
-            account.last_verified = datetime.utcnow()
-            flash_msg = f'Account "{account.account_name}" added and verified successfully.'
-        except WaasApiError as e:
-            # Still save, but warn about verification failure
-            flash_msg = f'Account "{account.account_name}" added, but API verification failed: {e}. You can retry verification later.'
+        # Store credentials (at least one set is guaranteed by form validation)
+        if form.api_key.data and form.api_key.data.strip():
+            account.api_key = form.api_key.data.strip()
+        if form.waas_email.data and form.waas_email.data.strip():
+            account.waas_email = form.waas_email.data.strip()
+        if form.waas_password.data and form.waas_password.data.strip():
+            account.waas_password = form.waas_password.data.strip()
 
+        # Save first so we have an ID for audit log
         db.session.add(account)
         db.session.commit()
+
+        # Attempt verification if v2 credentials are available
+        flash_msg = f'Account "{account.account_name}" added successfully.'
+        if account.has_v2_credentials:
+            try:
+                # Login via v2 to get auth token, then verify
+                client = WaasClient.from_account(account)
+                account_info = client.verify_account()
+                accounts_list = account_info.get('accounts', [])
+                if accounts_list:
+                    account.waas_account_id = str(accounts_list[0].get('id', ''))
+                account.last_verified = datetime.utcnow()
+                account.is_active = True
+                db.session.commit()
+                flash_msg = f'Account "{account.account_name}" added and verified successfully.'
+            except WaasApiError as e:
+                flash_msg = f'Account "{account.account_name}" added, but verification failed: {e}. You can retry later.'
+        elif account.has_api_key:
+            flash_msg += ' Add WaaS email/password credentials to enable account verification.'
 
         AuditLog.log(
             user_id=current_user.id,
@@ -71,12 +87,32 @@ def view_account(account_id):
 def edit_account(account_id):
     """Edit a WaaS account"""
     account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id).first_or_404()
+
+    # Pre-populate form; don't expose secrets in the form value
     form = WaasAccountForm(obj=account)
 
-    if form.validate_on_submit():
+    if request.method == 'GET':
+        # Show placeholder hints but don't fill in secret fields
+        form.api_key.data = ''
+        form.waas_email.data = account.waas_email or ''
+        form.waas_password.data = ''
+
+    if form.is_submitted() and form.validate(is_edit=True, account=account):
         account.account_name = form.account_name.data
-        if form.api_key.data:
-            account.api_key = form.api_key.data
+
+        # Update credentials only if new values provided
+        if form.api_key.data and form.api_key.data.strip():
+            account.api_key = form.api_key.data.strip()
+        if form.waas_email.data and form.waas_email.data.strip():
+            account.waas_email = form.waas_email.data.strip()
+        if form.waas_password.data and form.waas_password.data.strip():
+            account.waas_password = form.waas_password.data.strip()
+
+        # Invalidate cached v2 token when credentials change
+        if form.waas_email.data or form.waas_password.data:
+            account.v2_auth_token = None
+            account.v2_token_expiry = None
+
         db.session.commit()
 
         AuditLog.log(
@@ -97,13 +133,24 @@ def edit_account(account_id):
 @bp.route('/<int:account_id>/verify', methods=['POST'])
 @login_required
 def verify_account(account_id):
-    """Re-verify a WaaS account API key"""
+    """Re-verify a WaaS account using v2 credentials"""
     account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id).first_or_404()
 
+    if not account.has_v2_credentials:
+        flash(
+            f'Cannot verify "{account.account_name}": WaaS email/password credentials are required for verification. '
+            'Edit the account to add v2 credentials.',
+            'warning'
+        )
+        return redirect(url_for('accounts.view_account', account_id=account_id))
+
     try:
-        client = WaasClient(account.api_key)
+        client = WaasClient.from_account(account)
         account_info = client.verify_account()
-        account.waas_account_id = account_info.get('id', account_info.get('account_id'))
+        # v2 response: {"accounts": [{"id": ..., "name": ...}, ...], ...}
+        accounts_list = account_info.get('accounts', [])
+        if accounts_list:
+            account.waas_account_id = str(accounts_list[0].get('id', ''))
         account.last_verified = datetime.utcnow()
         account.is_active = True
         db.session.commit()

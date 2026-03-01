@@ -103,18 +103,75 @@ class ChangePasswordForm(FlaskForm):
 
 
 class WaasAccountForm(FlaskForm):
-    """Form for adding/editing a WaaS API account"""
+    """Form for adding/editing a WaaS API account.
+
+    At least one credential type is required: API key (v4) or email+password (v2).
+    """
     account_name = StringField(
         'Account Name',
         validators=[DataRequired(), Length(min=2, max=100)],
         render_kw={'placeholder': 'e.g., Production Account', 'class': 'form-control'}
     )
     api_key = StringField(
-        'API Key / Token',
-        validators=[DataRequired(), Length(min=10, max=500)],
+        'API Key / Token (v4)',
+        validators=[Optional(), Length(min=10, max=500)],
         render_kw={'placeholder': 'Paste WaaS API key here', 'class': 'form-control', 'type': 'password'}
     )
+    waas_email = StringField(
+        'WaaS Email (v2)',
+        validators=[Optional(), Email(), Length(max=120)],
+        render_kw={'placeholder': 'user@example.com', 'class': 'form-control'}
+    )
+    waas_password = PasswordField(
+        'WaaS Password (v2)',
+        validators=[Optional(), Length(max=255)],
+        render_kw={'placeholder': 'Enter WaaS password', 'class': 'form-control'}
+    )
     submit = SubmitField('Save Account', render_kw={'class': 'btn btn-primary'})
+
+    def validate(self, extra_validators=None, is_edit=False, account=None):
+        """Custom validation: require at least one credential type.
+
+        Args:
+            is_edit: If True, blank credential fields are allowed (means "keep existing").
+            account: The existing WaasAccount being edited (used to check existing credentials).
+        """
+        if not super().validate(extra_validators=extra_validators):
+            return False
+
+        has_api_key = bool(self.api_key.data and self.api_key.data.strip())
+        has_v2_creds = bool(
+            self.waas_email.data and self.waas_email.data.strip()
+            and self.waas_password.data and self.waas_password.data.strip()
+        )
+
+        # On edit, existing credentials count as "having" them
+        if is_edit and account:
+            existing_api_key = account.has_api_key
+            existing_v2_creds = account.has_v2_credentials
+        else:
+            existing_api_key = False
+            existing_v2_creds = False
+
+        if not has_api_key and not has_v2_creds and not existing_api_key and not existing_v2_creds:
+            self.api_key.errors.append(
+                'At least one credential type is required: API key or WaaS email + password.'
+            )
+            return False
+
+        # If email provided without password (or vice versa), flag it — but only for new values
+        has_email_only = bool(self.waas_email.data and self.waas_email.data.strip()) and not bool(self.waas_password.data and self.waas_password.data.strip())
+        has_pass_only = bool(self.waas_password.data and self.waas_password.data.strip()) and not bool(self.waas_email.data and self.waas_email.data.strip())
+
+        # On edit, having only email without new password is OK if v2 creds already exist
+        if has_email_only and not (is_edit and existing_v2_creds):
+            self.waas_password.errors.append('Password is required when email is provided.')
+            return False
+        if has_pass_only and not (is_edit and existing_v2_creds):
+            self.waas_email.errors.append('Email is required when password is provided.')
+            return False
+
+        return True
 
 
 class UserCreateForm(FlaskForm):

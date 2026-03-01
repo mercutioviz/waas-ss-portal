@@ -14,7 +14,7 @@ def get_client_for_account(account_id):
     account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id, is_active=True).first()
     if not account:
         return None, None
-    return WaasClient(account.api_key), account
+    return WaasClient.from_account(account), account
 
 
 @bp.route('/')

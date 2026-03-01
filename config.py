@@ -16,8 +16,9 @@ class Config:
         f'sqlite:///{os.path.join(basedir, "instance", "waas-portal.db")}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # WaaS API base URL (includes version prefix)
+    # WaaS API base URLs (includes version prefix)
     WAAS_API_BASE_URL = os.environ.get('WAAS_API_BASE_URL') or 'https://api.waas.barracudanetworks.com/v4/waasapi'
+    WAAS_API_V2_BASE_URL = os.environ.get('WAAS_API_V2_BASE_URL') or 'https://api.waas.barracudanetworks.com/v2/waasapi'
 
     # Pagination
     ITEMS_PER_PAGE = 20

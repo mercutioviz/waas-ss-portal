@@ -39,7 +39,7 @@ def waf_logs(account_id, app_id):
     total = 0
 
     try:
-        client = WaasClient(account.api_key)
+        client = WaasClient.from_account(account)
         result = client.get_waf_logs(app_id, params=params)
         if isinstance(result, list):
             logs = result
@@ -86,7 +86,7 @@ def access_logs(account_id, app_id):
     total = 0
 
     try:
-        client = WaasClient(account.api_key)
+        client = WaasClient.from_account(account)
         result = client.get_access_logs(app_id, params=params)
         if isinstance(result, list):
             logs = result
@@ -120,7 +120,7 @@ def fp_analysis(account_id, app_id):
     error = None
 
     try:
-        client = WaasClient(account.api_key)
+        client = WaasClient.from_account(account)
         # Fetch recent WAF logs with action=block for FP analysis
         params = {
             'per_page': 100,

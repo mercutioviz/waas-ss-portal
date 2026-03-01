@@ -74,12 +74,20 @@ class WaasAccount(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     account_name = db.Column(db.String(100), nullable=False)
-    api_key_encrypted = db.Column(db.Text, nullable=False)
+    api_key_encrypted = db.Column(db.Text, nullable=True)  # v4 API key (optional if v2 creds provided)
     waas_account_id = db.Column(db.String(100))  # Account ID from WaaS API
     is_active = db.Column(db.Boolean, default=True)
     last_verified = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
+
+    # v2 API credentials (email/password login)
+    waas_email_encrypted = db.Column(db.Text, nullable=True)
+    waas_password_encrypted = db.Column(db.Text, nullable=True)
+
+    # Cached v2 auth token
+    v2_auth_token_encrypted = db.Column(db.Text, nullable=True)
+    v2_token_expiry = db.Column(db.Integer, nullable=True)  # Unix timestamp
 
     def __repr__(self):
         return f'<WaasAccount {self.id}: {self.account_name}>'
@@ -95,8 +103,80 @@ class WaasAccount(db.Model):
     @api_key.setter
     def api_key(self, value):
         """Encrypt and store API key"""
-        from app.encryption import encrypt_value
-        self.api_key_encrypted = encrypt_value(value)
+        if value:
+            from app.encryption import encrypt_value
+            self.api_key_encrypted = encrypt_value(value)
+        else:
+            self.api_key_encrypted = None
+
+    @property
+    def waas_email(self):
+        """Decrypt and return WaaS email"""
+        if self.waas_email_encrypted:
+            from app.encryption import decrypt_value
+            return decrypt_value(self.waas_email_encrypted)
+        return None
+
+    @waas_email.setter
+    def waas_email(self, value):
+        """Encrypt and store WaaS email"""
+        if value:
+            from app.encryption import encrypt_value
+            self.waas_email_encrypted = encrypt_value(value)
+        else:
+            self.waas_email_encrypted = None
+
+    @property
+    def waas_password(self):
+        """Decrypt and return WaaS password"""
+        if self.waas_password_encrypted:
+            from app.encryption import decrypt_value
+            return decrypt_value(self.waas_password_encrypted)
+        return None
+
+    @waas_password.setter
+    def waas_password(self, value):
+        """Encrypt and store WaaS password"""
+        if value:
+            from app.encryption import encrypt_value
+            self.waas_password_encrypted = encrypt_value(value)
+        else:
+            self.waas_password_encrypted = None
+
+    @property
+    def v2_auth_token(self):
+        """Decrypt and return cached v2 auth token"""
+        if self.v2_auth_token_encrypted:
+            from app.encryption import decrypt_value
+            return decrypt_value(self.v2_auth_token_encrypted)
+        return None
+
+    @v2_auth_token.setter
+    def v2_auth_token(self, value):
+        """Encrypt and store v2 auth token"""
+        if value:
+            from app.encryption import encrypt_value
+            self.v2_auth_token_encrypted = encrypt_value(value)
+        else:
+            self.v2_auth_token_encrypted = None
+
+    @property
+    def has_api_key(self):
+        """Check if v4 API key is configured"""
+        return bool(self.api_key_encrypted)
+
+    @property
+    def has_v2_credentials(self):
+        """Check if v2 email/password credentials are configured"""
+        return bool(self.waas_email_encrypted and self.waas_password_encrypted)
+
+    @property
+    def v2_token_valid(self):
+        """Check if cached v2 auth token is still valid (with 60s buffer)"""
+        import time
+        if not self.v2_auth_token_encrypted or not self.v2_token_expiry:
+            return False
+        return self.v2_token_expiry > (int(time.time()) + 60)
 
     def to_dict(self):
         """Convert to dictionary (no sensitive data)"""
@@ -106,6 +186,8 @@ class WaasAccount(db.Model):
             'account_name': self.account_name,
             'waas_account_id': self.waas_account_id,
             'is_active': self.is_active,
+            'has_api_key': self.has_api_key,
+            'has_v2_credentials': self.has_v2_credentials,
             'last_verified': self.last_verified.isoformat() if self.last_verified else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None

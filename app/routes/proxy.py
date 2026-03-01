@@ -32,7 +32,7 @@ def _get_account_and_app(account_id, app_id):
         is_active=True,
     ).first_or_404()
 
-    client = WaasClient(account.api_key)
+    client = WaasClient.from_account(account)
     try:
         app_data = client.get_application(app_id)
     except WaasApiError as e:
@@ -203,7 +203,7 @@ def waf_logs(account_id, app_id):
         return jsonify({'logs': [], 'error': 'No active session'})
 
     try:
-        client = WaasClient(account.api_key)
+        client = WaasClient.from_account(account)
 
         # Build time filter params — logs since session started
         params = {}

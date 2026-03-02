@@ -3,81 +3,91 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
-    <h2><i class="bi bi-journal-text"></i> Access Logs</h2>
+    <h2><i class="bi bi-journal-text"></i> Log Viewer</h2>
 </div>
 
 {% if not accounts %}
-<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> No WaaS accounts configured. <a href="{{ url_for('accounts.add_account') }}">Add an account</a> first.</div>
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle"></i> No WaaS accounts configured.
+    <a href="{{ url_for('accounts.add_account') }}">Add an account</a> first.
+</div>
+
+{% elif not selected_account %}
+{# Step 1: Select Account #}
+<div class="card mb-4">
+    <div class="card-header"><h5 class="mb-0"><i class="bi bi-1-circle"></i> Select Account</h5></div>
+    <div class="list-group list-group-flush">
+        {% for account in accounts %}
+        <a href="{{ url_for('logs.index', account_id=account.id) }}"
+           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-key"></i> {{ account.account_name }}</span>
+            <i class="bi bi-chevron-right text-muted"></i>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
 {% else %}
-    {% if not selected_account %}
-    <div class="card mb-4">
-        <div class="card-header"><h5 class="mb-0">Select Account</h5></div>
-        <div class="list-group list-group-flush">
-            {% for account in accounts %}
-            <a href="{{ url_for('logs.index', account_id=account.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-key"></i> {{ account.account_name }}</span>
-                <span class="badge bg-primary">View Logs</span>
-            </a>
-            {% endfor %}
-        </div>
-    </div>
-    {% else %}
-    <div class="mb-3">
-        <span class="text-muted">Account:</span> <strong>{{ selected_account.account_name }}</strong>
-        <a href="{{ url_for('logs.index') }}" class="btn btn-sm btn-outline-secondary ms-2"><i class="bi bi-arrow-left"></i> All Accounts</a>
+{# Account selected — show breadcrumb #}
+<div class="mb-3">
+    <span class="text-muted">Account:</span> <strong>{{ selected_account.account_name }}</strong>
+    <a href="{{ url_for('logs.index') }}" class="btn btn-sm btn-outline-secondary ms-2">
+        <i class="bi bi-arrow-left"></i> Change Account
+    </a>
+</div>
+
+    {% if not applications %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> No applications found for this account.
     </div>
 
-    <!-- App selector -->
-    {% if not selected_app %}
-    <div class="card mb-4">
-        <div class="card-header"><h5 class="mb-0">Select Application</h5></div>
-        {% if applications %}
-        <div class="list-group list-group-flush">
-            {% for app in applications %}
-            <a href="{{ url_for('logs.index', account_id=selected_account.id, app_id=app.get('id')) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-globe"></i> {{ app.get('name', 'Unnamed') }}</span>
-                <span class="badge bg-primary">View Logs</span>
-            </a>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="card-body text-muted">No applications found for this account.</div>
-        {% endif %}
-    </div>
     {% else %}
-    <div class="mb-3">
-        <span class="text-muted">Application:</span> <strong>{{ selected_app.get('name', selected_app_id) }}</strong>
-    </div>
-
-    {% if error %}
-    <div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> {{ error }}</div>
-    {% elif logs %}
-    <div class="card">
+    {# Step 2: Select Application → shows log type buttons #}
+    <div class="card mb-4">
+        <div class="card-header"><h5 class="mb-0"><i class="bi bi-2-circle"></i> Select Application &amp; Log Type</h5></div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover table-sm mb-0">
+                <table class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Timestamp</th>
-                            <th>Client IP</th>
-                            <th>Method</th>
-                            <th>URL</th>
-                            <th>Status</th>
-                            <th>Action</th>
+                            <th>Application</th>
+                            <th>Mode</th>
+                            <th>Group</th>
+                            <th class="text-end">View Logs</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for log in logs %}
+                        {% for app in applications %}
                         <tr>
-                            <td><small>{{ log.get('timestamp', 'N/A') }}</small></td>
-                            <td><code>{{ log.get('clientIp', log.get('client_ip', 'N/A')) }}</code></td>
-                            <td><span class="badge bg-secondary">{{ log.get('method', 'N/A') }}</span></td>
-                            <td><small class="text-truncate d-inline-block" style="max-width:300px">{{ log.get('url', log.get('path', 'N/A')) }}</small></td>
                             <td>
-                                {% set sc = log.get('statusCode', log.get('status_code', 0))|int %}
-                                <span class="badge {% if sc >= 200 and sc < 300 %}bg-success{% elif sc >= 400 and sc < 500 %}bg-warning{% elif sc >= 500 %}bg-danger{% else %}bg-secondary{% endif %}">{{ sc }}</span>
+                                <i class="bi bi-globe"></i>
+                                <strong>{{ app.get('name', 'Unnamed') }}</strong>
                             </td>
-                            <td>{{ log.get('action', log.get('policyAction', '—')) }}</td>
+                            <td>
+                                {% set mode = app.get('basic_security', {}).get('protection_mode', 'Unknown') %}
+                                <span class="badge {% if mode == 'Active' %}bg-success{% elif mode == 'Passive' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                    {{ mode }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info text-dark">{{ app.get('app_group', '—') }}</span>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('logs.waf_logs', account_id=selected_account.id, app_name=app.get('name', '')) }}"
+                                       class="btn btn-outline-danger" title="WAF Logs">
+                                        <i class="bi bi-shield-exclamation"></i> WAF
+                                    </a>
+                                    <a href="{{ url_for('logs.access_logs', account_id=selected_account.id, app_name=app.get('name', '')) }}"
+                                       class="btn btn-outline-primary" title="Access Logs">
+                                        <i class="bi bi-list-ul"></i> Access
+                                    </a>
+                                    <a href="{{ url_for('logs.fp_analysis', account_id=selected_account.id, app_name=app.get('name', '')) }}"
+                                       class="btn btn-outline-warning" title="False Positive Analysis">
+                                        <i class="bi bi-search"></i> FP Analysis
+                                    </a>
+                                </div>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -85,16 +95,6 @@
             </div>
         </div>
     </div>
-    {% else %}
-    <div class="card">
-        <div class="card-body text-center py-5">
-            <i class="bi bi-journal-text display-1 text-muted"></i>
-            <h4 class="mt-3">No Logs Found</h4>
-            <p class="text-muted">No access log entries were returned for this application.</p>
-        </div>
-    </div>
-    {% endif %}
-    {% endif %}
     {% endif %}
 {% endif %}
 {% endblock %}

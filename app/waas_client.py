@@ -368,17 +368,101 @@ class WaasClient:
         return self._make_request('DELETE', f'/certificates/{cert_id}/')
 
     # === Logs ===
+    def get_logs(self, app_name, quick_range='r_24h', page=1, items_per_page=50,
+                 from_epoch=None, to_epoch=None, filter_fields=None):
+        """Get logs (WAF + access combined) for an application via v4 API.
+
+        Args:
+            app_name: Application name/domain (e.g. 'bank.darklab.cudalabx.net')
+            quick_range: Quick time range shortcut. One of:
+                r_1h, r_24h, r_7d, r_14d, r_30d, r_45d, r_60d.
+                Ignored if from_epoch/to_epoch are provided.
+            page: Page number (default 1)
+            items_per_page: Items per page (default 50, max 1000)
+            from_epoch: Start time as epoch seconds (overrides quick_range)
+            to_epoch: End time as epoch seconds (overrides quick_range)
+            filter_fields: Dict of filter fields, e.g.
+                {"ClientIP": [{"condition": "is", "value": "1.2.3.4"}]}
+
+        Returns:
+            dict with 'results' (list of log entries) and 'count' (int)
+        """
+        params = {
+            'page': page,
+            'itemsPerPage': items_per_page,
+        }
+
+        if from_epoch and to_epoch:
+            params['from'] = str(int(from_epoch))
+            params['to'] = str(int(to_epoch))
+        else:
+            params['quickRange'] = quick_range
+
+        if filter_fields:
+            params['filterFields'] = json.dumps(filter_fields)
+
+        return self._make_request('GET', f'/applications/{app_name}/logs/', params=params)
+
     def get_access_logs(self, app_id, params=None):
-        """Get access logs for an application"""
-        return self._make_request('GET', f'/applications/{app_id}/logs/access/', params=params)
+        """Get access logs for an application (v2 API, legacy).
+
+        Prefer get_logs() for richer v4 data.
+        """
+        return self._make_request('GET', f'/applications/{app_id}/logs/access/', params=params, api_version='v2')
 
     def get_waf_logs(self, app_id, params=None):
-        """Get WAF logs for an application"""
-        return self._make_request('GET', f'/applications/{app_id}/logs/waf/', params=params)
+        """Get WAF logs for an application (v2 API, legacy).
+
+        Prefer get_logs() for richer v4 data.
+        """
+        return self._make_request('GET', f'/applications/{app_id}/logs/waf/', params=params, api_version='v2')
 
     def get_audit_logs(self, params=None):
         """Get audit/system logs"""
         return self._make_request('GET', '/logs/audit/', params=params)
+
+    # === Applications (v2) ===
+    def list_applications_v2(self):
+        """List all applications via v2 API.
+
+        Returns the paginated response with 'results' containing application
+        objects with fields: id, name, basic_security, servers, app_group,
+        license_plan, etc.
+        """
+        return self._make_request('GET', '/applications/', api_version='v2')
+
+    # === Public IP lookup ===
+    _cached_public_ip = None
+    _cached_public_ip_time = 0
+
+    @classmethod
+    def get_public_ip(cls, cache_ttl=300):
+        """Look up this server's public IP address.
+
+        Caches the result for ``cache_ttl`` seconds (default 5 minutes)
+        to avoid hitting ipinfo.io on every request.
+
+        Returns:
+            str: Public IP address, or None on failure.
+        """
+        now = time.time()
+        if cls._cached_public_ip and (now - cls._cached_public_ip_time) < cache_ttl:
+            return cls._cached_public_ip
+
+        try:
+            resp = requests.get('https://ipinfo.io/ip', timeout=5)
+            if resp.ok:
+                ip = resp.text.strip()
+                cls._cached_public_ip = ip
+                cls._cached_public_ip_time = now
+                logger.info(f'Public IP lookup: {ip}')
+                return ip
+            else:
+                logger.warning(f'Public IP lookup failed: HTTP {resp.status_code}')
+                return cls._cached_public_ip  # return stale cache if available
+        except Exception as e:
+            logger.warning(f'Public IP lookup error: {e}')
+            return cls._cached_public_ip  # return stale cache if available
 
     # === DNS / CNAME ===
     def get_dns_info(self, app_id):

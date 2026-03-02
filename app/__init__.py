@@ -72,6 +72,32 @@ def create_app(config_name='default'):
         except (ValueError, TypeError):
             return '0 B'
 
+    @app.template_filter('epoch_ms')
+    def epoch_ms_format(value, fmt='%Y-%m-%d %H:%M:%S'):
+        """Convert epoch milliseconds to human-readable datetime string.
+
+        WaaS API returns timestamps as epoch milliseconds (e.g. 1772472596562).
+        """
+        if value is None:
+            return 'N/A'
+        try:
+            epoch_ms = int(value)
+            epoch_s = epoch_ms / 1000.0
+            dt = datetime.utcfromtimestamp(epoch_s)
+            return dt.strftime(fmt)
+        except (ValueError, TypeError, OSError):
+            return str(value)
+
+    @app.template_filter('null_dash')
+    def null_dash_filter(value):
+        """Replace WaaS null marker '"-"' with an em-dash for display."""
+        if value is None:
+            return '—'
+        s = str(value).strip()
+        if s in ('"-"', '"-"', '-', ''):
+            return '—'
+        return s
+
     # Context processor to inject version into all templates
     @app.context_processor
     def inject_version():

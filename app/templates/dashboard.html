@@ -23,7 +23,9 @@
         <div class="card border-success h-100">
             <div class="card-body text-center">
                 <i class="bi bi-globe display-4 text-success"></i>
-                <h3 class="mt-2">&mdash;</h3>
+                <h3 class="mt-2" id="app-count">
+                    <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+                </h3>
                 <p class="text-muted mb-0">Applications</p>
             </div>
             <div class="card-footer bg-transparent text-center">
@@ -35,7 +37,9 @@
         <div class="card border-info h-100">
             <div class="card-body text-center">
                 <i class="bi bi-file-earmark-lock display-4 text-info"></i>
-                <h3 class="mt-2">&mdash;</h3>
+                <h3 class="mt-2" id="cert-count">
+                    <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+                </h3>
                 <p class="text-muted mb-0">Certificates</p>
             </div>
             <div class="card-footer bg-transparent text-center">
@@ -144,3 +148,24 @@
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('{{ url_for("main.dashboard_counts") }}')
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            document.getElementById('app-count').textContent = data.app_count;
+            document.getElementById('cert-count').textContent = data.cert_count;
+            if (data.errors && data.errors.length > 0) {
+                console.warn('Dashboard count errors:', data.errors);
+            }
+        })
+        .catch(function(err) {
+            console.error('Failed to load dashboard counts:', err);
+            document.getElementById('app-count').textContent = '\u2014';
+            document.getElementById('cert-count').textContent = '\u2014';
+        });
+});
+</script>
+{% endblock extra_js %}

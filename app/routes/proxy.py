@@ -191,7 +191,12 @@ def session_view(account_id, app_id):
 @bp.route('/<int:account_id>/<app_id>/waf-logs')
 @login_required
 def waf_logs(account_id, app_id):
-    """AJAX endpoint — returns WAF logs as JSON for the active session period."""
+    """AJAX endpoint — returns WAF logs as JSON for the active session period.
+
+    Uses the v4 get_logs() method with epoch-based time filtering scoped to
+    the session start time, and optionally filters by this server's public IP
+    so only traffic from the proxy session is shown.
+    """
     account = WaasAccount.query.filter_by(
         id=account_id,
         user_id=current_user.id,
@@ -200,27 +205,46 @@ def waf_logs(account_id, app_id):
 
     active_session = get_active_session(current_user.id, account_id, app_id)
     if not active_session:
-        return jsonify({'logs': [], 'error': 'No active session'})
+        return jsonify({'logs': [], 'count': 0, 'error': 'No active session'})
 
     try:
         client = WaasClient.from_account(account)
 
-        # Build time filter params — logs since session started
-        params = {}
+        # Build epoch-based time window: session start → now
+        from_epoch = None
+        to_epoch = None
         if active_session.started_at:
-            params['from_time'] = active_session.started_at.strftime('%Y-%m-%dT%H:%M:%SZ')
-            params['to_time'] = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+            from_epoch = int(active_session.started_at.timestamp())
+            to_epoch = int(datetime.utcnow().timestamp())
 
-        result = client.get_waf_logs(app_id, params=params)
+        # Optionally filter by this server's public IP so we only see
+        # traffic generated through the proxy session
+        filter_fields = None
+        public_ip = WaasClient.get_public_ip()
+        if public_ip:
+            filter_fields = {
+                'ClientIP': [{'condition': 'is', 'value': public_ip}]
+            }
 
-        # The API may return a list directly or a dict with a data/logs key
-        logs = []
-        if isinstance(result, list):
-            logs = result
-        elif isinstance(result, dict):
-            logs = result.get('data', result.get('logs', result.get('items', [])))
+        result = client.get_logs(
+            app_name=app_id,
+            quick_range=None,
+            page=1,
+            items_per_page=200,
+            from_epoch=from_epoch,
+            to_epoch=to_epoch,
+            filter_fields=filter_fields,
+        )
 
-        return jsonify({'logs': logs, 'session_id': active_session.id})
+        logs = result.get('results', []) if isinstance(result, dict) else []
+        count = result.get('count', len(logs)) if isinstance(result, dict) else 0
+
+        return jsonify({
+            'logs': logs,
+            'count': count,
+            'session_id': active_session.id,
+            'public_ip': public_ip,
+        })
 
     except WaasApiError as e:
-        return jsonify({'logs': [], 'error': str(e)})
+        return jsonify({'logs': [], 'count': 0, 'error': str(e)})

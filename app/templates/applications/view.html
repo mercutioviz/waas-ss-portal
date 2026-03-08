@@ -68,9 +68,20 @@
                     <a href="{{ url_for('proxy.launch', account_id=account.id, app_id=app_id) }}" class="btn btn-outline-primary">
                         <i class="bi bi-display"></i> Browse Application via Proxy
                     </a>
-                    <a href="{{ url_for('logs.index') }}" class="btn btn-outline-warning">
-                        <i class="bi bi-file-text"></i> View Logs
-                    </a>
+                    <div class="border rounded p-2 mt-1">
+                        <small class="text-muted d-block mb-2"><i class="bi bi-journal-text"></i> Logs</small>
+                        <div class="btn-group w-100">
+                            <a href="{{ url_for('logs.waf_logs', account_id=account.id, app_name=app_id, from='app') }}" class="btn btn-outline-danger">
+                                <i class="bi bi-shield-exclamation"></i> WAF
+                            </a>
+                            <a href="{{ url_for('logs.access_logs', account_id=account.id, app_name=app_id, from='app') }}" class="btn btn-outline-primary">
+                                <i class="bi bi-list-ul"></i> Access
+                            </a>
+                            <a href="{{ url_for('logs.fp_analysis', account_id=account.id, app_name=app_id, from='app') }}" class="btn btn-outline-warning">
+                                <i class="bi bi-search"></i> FP Analysis
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

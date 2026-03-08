@@ -4,9 +4,15 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
     <h2><i class="bi bi-list-ul"></i> Access Logs</h2>
+    {% if request.args.get('from') == 'app' %}
+    <a href="{{ url_for('applications.view_application', account_id=account.id, app_id=app_name) }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Back to Application
+    </a>
+    {% else %}
     <a href="{{ url_for('logs.index', account_id=account.id) }}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left"></i> Back to Log Viewer
     </a>
+    {% endif %}
 </div>
 
 <div class="mb-3">

@@ -36,24 +36,37 @@
                         {{ mode }}
                     </span>
                 </div>
+                {% if security.get('clickjacking_protection') %}
+                <hr class="my-2">
+                <h6 class="text-muted mt-2">Clickjacking Protection</h6>
                 <table class="table table-borderless table-sm mb-0">
+                    {% for key, value in security.get('clickjacking_protection', {}).items() %}
                     <tr>
-                        <th style="width:50%">WAF Enabled</th>
-                        <td>{{ '✅' if security.get('waf_enabled', security.get('enable_web_application_firewall', False)) else '❌' }}</td>
+                        <th style="width:50%">{{ key | replace('_', ' ') | title }}</th>
+                        <td>
+                            {% if value is sameas true %}✅{% elif value is sameas false %}❌{% else %}{{ value }}{% endif %}
+                        </td>
                     </tr>
-                    <tr>
-                        <th>DDoS Protection</th>
-                        <td>{{ '✅' if security.get('ddos_protection', security.get('enable_ddos_protection', False)) else '❌' }}</td>
-                    </tr>
-                    <tr>
-                        <th>Bot Protection</th>
-                        <td>{{ '✅' if security.get('bot_protection', security.get('enable_bot_protection', False)) else '❌' }}</td>
-                    </tr>
-                    <tr>
-                        <th>API Protection</th>
-                        <td>{{ '✅' if security.get('api_protection', security.get('enable_api_protection', False)) else '❌' }}</td>
-                    </tr>
+                    {% endfor %}
                 </table>
+                {% endif %}
+
+                {% if security.get('data_theft_protection') %}
+                <hr class="my-2">
+                <h6 class="text-muted mt-2">Data Theft Protection</h6>
+                <table class="table table-borderless table-sm mb-0">
+                    {% for key, value in security.get('data_theft_protection', {}).items() %}
+                    <tr>
+                        <th style="width:50%">{{ key | replace('_', ' ') | title }}</th>
+                        <td>
+                            {% if value is sameas true %}✅{% elif value is sameas false %}❌{% elif value is mapping %}
+                            <code>{{ value | tojson }}</code>
+                            {% else %}{{ value }}{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -100,71 +113,6 @@
     </div>
 </div>
 
-{# Attack Protection Categories #}
-{% set attack_types = security.get('attack_types', security.get('attack_protection', {})) %}
-{% if attack_types and attack_types is mapping %}
-<div class="card mt-4">
-    <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-bug"></i> Attack Protection</h5>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Attack Type</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for attack_name, attack_cfg in attack_types.items() %}
-                    <tr>
-                        <td><strong>{{ attack_name | replace('_', ' ') | title }}</strong></td>
-                        <td>
-                            {% if attack_cfg is mapping %}
-                                {% set enabled = attack_cfg.get('enabled', attack_cfg.get('status', 'Unknown')) %}
-                                {% if enabled == true or enabled == 'On' or enabled == 'Enabled' %}
-                                <span class="badge bg-success">Enabled</span>
-                                {% elif enabled == false or enabled == 'Off' or enabled == 'Disabled' %}
-                                <span class="badge bg-secondary">Disabled</span>
-                                {% else %}
-                                <span class="badge bg-info">{{ enabled }}</span>
-                                {% endif %}
-                            {% else %}
-                                {% if attack_cfg == true or attack_cfg == 'On' %}
-                                <span class="badge bg-success">Enabled</span>
-                                {% elif attack_cfg == false or attack_cfg == 'Off' %}
-                                <span class="badge bg-secondary">Disabled</span>
-                                {% else %}
-                                <span class="badge bg-info">{{ attack_cfg }}</span>
-                                {% endif %}
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if attack_cfg is mapping %}
-                                {% set action = attack_cfg.get('action', attack_cfg.get('default_action', 'N/A')) %}
-                                {% if action == 'Deny' or action == 'DENY' or action == 'Block' %}
-                                <span class="badge bg-danger">{{ action }}</span>
-                                {% elif action == 'Log' or action == 'LOG' %}
-                                <span class="badge bg-warning text-dark">{{ action }}</span>
-                                {% elif action == 'Allow' or action == 'ALLOW' %}
-                                <span class="badge bg-success">{{ action }}</span>
-                                {% else %}
-                                <span class="badge bg-secondary">{{ action }}</span>
-                                {% endif %}
-                            {% else %}
-                            <span class="text-muted">—</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-{% endif %}
 
 {# Edit Form (for non-viewer users) #}
 {% if current_user.role != 'viewer' %}

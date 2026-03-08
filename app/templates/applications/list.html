@@ -23,9 +23,43 @@
         </div>
     </div>
     {% else %}
-    <div class="mb-3">
-        <span class="text-muted">Account:</span> <strong>{{ selected_account.account_name }}</strong>
-        <a href="{{ url_for('applications.list_applications') }}" class="btn btn-sm btn-outline-secondary ms-2"><i class="bi bi-arrow-left"></i> All Accounts</a>
+    <!-- Account header with actions -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <span class="text-muted">Account:</span> <strong>{{ selected_account.account_name }}</strong>
+            <a href="{{ url_for('applications.list_applications') }}" class="btn btn-sm btn-outline-secondary ms-2"><i class="bi bi-arrow-left"></i> All Accounts</a>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            {% if current_user.role != 'viewer' and selected_account.has_v2_credentials %}
+            <a href="{{ url_for('applications.create_application', account_id=selected_account.id) }}" class="btn btn-sm btn-success">
+                <i class="bi bi-plus-lg"></i> Create Application
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- API Version Toggle -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <span class="badge {{ 'bg-primary' if api_version == 'v4' else 'bg-warning text-dark' }}">
+                {{ api_version|upper }} API
+            </span>
+            <small class="text-muted ms-1">
+                {% if api_version == 'v4' %}
+                    Detailed view with server health
+                {% else %}
+                    Shows v2 app IDs — required for create/delete
+                {% endif %}
+            </small>
+        </div>
+        <div class="btn-group btn-group-sm" role="group" aria-label="API version">
+            <a href="{{ url_for('applications.list_applications', account_id=selected_account.id, api_version='v4') }}"
+               class="btn {{ 'btn-primary' if api_version == 'v4' else 'btn-outline-primary' }}">v4</a>
+            {% if selected_account.has_v2_credentials %}
+            <a href="{{ url_for('applications.list_applications', account_id=selected_account.id, api_version='v2') }}"
+               class="btn {{ 'btn-warning' if api_version == 'v2' else 'btn-outline-warning' }}">v2</a>
+            {% endif %}
+        </div>
     </div>
 
     {% if error %}
@@ -37,27 +71,40 @@
                 <table class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
+                            {% if api_version == 'v2' %}
+                            <th>ID</th>
+                            {% endif %}
                             <th>Application Name</th>
                             <th>Group</th>
+                            {% if api_version == 'v4' %}
                             <th>Servers</th>
                             <th>Server Health</th>
+                            {% else %}
+                            <th>Servers</th>
+                            {% endif %}
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for app in applications %}
                         {% set servers = app.get('servers', []) %}
-                        {% set up_count = servers | selectattr('health', 'equalto', 'Up') | list | length %}
-                        {% set total_count = servers | length %}
+                        {% set app_name = app.get('name', 'Unnamed') %}
+                        {% set app_group = app.get('app_group', '') %}
                         <tr>
-                            <td><strong>{{ app.get('name', 'Unnamed') }}</strong></td>
+                            {% if api_version == 'v2' %}
+                            <td><code>{{ app.get('id', '—') }}</code></td>
+                            {% endif %}
+                            <td><strong>{{ app_name }}</strong></td>
                             <td>
-                                {% if app.get('app_group') %}
-                                <span class="badge bg-info">{{ app.get('app_group') }}</span>
+                                {% if app_group %}
+                                <span class="badge bg-info">{{ app_group }}</span>
                                 {% else %}
                                 <span class="text-muted">—</span>
                                 {% endif %}
                             </td>
+                            {% if api_version == 'v4' %}
+                            {% set up_count = servers | selectattr('health', 'equalto', 'Up') | list | length %}
+                            {% set total_count = servers | length %}
                             <td>{{ total_count }}</td>
                             <td>
                                 {% if total_count > 0 %}
@@ -72,10 +119,27 @@
                                 <span class="text-muted">—</span>
                                 {% endif %}
                             </td>
+                            {% else %}
+                            <td>{{ servers | length }}</td>
+                            {% endif %}
                             <td>
-                                {% if app.get('name') %}
-                                <a href="{{ url_for('applications.view_application', account_id=selected_account.id, app_id=app.get('name')) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> View</a>
-                                {% endif %}
+                                <div class="d-flex gap-1">
+                                    {% if app_name and app_name != 'Unnamed' %}
+                                    <a href="{{ url_for('applications.view_application', account_id=selected_account.id, app_id=app_name) }}" class="btn btn-sm btn-outline-primary" title="View (v4 API)">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                    {% endif %}
+                                    {% if api_version == 'v2' and app.get('id') and current_user.role != 'viewer' %}
+                                    <form method="POST" action="{{ url_for('applications.delete_application', account_id=selected_account.id, app_id=app.get('id')) }}" class="d-inline"
+                                          onsubmit="return confirm('Are you sure you want to delete application &quot;{{ app_name }}&quot;? This cannot be undone.');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="app_name" value="{{ app_name }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete (v2 API)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -90,6 +154,11 @@
             <i class="bi bi-globe display-1 text-muted"></i>
             <h4 class="mt-3">No Applications Found</h4>
             <p class="text-muted">This account has no applications configured in WaaS.</p>
+            {% if current_user.role != 'viewer' and selected_account.has_v2_credentials %}
+            <a href="{{ url_for('applications.create_application', account_id=selected_account.id) }}" class="btn btn-success mt-2">
+                <i class="bi bi-plus-lg"></i> Create Application
+            </a>
+            {% endif %}
         </div>
     </div>
     {% endif %}

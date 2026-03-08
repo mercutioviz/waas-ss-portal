@@ -37,7 +37,7 @@
                     <thead class="table-light">
                         <tr>
                             <th>Certificate Name</th>
-                            <th>ID</th>
+                            <th>Application</th>
                             <th>Common Name</th>
                             <th>Expiry</th>
                             <th>Actions</th>
@@ -47,11 +47,19 @@
                         {% for cert in certificates %}
                         <tr>
                             <td><strong>{{ cert.get('name', 'Unnamed') }}</strong></td>
-                            <td><code>{{ cert.get('id', 'N/A') }}</code></td>
+                            <td>
+                                {% if cert.get('_app_name') %}
+                                <span class="badge bg-secondary">{{ cert.get('_app_name') }}</span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
                             <td>{{ cert.get('common_name', cert.get('commonName', 'N/A')) }}</td>
                             <td>{{ cert.get('expiry', cert.get('expiryDate', 'N/A')) }}</td>
                             <td>
-                                <a href="{{ url_for('certificates.view_certificate', account_id=selected_account.id, cert_id=cert.get('id')) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> View</a>
+                                {% if cert.get('_app_name') and cert.get('name') %}
+                                <a href="{{ url_for('certificates.view_certificate', account_id=selected_account.id, app_name=cert.get('_app_name'), cert_id=cert.get('name')) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> View</a>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}

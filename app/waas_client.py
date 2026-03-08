@@ -343,29 +343,66 @@ class WaasClient:
 
     # === Application Security Config ===
     def get_security_config(self, app_id):
-        """Get security configuration for an application"""
-        return self._make_request('GET', f'/applications/{app_id}/security/')
+        """Get basic security configuration for an application (v4 API).
+
+        Endpoint: GET /applications/{appName}/basic_security/
+        """
+        return self._make_request('GET', f'/applications/{app_id}/basic_security/')
 
     def update_security_config(self, app_id, data):
-        """Update security configuration"""
-        return self._make_request('PUT', f'/applications/{app_id}/security/', data=data)
+        """Update basic security configuration (v4 API).
 
-    # === Certificates ===
-    def list_certificates(self, params=None):
-        """List all certificates"""
-        return self._make_request('GET', '/certificates/', params=params)
+        Endpoint: PATCH /applications/{appName}/basic_security/
+        """
+        return self._make_request('PATCH', f'/applications/{app_id}/basic_security/', data=data)
 
-    def get_certificate(self, cert_id):
-        """Get a single certificate"""
-        return self._make_request('GET', f'/certificates/{cert_id}/')
+    # === Certificates (v4 — per-application SNI certificates) ===
+    def list_certificates(self, app_name=None):
+        """List certificates.
 
-    def upload_certificate(self, files, data=None):
-        """Upload a certificate"""
-        return self._make_request('POST', '/certificates/', files=files, data=data)
+        If ``app_name`` is provided, returns SNI certificates for that
+        application via v4 API.  If omitted, aggregates certificates
+        across all applications on the account.
+        """
+        if app_name:
+            return self._make_request('GET', f'/applications/{app_name}/sni_certificates/')
 
-    def delete_certificate(self, cert_id):
-        """Delete a certificate"""
-        return self._make_request('DELETE', f'/certificates/{cert_id}/')
+        # Aggregate across all apps
+        apps = self.list_applications()
+        if isinstance(apps, dict):
+            apps = apps.get('results', apps.get('data', apps.get('applications', [])))
+        all_certs = []
+        for app in (apps if isinstance(apps, list) else []):
+            name = app.get('name')
+            if not name:
+                continue
+            try:
+                certs = self._make_request('GET', f'/applications/{name}/sni_certificates/')
+                if isinstance(certs, list):
+                    for c in certs:
+                        c['_app_name'] = name
+                    all_certs.extend(certs)
+                elif isinstance(certs, dict):
+                    items = certs.get('results', certs.get('data', []))
+                    if isinstance(items, list):
+                        for c in items:
+                            c['_app_name'] = name
+                        all_certs.extend(items)
+            except WaasApiError:
+                pass  # skip apps where cert listing fails
+        return all_certs
+
+    def get_certificate(self, app_name, cert_name):
+        """Get a single SNI certificate (v4 API)."""
+        return self._make_request('GET', f'/applications/{app_name}/sni_certificates/{cert_name}/')
+
+    def upload_certificate(self, app_name, files, data=None):
+        """Upload an SNI certificate to an application (v4 API)."""
+        return self._make_request('POST', f'/applications/{app_name}/sni_certificates/', files=files, data=data)
+
+    def delete_certificate(self, app_name, cert_name):
+        """Delete an SNI certificate (v4 API)."""
+        return self._make_request('DELETE', f'/applications/{app_name}/sni_certificates/{cert_name}/')
 
     # === Logs ===
     def get_logs(self, app_name, quick_range='r_24h', page=1, items_per_page=50,
@@ -431,6 +468,42 @@ class WaasClient:
         """
         return self._make_request('GET', '/applications/', api_version='v2')
 
+    def create_application_v2(self, data):
+        """Create a new application via v2 API.
+
+        Required fields in ``data``:
+            hostnames (list[dict]): e.g. [{"hostname": "example.com"}]
+            backendIp (str): Backend server IP or hostname
+            backendPort (int): Backend server port
+            backendType (str): "HTTP" or "HTTPS"
+            useExistingIp (bool): Use an existing Barracuda IP or allocate new
+            maliciousTraffic (str): "Active" (block) or "Passive" (monitor)
+
+        Optional fields:
+            applicationName, useHttp, useHttps, httpServicePort,
+            httpsServicePort, redirectHTTP, serviceIp
+
+        Returns the created application data from the API.
+        """
+        return self._make_request('POST', '/applications/', data=data, api_version='v2')
+
+    def delete_application_v2(self, app_id):
+        """Delete an application via v2 API.
+
+        Args:
+            app_id: The v2 integer application ID.
+
+        Returns 204 on success (empty response).
+        """
+        return self._make_request('DELETE', f'/applications/{app_id}/', api_version='v2')
+
+    def get_account_ips(self):
+        """Get available account IPs via v2 API.
+
+        Used when creating applications with useExistingIp=True.
+        """
+        return self._make_request('GET', '/account_ips/', api_version='v2')
+
     # === Public IP lookup ===
     _cached_public_ip = None
     _cached_public_ip_time = 0
@@ -466,8 +539,26 @@ class WaasClient:
 
     # === DNS / CNAME ===
     def get_dns_info(self, app_id):
-        """Get DNS/CNAME information for an application"""
-        return self._make_request('GET', f'/applications/{app_id}/dns/')
+        """Get DNS/CNAME information for an application.
+
+        The v4 API does not have a per-application /dns/ endpoint.
+        DNS data (CNAME, domains) is embedded in the application export,
+        so we extract it from the endpoints section of the export.
+        """
+        export = self.get_application(app_id)
+        endpoints = export.get('endpoints', {})
+        return {
+            'cname': endpoints.get('cname', ''),
+            'domains': endpoints.get('domains', []),
+            'deployment': endpoints.get('deployment', {}),
+        }
+
+    def list_dns_zones(self):
+        """List all DNS zones (v4 API).
+
+        Endpoint: GET /dns_zones/
+        """
+        return self._make_request('GET', '/dns_zones/')
 
     # === Proxy ===
     def get_proxy_settings(self, app_id):

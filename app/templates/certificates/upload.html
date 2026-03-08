@@ -23,6 +23,18 @@
                 <form method="POST" enctype="multipart/form-data">
                     {{ form.hidden_tag() }}
 
+                    {# Application selector — v4 certs are per-app #}
+                    <div class="mb-3">
+                        <label for="app_name" class="form-label">Application <span class="badge bg-primary">v4 API</span></label>
+                        <select name="app_name" id="app_name" class="form-select" required>
+                            <option value="">Select application...</option>
+                            {% for app in applications %}
+                            <option value="{{ app.get('name', '') }}" {{ 'selected' if app_name == app.get('name') }}>{{ app.get('name', 'Unnamed') }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">SNI certificates are scoped to a specific application in the v4 API.</div>
+                    </div>
+
                     {# Certificate File #}
                     <div class="mb-3">
                         {{ form.certificate_file.label(class="form-label") }}

@@ -10,7 +10,11 @@ bp = Blueprint('certificates', __name__, url_prefix='/certificates')
 @bp.route('/')
 @login_required
 def list_certificates():
-    """List certificates - user selects which WaaS account to view"""
+    """List certificates — user selects which WaaS account to view.
+
+    Certificates in the v4 API are per-application (SNI certificates).
+    This view aggregates across all applications on the selected account.
+    """
     accounts = WaasAccount.query.filter_by(user_id=current_user.id, is_active=True).all()
     selected_account_id = request.args.get('account_id', type=int)
 
@@ -44,18 +48,34 @@ def list_certificates():
 @bp.route('/<int:account_id>/upload', methods=['GET', 'POST'])
 @login_required
 def upload_certificate(account_id):
-    """Upload a certificate to a WaaS account"""
+    """Upload a certificate to a WaaS application.
+
+    Requires an ``app_name`` query parameter to specify which application
+    the SNI certificate belongs to (v4 API is per-application).
+    """
     if current_user.role == 'viewer':
         flash('You do not have permission to upload certificates.', 'danger')
         return redirect(url_for('certificates.list_certificates'))
 
     account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id, is_active=True).first_or_404()
+    app_name = request.args.get('app_name') or request.form.get('app_name')
+
+    # We need to know which application to upload to
+    client = WaasClient.from_account(account)
+    applications = []
+    try:
+        result = client.list_applications()
+        if isinstance(result, list):
+            applications = result
+        elif isinstance(result, dict):
+            applications = result.get('results', result.get('data', result.get('applications', [])))
+    except WaasApiError:
+        pass
+
     form = CertificateUploadForm()
 
-    if form.validate_on_submit():
+    if form.validate_on_submit() and app_name:
         try:
-            client = WaasClient.from_account(account)
-
             files = {}
             cert_file = form.certificate_file.data
             if cert_file:
@@ -71,13 +91,13 @@ def upload_certificate(account_id):
             if form.friendly_name.data:
                 data['friendly_name'] = form.friendly_name.data
 
-            result = client.upload_certificate(files=files, data=data)
+            result = client.upload_certificate(app_name=app_name, files=files, data=data)
 
             AuditLog.log(
                 user_id=current_user.id,
                 action='certificate_upload',
                 resource_type='certificate',
-                details=f'Uploaded certificate to account {account.account_name}: {form.friendly_name.data or cert_file.filename}',
+                details=f'Uploaded certificate to app {app_name} on account {account.account_name}: {form.friendly_name.data or cert_file.filename}',
                 ip_address=request.remote_addr
             )
 
@@ -86,23 +106,27 @@ def upload_certificate(account_id):
 
         except WaasApiError as e:
             flash(f'Failed to upload certificate: {e}', 'danger')
+    elif form.is_submitted() and not app_name:
+        flash('Please select an application for this certificate.', 'warning')
 
     return render_template(
         'certificates/upload.html',
         account=account,
-        form=form
+        form=form,
+        applications=applications,
+        app_name=app_name
     )
 
 
-@bp.route('/<int:account_id>/<cert_id>')
+@bp.route('/<int:account_id>/<app_name>/<cert_id>')
 @login_required
-def view_certificate(account_id, cert_id):
-    """View certificate details"""
+def view_certificate(account_id, app_name, cert_id):
+    """View certificate details (v4 per-application SNI certificate)."""
     account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id, is_active=True).first_or_404()
 
     try:
         client = WaasClient.from_account(account)
-        certificate = client.get_certificate(cert_id)
+        certificate = client.get_certificate(app_name, cert_id)
     except WaasApiError as e:
         flash(f'Failed to load certificate: {e}', 'danger')
         return redirect(url_for('certificates.list_certificates', account_id=account_id))
@@ -110,14 +134,15 @@ def view_certificate(account_id, cert_id):
     return render_template(
         'certificates/view.html',
         account=account,
-        certificate=certificate
+        certificate=certificate,
+        app_name=app_name
     )
 
 
-@bp.route('/<int:account_id>/<cert_id>/delete', methods=['POST'])
+@bp.route('/<int:account_id>/<app_name>/<cert_id>/delete', methods=['POST'])
 @login_required
-def delete_certificate(account_id, cert_id):
-    """Delete a certificate"""
+def delete_certificate(account_id, app_name, cert_id):
+    """Delete an SNI certificate (v4 per-application)."""
     if current_user.role == 'viewer':
         flash('You do not have permission to delete certificates.', 'danger')
         return redirect(url_for('certificates.list_certificates'))
@@ -126,13 +151,13 @@ def delete_certificate(account_id, cert_id):
 
     try:
         client = WaasClient.from_account(account)
-        client.delete_certificate(cert_id)
+        client.delete_certificate(app_name, cert_id)
 
         AuditLog.log(
             user_id=current_user.id,
             action='certificate_delete',
             resource_type='certificate',
-            details=f'Deleted certificate {cert_id} from account {account.account_name}',
+            details=f'Deleted certificate {cert_id} from app {app_name} on account {account.account_name}',
             ip_address=request.remote_addr
         )
 

@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from app.models import WaasAccount, AuditLog
 from app.waas_client import WaasClient, WaasApiError
+from app.forms import ApplicationCreateForm
 
 logger = logging.getLogger(__name__)
 
@@ -17,12 +18,27 @@ def get_client_for_account(account_id):
     return WaasClient.from_account(account), account
 
 
+def _parse_app_list(result):
+    """Normalise the raw API list response into a plain Python list."""
+    if isinstance(result, list):
+        return result
+    if isinstance(result, dict):
+        apps = result.get('results', result.get('data', result.get('applications', [])))
+        return apps if isinstance(apps, list) else [result]
+    return []
+
+
 @bp.route('/')
 @login_required
 def list_applications():
-    """List applications - user selects which WaaS account to view"""
+    """List applications — user selects which WaaS account to view.
+
+    Supports ``?api_version=v2`` query param to switch between v4 (default)
+    and v2 API for the listing.  The template shows which API is in use.
+    """
     accounts = WaasAccount.query.filter_by(user_id=current_user.id, is_active=True).all()
     selected_account_id = request.args.get('account_id', type=int)
+    api_version = request.args.get('api_version', 'v4')  # default to v4
 
     applications = []
     selected_account = None
@@ -32,23 +48,22 @@ def list_applications():
         client, selected_account = get_client_for_account(selected_account_id)
         if client:
             try:
-                result = client.list_applications()
-                logger.info(f'API list_applications raw result type: {type(result).__name__}')
-                if isinstance(result, list):
-                    applications = result
-                elif isinstance(result, dict):
-                    # Try common wrapper keys
-                    applications = result.get('results', result.get('data', result.get('applications', [])))
-                    if not isinstance(applications, list):
-                        applications = [result]  # Single result, wrap in list
+                if api_version == 'v2' and selected_account.has_v2_credentials:
+                    result = client.list_applications_v2()
+                    applications = _parse_app_list(result)
+                    logger.info(f'Listed {len(applications)} apps via v2 API')
                 else:
-                    applications = []
+                    # Fall back to v4 if v2 requested but no v2 creds
+                    if api_version == 'v2' and not selected_account.has_v2_credentials:
+                        api_version = 'v4'
+                        flash('v2 credentials not available — using v4 API.', 'warning')
+                    result = client.list_applications()
+                    applications = _parse_app_list(result)
+                    logger.info(f'Listed {len(applications)} apps via v4 API')
 
-                # Log the first application's keys so we can see the field names
                 if applications:
                     first_app = applications[0]
                     logger.info(f'First application keys: {list(first_app.keys()) if isinstance(first_app, dict) else type(first_app).__name__}')
-                    logger.debug(f'First application data: {first_app}')
                 else:
                     logger.info('No applications returned from API')
             except WaasApiError as e:
@@ -62,6 +77,7 @@ def list_applications():
         applications=applications,
         selected_account=selected_account,
         selected_account_id=selected_account_id,
+        api_version=api_version,
         error=error
     )
 
@@ -69,7 +85,7 @@ def list_applications():
 @bp.route('/<int:account_id>/<app_id>')
 @login_required
 def view_application(account_id, app_id):
-    """View application details"""
+    """View application details (v4 export API)."""
     client, account = get_client_for_account(account_id)
     if not client:
         flash('Account not found or inactive.', 'danger')
@@ -89,10 +105,114 @@ def view_application(account_id, app_id):
     )
 
 
+@bp.route('/<int:account_id>/create', methods=['GET', 'POST'])
+@login_required
+def create_application(account_id):
+    """Create a new WaaS application via v2 API."""
+    if current_user.role == 'viewer':
+        flash('You do not have permission to create applications.', 'danger')
+        return redirect(url_for('applications.list_applications', account_id=account_id))
+
+    client, account = get_client_for_account(account_id)
+    if not client:
+        flash('Account not found or inactive.', 'danger')
+        return redirect(url_for('applications.list_applications'))
+
+    if not account.has_v2_credentials:
+        flash('Application creation requires v2 API credentials (email + password) on this account.', 'warning')
+        return redirect(url_for('applications.list_applications', account_id=account_id))
+
+    form = ApplicationCreateForm()
+
+    if form.validate_on_submit():
+        data = {
+            'applicationName': form.application_name.data.strip(),
+            'hostnames': [{'hostname': form.hostname.data.strip()}],
+            'backendIp': form.backend_ip.data.strip(),
+            'backendPort': form.backend_port.data,
+            'backendType': form.backend_type.data,
+            'useExistingIp': False,
+            'maliciousTraffic': form.malicious_traffic.data,
+            'useHttps': form.use_https.data,
+            'useHttp': form.use_http.data,
+            'redirectHTTP': form.redirect_http.data,
+        }
+
+        if form.use_https.data:
+            data['httpsServicePort'] = 443
+        if form.use_http.data:
+            data['httpServicePort'] = 80
+
+        try:
+            result = client.create_application_v2(data)
+            app_name = form.application_name.data.strip()
+
+            AuditLog.log(
+                user_id=current_user.id,
+                action='application_create',
+                resource_type='application',
+                resource_id=app_name,
+                details=f'Created application "{app_name}" on account {account.account_name} (v2 API)',
+                ip_address=request.remote_addr
+            )
+
+            flash(f'Application "{app_name}" created successfully.', 'success')
+            return redirect(url_for('applications.list_applications', account_id=account_id))
+        except WaasApiError as e:
+            flash(f'Failed to create application: {e}', 'danger')
+
+    return render_template(
+        'applications/create.html',
+        form=form,
+        account=account
+    )
+
+
+@bp.route('/<int:account_id>/<int:app_id>/delete', methods=['POST'])
+@login_required
+def delete_application(account_id, app_id):
+    """Delete a WaaS application via v2 API.
+
+    ``app_id`` is the v2 integer application ID.
+    """
+    if current_user.role == 'viewer':
+        flash('You do not have permission to delete applications.', 'danger')
+        return redirect(url_for('applications.list_applications', account_id=account_id))
+
+    client, account = get_client_for_account(account_id)
+    if not client:
+        flash('Account not found or inactive.', 'danger')
+        return redirect(url_for('applications.list_applications'))
+
+    if not account.has_v2_credentials:
+        flash('Application deletion requires v2 API credentials on this account.', 'warning')
+        return redirect(url_for('applications.list_applications', account_id=account_id))
+
+    app_name = request.form.get('app_name', f'ID {app_id}')
+
+    try:
+        client.delete_application_v2(app_id)
+
+        AuditLog.log(
+            user_id=current_user.id,
+            action='application_delete',
+            resource_type='application',
+            resource_id=str(app_id),
+            details=f'Deleted application "{app_name}" (ID {app_id}) from account {account.account_name} (v2 API)',
+            ip_address=request.remote_addr
+        )
+
+        flash(f'Application "{app_name}" deleted.', 'success')
+    except WaasApiError as e:
+        flash(f'Failed to delete application: {e}', 'danger')
+
+    return redirect(url_for('applications.list_applications', account_id=account_id))
+
+
 @bp.route('/<int:account_id>/<app_id>/security')
 @login_required
 def security_config(account_id, app_id):
-    """View/edit security configuration for an application"""
+    """View/edit security configuration for an application (v4 API)."""
     client, account = get_client_for_account(account_id)
     if not client:
         flash('Account not found or inactive.', 'danger')
@@ -109,14 +229,15 @@ def security_config(account_id, app_id):
         'applications/security.html',
         account=account,
         application=application,
-        security=security
+        security=security,
+        app_id=app_id
     )
 
 
 @bp.route('/<int:account_id>/<app_id>/security', methods=['POST'])
 @login_required
 def update_security_config(account_id, app_id):
-    """Update security configuration"""
+    """Update security configuration (v4 API)."""
     if current_user.role == 'viewer':
         flash('You do not have permission to modify configurations.', 'danger')
         return redirect(url_for('applications.security_config', account_id=account_id, app_id=app_id))
@@ -149,7 +270,7 @@ def update_security_config(account_id, app_id):
 @bp.route('/<int:account_id>/<app_id>/dns')
 @login_required
 def dns_info(account_id, app_id):
-    """View DNS/CNAME information for an application"""
+    """View DNS/CNAME information for an application (v4 API)."""
     client, account = get_client_for_account(account_id)
     if not client:
         flash('Account not found or inactive.', 'danger')
@@ -166,5 +287,6 @@ def dns_info(account_id, app_id):
         'applications/dns.html',
         account=account,
         application=application,
-        dns=dns
+        dns=dns,
+        app_id=app_id
     )

@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SelectField, SubmitField, TextAreaField
+from wtforms import StringField, PasswordField, BooleanField, SelectField, SubmitField, TextAreaField, IntegerField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, Optional, Regexp
 from flask_wtf.file import FileField, FileAllowed
 
@@ -282,3 +282,49 @@ class CertificateUploadForm(FlaskForm):
         render_kw={'placeholder': 'Optional label for this certificate', 'class': 'form-control'}
     )
     submit = SubmitField('Upload Certificate', render_kw={'class': 'btn btn-primary'})
+
+
+class ApplicationCreateForm(FlaskForm):
+    """Form for creating a new WaaS application via v2 API."""
+    application_name = StringField(
+        'Application Name',
+        validators=[DataRequired(), Length(min=1, max=200)],
+        render_kw={'placeholder': 'e.g., My Web App', 'class': 'form-control'}
+    )
+    hostname = StringField(
+        'Hostname / Domain',
+        validators=[DataRequired(), Length(min=1, max=255)],
+        render_kw={'placeholder': 'e.g., www.example.com', 'class': 'form-control'}
+    )
+    backend_ip = StringField(
+        'Backend Server IP / Hostname',
+        validators=[DataRequired(), Length(min=1, max=255)],
+        render_kw={'placeholder': 'e.g., 10.0.0.1 or origin.example.com', 'class': 'form-control'}
+    )
+    backend_port = IntegerField(
+        'Backend Port',
+        validators=[DataRequired()],
+        default=443,
+        render_kw={'placeholder': '443', 'class': 'form-control'}
+    )
+    backend_type = SelectField(
+        'Backend Protocol',
+        choices=[('HTTPS', 'HTTPS'), ('HTTP', 'HTTP')],
+        default='HTTPS',
+        validators=[DataRequired()],
+        render_kw={'class': 'form-select'}
+    )
+    malicious_traffic = SelectField(
+        'Protection Mode',
+        choices=[
+            ('Passive', 'Passive — Monitor only (recommended for initial setup)'),
+            ('Active', 'Active — Block malicious traffic')
+        ],
+        default='Passive',
+        validators=[DataRequired()],
+        render_kw={'class': 'form-select'}
+    )
+    use_https = BooleanField('Create HTTPS Endpoint', default=True, render_kw={'class': 'form-check-input'})
+    use_http = BooleanField('Create HTTP Endpoint', default=True, render_kw={'class': 'form-check-input'})
+    redirect_http = BooleanField('Redirect HTTP to HTTPS', default=True, render_kw={'class': 'form-check-input'})
+    submit = SubmitField('Create Application', render_kw={'class': 'btn btn-primary'})

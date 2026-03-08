@@ -19,6 +19,7 @@
             <tr><th>ID</th><td><code>{{ certificate.get('id', 'N/A') }}</code></td></tr>
             <tr><th>Common Name</th><td>{{ certificate.get('common_name', certificate.get('commonName', 'N/A')) }}</td></tr>
             <tr><th>Expiry Date</th><td>{{ certificate.get('expiry', certificate.get('expiryDate', 'N/A')) }}</td></tr>
+            <tr><th>Application</th><td>{{ app_name }}</td></tr>
             <tr><th>Account</th><td>{{ account.account_name }}</td></tr>
         </table>
     </div>

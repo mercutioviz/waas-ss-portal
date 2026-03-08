@@ -56,6 +56,12 @@
             <div class="card-header"><h5 class="mb-0">Quick Actions</h5></div>
             <div class="card-body">
                 <div class="d-grid gap-2">
+                    <a href="{{ url_for('applications.security_config', account_id=account.id, app_id=app_id) }}" class="btn btn-outline-danger">
+                        <i class="bi bi-shield-lock"></i> Security Configuration
+                    </a>
+                    <a href="{{ url_for('applications.dns_info', account_id=account.id, app_id=app_id) }}" class="btn btn-outline-info">
+                        <i class="bi bi-diagram-3"></i> DNS / CNAME Info
+                    </a>
                     <a href="{{ url_for('proxy.launch', account_id=account.id, app_id=app_id) }}" class="btn btn-outline-primary">
                         <i class="bi bi-display"></i> Browse Application via Proxy
                     </a>

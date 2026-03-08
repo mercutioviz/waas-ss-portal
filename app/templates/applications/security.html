@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block title %}Security Config — {{ application.get('name', 'Application') }} — WaaS Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+    <h2><i class="bi bi-shield-lock"></i> Security Configuration</h2>
+    <a href="{{ url_for('applications.view_application', account_id=account.id, app_id=application.get('name', '')) }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Back to Application
+    </a>
+</div>
+
+<div class="mb-3">
+    <span class="text-muted">Account:</span> <strong>{{ account.account_name }}</strong>
+    <span class="text-muted ms-3">Application:</span> <strong>{{ application.get('name', 'N/A') }}</strong>
+</div>
+
+{% if security %}
+<div class="row g-4">
+    {# Protection Mode #}
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-shield-check"></i> Protection Mode</h5>
+            </div>
+            <div class="card-body">
+                {% set mode = security.get('protection_mode', security.get('mode', 'Unknown')) %}
+                <div class="text-center mb-3">
+                    <span class="badge fs-5 {% if mode == 'Active' %}bg-success{% elif mode == 'Passive' %}bg-warning text-dark{% else %}bg-secondary{% endif %} px-4 py-2">
+                        {% if mode == 'Active' %}
+                        <i class="bi bi-shield-fill-check"></i>
+                        {% elif mode == 'Passive' %}
+                        <i class="bi bi-shield-fill-exclamation"></i>
+                        {% else %}
+                        <i class="bi bi-shield"></i>
+                        {% endif %}
+                        {{ mode }}
+                    </span>
+                </div>
+                <table class="table table-borderless table-sm mb-0">
+                    <tr>
+                        <th style="width:50%">WAF Enabled</th>
+                        <td>{{ '✅' if security.get('waf_enabled', security.get('enable_web_application_firewall', False)) else '❌' }}</td>
+                    </tr>
+                    <tr>
+                        <th>DDoS Protection</th>
+                        <td>{{ '✅' if security.get('ddos_protection', security.get('enable_ddos_protection', False)) else '❌' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Bot Protection</th>
+                        <td>{{ '✅' if security.get('bot_protection', security.get('enable_bot_protection', False)) else '❌' }}</td>
+                    </tr>
+                    <tr>
+                        <th>API Protection</th>
+                        <td>{{ '✅' if security.get('api_protection', security.get('enable_api_protection', False)) else '❌' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {# Request Limits #}
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-speedometer2"></i> Request Limits</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless table-sm mb-0">
+                    <tr>
+                        <th style="width:60%">Max Request Length</th>
+                        <td>{{ security.get('max_request_length', security.get('request_limits', {}).get('max_request_length', 'N/A')) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Max Request Line Length</th>
+                        <td>{{ security.get('max_request_line_length', security.get('request_limits', {}).get('max_request_line_length', 'N/A')) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Max URL Length</th>
+                        <td>{{ security.get('max_url_length', security.get('request_limits', {}).get('max_url_length', 'N/A')) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Max Number of Headers</th>
+                        <td>{{ security.get('max_number_of_headers', security.get('request_limits', {}).get('max_number_of_headers', 'N/A')) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Max Header Value Length</th>
+                        <td>{{ security.get('max_header_value_length', security.get('request_limits', {}).get('max_header_value_length', 'N/A')) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Max Cookie Name Length</th>
+                        <td>{{ security.get('max_cookie_name_length', security.get('request_limits', {}).get('max_cookie_name_length', 'N/A')) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Max Cookie Value Length</th>
+                        <td>{{ security.get('max_cookie_value_length', security.get('request_limits', {}).get('max_cookie_value_length', 'N/A')) }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Attack Protection Categories #}
+{% set attack_types = security.get('attack_types', security.get('attack_protection', {})) %}
+{% if attack_types and attack_types is mapping %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-bug"></i> Attack Protection</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Attack Type</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attack_name, attack_cfg in attack_types.items() %}
+                    <tr>
+                        <td><strong>{{ attack_name | replace('_', ' ') | title }}</strong></td>
+                        <td>
+                            {% if attack_cfg is mapping %}
+                                {% set enabled = attack_cfg.get('enabled', attack_cfg.get('status', 'Unknown')) %}
+                                {% if enabled == true or enabled == 'On' or enabled == 'Enabled' %}
+                                <span class="badge bg-success">Enabled</span>
+                                {% elif enabled == false or enabled == 'Off' or enabled == 'Disabled' %}
+                                <span class="badge bg-secondary">Disabled</span>
+                                {% else %}
+                                <span class="badge bg-info">{{ enabled }}</span>
+                                {% endif %}
+                            {% else %}
+                                {% if attack_cfg == true or attack_cfg == 'On' %}
+                                <span class="badge bg-success">Enabled</span>
+                                {% elif attack_cfg == false or attack_cfg == 'Off' %}
+                                <span class="badge bg-secondary">Disabled</span>
+                                {% else %}
+                                <span class="badge bg-info">{{ attack_cfg }}</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if attack_cfg is mapping %}
+                                {% set action = attack_cfg.get('action', attack_cfg.get('default_action', 'N/A')) %}
+                                {% if action == 'Deny' or action == 'DENY' or action == 'Block' %}
+                                <span class="badge bg-danger">{{ action }}</span>
+                                {% elif action == 'Log' or action == 'LOG' %}
+                                <span class="badge bg-warning text-dark">{{ action }}</span>
+                                {% elif action == 'Allow' or action == 'ALLOW' %}
+                                <span class="badge bg-success">{{ action }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ action }}</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# Edit Form (for non-viewer users) #}
+{% if current_user.role != 'viewer' %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <a class="text-decoration-none" data-bs-toggle="collapse" href="#editSection" role="button">
+                <i class="bi bi-pencil-square"></i> Edit Protection Mode
+            </a>
+        </h5>
+    </div>
+    <div class="collapse" id="editSection">
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('applications.update_security_config', account_id=account.id, app_id=application.get('name', '')) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="mb-3">
+                    <label for="protection_mode" class="form-label">Protection Mode</label>
+                    <select name="protection_mode" id="protection_mode" class="form-select" style="max-width:300px">
+                        <option value="Active" {% if mode == 'Active' %}selected{% endif %}>Active (block attacks)</option>
+                        <option value="Passive" {% if mode == 'Passive' %}selected{% endif %}>Passive (log only)</option>
+                    </select>
+                    <div class="form-text">
+                        <strong>Active:</strong> Malicious requests are blocked.<br>
+                        <strong>Passive:</strong> Attacks are logged but not blocked — useful for tuning.
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> Update Security Config
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# Raw Security Data #}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <a class="text-decoration-none" data-bs-toggle="collapse" href="#rawSecurityData" role="button">
+                <i class="bi bi-code-slash"></i> Raw API Data
+            </a>
+        </h5>
+    </div>
+    <div class="collapse" id="rawSecurityData">
+        <div class="card-body">
+            <pre class="mb-0 bg-light p-3 rounded" style="max-height: 500px; overflow-y: auto;"><code>{{ security|tojson(indent=2) }}</code></pre>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-shield-x display-1 text-muted"></i>
+        <h4 class="mt-3">No Security Configuration</h4>
+        <p class="text-muted">Could not retrieve security configuration for this application.</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -2,6 +2,8 @@ import logging
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from config import config
 from datetime import datetime
@@ -9,6 +11,7 @@ from datetime import datetime
 # Initialize extensions
 db = SQLAlchemy()
 login_manager = LoginManager()
+limiter = Limiter(key_func=get_remote_address, default_limits=[], storage_uri="memory://")
 
 
 def create_app(config_name='default'):
@@ -31,6 +34,7 @@ def create_app(config_name='default'):
     # Initialize extensions with app
     db.init_app(app)
     login_manager.init_app(app)
+    limiter.init_app(app)
 
     # Configure Flask-Login
     login_manager.login_view = 'auth.login'
@@ -131,6 +135,10 @@ def create_app(config_name='default'):
     @app.errorhandler(403)
     def handle_403(e):
         return render_template('errors/403.html'), 403
+
+    @app.errorhandler(429)
+    def handle_429(e):
+        return render_template('errors/429.html'), 429
 
     @app.errorhandler(500)
     def handle_500(e):

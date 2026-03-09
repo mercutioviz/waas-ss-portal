@@ -10,6 +10,8 @@ Auth priority:
 import logging
 import time
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from flask import current_app
 import json
 
@@ -52,6 +54,19 @@ class WaasClient:
             'Accept': 'application/json',
         })
         self._set_auth()
+
+        # Configure retry and timeout from app config
+        retry_total = current_app.config.get('WAAS_API_RETRY_TOTAL', 1)
+        self.default_timeout = current_app.config.get('WAAS_API_TIMEOUT', 30)
+        retry = Retry(
+            total=retry_total,
+            status_forcelist=[502, 503, 504],
+            backoff_factor=1,
+            allowed_methods=['GET', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'POST', 'PATCH'],
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        self.session.mount('https://', adapter)
+        self.session.mount('http://', adapter)
 
     # ------------------------------------------------------------------
     # Factory
@@ -221,7 +236,7 @@ class WaasClient:
             self.session.headers.pop('auth-api', None)
             self.session.headers['Authorization'] = f'Bearer {self.api_key}'
 
-    def _make_request(self, method, endpoint, data=None, params=None, files=None, timeout=30, api_version='v4'):
+    def _make_request(self, method, endpoint, data=None, params=None, files=None, timeout=None, api_version='v4'):
         """Make an API request and handle response.
 
         Args:
@@ -263,7 +278,7 @@ class WaasClient:
         try:
             kwargs = {
                 'params': params,
-                'timeout': timeout,
+                'timeout': timeout or self.default_timeout,
             }
             if files:
                 # Remove Content-Type for multipart uploads

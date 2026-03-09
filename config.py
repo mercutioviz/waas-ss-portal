@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -10,6 +11,7 @@ VERSION = '0.1.0'
 class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=30)
 
     # Database configuration
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
@@ -19,6 +21,10 @@ class Config:
     # WaaS API base URLs (includes version prefix)
     WAAS_API_BASE_URL = os.environ.get('WAAS_API_BASE_URL') or 'https://api.waas.barracudanetworks.com/v4/waasapi'
     WAAS_API_V2_BASE_URL = os.environ.get('WAAS_API_V2_BASE_URL') or 'https://api.waas.barracudanetworks.com/v2/waasapi'
+
+    # WaaS API settings
+    WAAS_API_TIMEOUT = 30
+    WAAS_API_RETRY_TOTAL = 1
 
     # Pagination
     ITEMS_PER_PAGE = 20

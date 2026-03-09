@@ -5,6 +5,7 @@ from app import db
 from app.models import WaasAccount, AuditLog
 from app.forms import WaasAccountForm
 from app.waas_client import WaasClient, WaasApiError
+from app import limiter
 
 bp = Blueprint('accounts', __name__, url_prefix='/accounts')
 
@@ -132,6 +133,7 @@ def edit_account(account_id):
 
 @bp.route('/<int:account_id>/verify', methods=['POST'])
 @login_required
+@limiter.limit("10 per minute")
 def verify_account(account_id):
     """Re-verify a WaaS account using v2 credentials"""
     account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id).first_or_404()

@@ -11,7 +11,7 @@
                     <h3 class="mt-2">WaaS Portal</h3>
                     <p class="text-muted">Sign in to your account</p>
                 </div>
-                <form method="POST" action="{{ url_for('auth.login') }}">
+                <form method="POST" action="{{ url_for('auth.login') }}" class="needs-validation" novalidate>
                     {{ form.hidden_tag() }}
                     <div class="mb-3">
                         <label for="username" class="form-label">Username</label>

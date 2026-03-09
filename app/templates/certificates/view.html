@@ -1,6 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Certificate Details - WaaS Portal{% endblock %}
 
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('certificates.list_certificates') }}">Certificates</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('certificates.list_certificates', account_id=account.id) }}">{{ account.account_name }}</a></li>
+        <li class="breadcrumb-item active">{{ certificate.get('name', 'Certificate') if certificate else 'Details' }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
     <h2><i class="bi bi-file-earmark-lock"></i> Certificate Details</h2>

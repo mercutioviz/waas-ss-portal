@@ -1,5 +1,5 @@
 import logging
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -122,6 +122,19 @@ def create_app(config_name='default'):
     app.register_blueprint(certificates.bp)
     app.register_blueprint(logs.bp)
     app.register_blueprint(proxy.bp)
+
+    # Register error handlers
+    @app.errorhandler(404)
+    def handle_404(e):
+        return render_template('errors/404.html'), 404
+
+    @app.errorhandler(403)
+    def handle_403(e):
+        return render_template('errors/403.html'), 403
+
+    @app.errorhandler(500)
+    def handle_500(e):
+        return render_template('errors/500.html'), 500
 
     # Create database tables
     with app.app_context():

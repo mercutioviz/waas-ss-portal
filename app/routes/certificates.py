@@ -1,8 +1,10 @@
+from datetime import date
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app.models import WaasAccount, AuditLog
 from app.waas_client import WaasClient, WaasApiError
 from app.forms import CertificateUploadForm
+from app.routes.main import _parse_cert_expiry
 
 bp = Blueprint('certificates', __name__, url_prefix='/certificates')
 
@@ -30,6 +32,11 @@ def list_certificates():
                 client = WaasClient.from_account(account)
                 result = client.list_certificates()
                 certificates = result if isinstance(result, list) else result.get('results', result.get('data', []))
+                today = date.today()
+                for cert in certificates:
+                    expiry_str = cert.get('expiry', cert.get('expiryDate'))
+                    expiry_date = _parse_cert_expiry(expiry_str)
+                    cert['_days_remaining'] = (expiry_date - today).days if expiry_date else None
             except WaasApiError as e:
                 error = str(e)
         else:

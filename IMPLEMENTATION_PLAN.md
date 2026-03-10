@@ -1,6 +1,6 @@
 # WaaS Self-Service Portal — Implementation Plan
 
-*Last updated: 2026-03-09*
+*Last updated: 2026-03-10*
 
 ---
 
@@ -18,6 +18,7 @@
 | **Certificates** | list, view, upload, delete | list.html, view.html, upload.html | Per-application SNI certificates (v4), aggregated list view |
 | **Logs** | index, waf, access, fp_analysis | index.html, waf.html, access.html, fp_analysis.html | Account/app selector, WAF/access log viewers |
 | **Proxy** | launch, start, stop, session, waf-logs | launch.html, session.html | noVNC browser proxy sessions |
+| **Templates** | list, add, view, edit, edit_config, delete, save_as_template, apply, bulk_apply | list.html, view.html, add.html, edit.html, edit_config.html, save_as.html, bulk_apply.html, bulk_results.html | Config templates with CRUD, save-from-app, quick apply via AJAX, bulk apply across accounts |
 
 ### API Version Mapping
 
@@ -35,12 +36,14 @@ All WaaS API calls now use the correct endpoints. Users see API version badges i
 | Certificates | v4 | `GET /applications/{name}/sni_certificates/` (per-app) |
 | Account verify | v2 | `GET /accounts/` |
 | WAF/access logs | v4 | `GET /applications/{name}/logs/` |
+| Import (apply template) | v4 | `PATCH /applications/{name}/import/?include_servers=bool&include_endpoints=bool` |
 
 ### Infrastructure In Place
 - **WaasClient** (`app/waas_client.py`): Dual v2/v4 API support with correct endpoint paths, retry on 5xx, configurable timeout
 - **Encryption** (`app/encryption.py`): Fernet encrypt/decrypt for API keys at rest
 - **AuditLog**: Logging wired into account, application, certificate, security, and proxy operations
-- **Forms**: `ApplicationCreateForm`, `CertificateUploadForm`, `WaasAccountForm`, auth forms
+- **Config Templates** (`app/routes/templates.py`): Save, reuse, and bulk-apply WaaS app security configs; per-user or global templates
+- **Forms**: `ApplicationCreateForm`, `CertificateUploadForm`, `WaasAccountForm`, `ConfigTemplateForm`, `TemplateFromAppForm`, auth forms
 - **Base template**: Navbar, flash messages, Bootstrap 5.3, Bootstrap Icons, confirmation modal, session timeout modal, breadcrumb block
 - **Rate limiting**: Flask-Limiter on login (5/min) and verify (10/min)
 - **Account lockout**: 5 failed attempts → 15-minute lockout
@@ -120,83 +123,25 @@ All WaaS API calls now use the correct endpoints. Users see API version badges i
 
 ---
 
-### Phase 5: WaaS App Config Templates ⬅️ NEXT
+### Phase 5: WaaS App Config Templates ✅ DONE
 
 **Goal:** Allow users to save WaaS security configurations as reusable templates and apply them to one or many applications in bulk.
 
-#### Context
+**What was built:**
 
-Currently only `protection_mode` (Active/Passive) is editable via `PATCH /basic_security/`. The v4 API also supports updating request limits, clickjacking protection, and data theft protection through separate endpoints. Config templates capture a snapshot of these settings so users can standardize security posture across applications.
-
-#### 5.1 — Expand Security Config Editing
-
-Extend `WaasClient` and the security config UI to support editing all four config areas, not just protection mode.
-
-| # | Task | Files |
-|---|------|-------|
-| 5.1.1 | Add `update_request_limits(app_id, data)` method | `app/waas_client.py` |
-| 5.1.2 | Add `update_clickjacking_protection(app_id, data)` method | `app/waas_client.py` |
-| 5.1.3 | Add `update_data_theft_protection(app_id, data)` method | `app/waas_client.py` |
-| 5.1.4 | Expand security config form/template to edit all 4 areas | `app/templates/applications/security.html`, `app/forms.py` |
-| 5.1.5 | Update security config route to dispatch to correct endpoint | `app/routes/applications.py` |
-
-#### 5.2 — Config Template Model & CRUD
-
-| # | Task | Files |
-|---|------|-------|
-| 5.2.1 | Create `ConfigTemplate` model | `app/models.py` |
-|       | Fields: `id`, `user_id` (FK), `name`, `description`, `config_data` (JSON), `created_at`, `updated_at` |
-|       | `config_data` stores: `basic_security`, `request_limits`, `clickjacking_protection`, `data_theft_protection` |
-| 5.2.2 | Create `ConfigTemplateForm` | `app/forms.py` |
-| 5.2.3 | Create `templates` blueprint with CRUD routes | `app/routes/templates.py` |
-|       | `GET /templates/` — list user's templates |
-|       | `GET /templates/create` — form to create from scratch |
-|       | `POST /templates/create` — save new template |
-|       | `GET /templates/<id>` — view template details |
-|       | `GET /templates/<id>/edit` — edit template |
-|       | `POST /templates/<id>/edit` — update template |
-|       | `POST /templates/<id>/delete` — delete template |
-| 5.2.4 | Create templates: `templates/list.html`, `templates/create.html`, `templates/view.html`, `templates/edit.html` | `app/templates/templates/` |
-| 5.2.5 | Register blueprint, add nav link | `app/__init__.py`, `app/templates/base.html` |
-| 5.2.6 | Add "Save as Template" button on security config page | `app/templates/applications/security.html` |
-|       | `POST /templates/create-from-app/<account_id>/<app_id>` — snapshot current app config into new template |
-
-#### 5.3 — Apply Template to Single Application
-
-| # | Task | Files |
-|---|------|-------|
-| 5.3.1 | Add "Apply Template" dropdown/button on security config page | `app/templates/applications/security.html` |
-| 5.3.2 | Add `apply_template` route | `app/routes/templates.py` |
-|       | `POST /templates/<id>/apply/<account_id>/<app_id>` |
-|       | Calls each WaasClient update method for the config areas in the template |
-| 5.3.3 | Show diff/preview before applying (optional enhancement) | `app/templates/templates/apply_preview.html` |
-| 5.3.4 | Audit log template application | `app/routes/templates.py` |
-
-#### 5.4 — Apply Template to Multiple Applications (Bulk)
-
-| # | Task | Files |
-|---|------|-------|
-| 5.4.1 | Create bulk apply page with app multi-select | `app/templates/templates/bulk_apply.html` |
-|       | `GET /templates/<id>/bulk-apply?account_id=N` — shows template summary + checkboxes for all apps on account |
-| 5.4.2 | Add bulk apply route | `app/routes/templates.py` |
-|       | `POST /templates/<id>/bulk-apply` — accepts list of `(account_id, app_id)` pairs |
-|       | Iterates through selected apps, applies template to each, collects results |
-|       | Returns summary: N succeeded, M failed (with per-app error details) |
-| 5.4.3 | Create results page | `app/templates/templates/bulk_results.html` |
-|       | Shows per-app success/failure with expandable error details |
-| 5.4.4 | Add "Apply to Multiple Apps" button on template view page | `app/templates/templates/view.html` |
-| 5.4.5 | Audit log each bulk application | `app/routes/templates.py` |
-
-#### Implementation Notes
-
-- **Config data format:** JSON blob with top-level keys matching API endpoint names: `basic_security`, `request_limits`, `clickjacking_protection`, `data_theft_protection`. Each key's value is the dict to PATCH to that endpoint. Keys can be omitted to skip that area.
-- **Template ownership:** Templates are per-user (`user_id` FK). Admin users can optionally see/use all templates (future enhancement).
-- **Bulk apply safety:** Each app is applied independently so one failure doesn't block others. Rate limit API calls with a small delay between apps if needed to avoid WaaS API throttling.
-- **No cross-account templates:** Templates are API-version-agnostic (v4 config structure). They can be applied to any app on any account the user owns.
+- **`ConfigTemplate` model** — `id`, `user_id`, `name`, `description`, `config_data` (JSON), `is_global`, `created_at`, `updated_at`. `config_dict` property auto-serializes/deserializes JSON.
+- **`import_application()` on WaasClient** — `PATCH /applications/{appName}/import/` with `include_servers` / `include_endpoints` query params. Merges partial config without replacing missing fields.
+- **`ConfigTemplateForm` / `TemplateFromAppForm`** — Forms with section checkboxes (basic security, request limits, clickjacking, data theft, servers, endpoints).
+- **`templates` blueprint** (10 routes) — Full CRUD, save-from-app with section selection, single quick-apply via AJAX, bulk-apply across accounts with per-app results.
+- **`/applications/api/list` JSON endpoint** — Returns app names for AJAX dropdown in quick-apply.
+- **9 HTML templates** — list, view, add, edit, edit_config (raw JSON editor with validation), save_as, bulk_apply, bulk_results.
+- **Visibility** — Templates are per-user (private) or global (admin-only toggle). Viewers blocked from mutations.
+- **Integration** — "Save as Template" buttons on app view and security pages; "Templates" nav link in navbar.
+- **Audit logging** — All mutations (create, edit, delete, apply, bulk-apply) logged.
 
 ---
 
-### Phase 6: Internationalization (i18n)
+### Phase 6: Internationalization (i18n) ⬅️ NEXT
 
 **Goal:** Make the UI translatable so the portal can be used in multiple languages.
 
@@ -257,16 +202,19 @@ Extend `WaasClient` and the security config UI to support editing all four confi
 
 **Goal:** Add power-user and operational features.
 
-| # | Task | Description |
-|---|------|-------------|
-| 7.1 | Log export | Download WAF/access logs as CSV or JSON |
-| 7.2 | Scheduled reports | Email summaries of WAF activity |
-| 7.3 | Multi-user account sharing | Allow accounts to be shared between portal users |
-| 7.4 | API key rotation | Rotate WaaS API keys from the portal |
-| 7.5 | Comparison views | Compare security configs between apps side-by-side |
-| 7.6 | Loading indicators | Spinners/overlays while API calls are in progress |
-| 7.7 | Toast notifications | Replace flash messages with auto-dismissing toasts |
-| 7.8 | Responsive improvements | Test and fix mobile layout issues |
+| # | Task | Description | Complexity |
+|---|------|-------------|------------|
+| 7.1 | Expand security config editing | Edit request limits, clickjacking, data theft (not just protection mode) via individual PATCH endpoints | Medium |
+| 7.2 | Log export | Download WAF/access logs as CSV or JSON | Small |
+| 7.3 | Template diff/preview | Show before/after diff when applying a template to an app | Medium |
+| 7.4 | Template import/export | Download templates as JSON files, upload to import | Small |
+| 7.5 | Comparison views | Compare security configs between apps side-by-side | Medium |
+| 7.6 | Multi-user account sharing | Allow WaaS accounts to be shared between portal users | Large |
+| 7.7 | API key rotation | Rotate WaaS API keys from the portal | Small |
+| 7.8 | Loading indicators | Spinners/overlays while API calls are in progress | Small |
+| 7.9 | Toast notifications | Replace flash messages with auto-dismissing toasts | Small |
+| 7.10 | Responsive improvements | Test and fix mobile layout issues | Medium |
+| 7.11 | Scheduled reports | Email summaries of WAF activity | Large |
 
 ---
 

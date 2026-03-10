@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Edit {{ account.account_name }} - WaaS Portal{% endblock %}
+{% block title %}{{ _('Edit') }} {{ account.account_name }} - {{ _('WaaS Portal') }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center mt-4">
     <div class="col-md-8 col-lg-6">
         <div class="card">
-            <div class="card-header"><h5 class="mb-0"><i class="bi bi-pencil"></i> Edit Account: {{ account.account_name }}</h5></div>
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-pencil"></i> {{ _('Edit Account:') }} {{ account.account_name }}</h5></div>
             <div class="card-body">
                 <form method="POST" class="needs-validation" novalidate>
                     {{ form.hidden_tag() }}
                     <div class="mb-3">
-                        <label for="account_name" class="form-label">Account Name</label>
+                        <label for="account_name" class="form-label">{{ _('Account Name') }}</label>
                         {{ form.account_name(class="form-control") }}
                         {% for error in form.account_name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
@@ -19,18 +19,18 @@
                     <div class="card mb-3">
                         <div class="card-header bg-light py-2">
                             <div class="d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0"><i class="bi bi-key"></i> API Key (v4)</h6>
+                                <h6 class="mb-0"><i class="bi bi-key"></i> {{ _('API Key (v4)') }}</h6>
                                 {% if account.has_api_key %}
-                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Configured</span>
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> {{ _('Configured') }}</span>
                                 {% else %}
-                                <span class="badge bg-secondary">Not set</span>
+                                <span class="badge bg-secondary">{{ _('Not set') }}</span>
                                 {% endif %}
                             </div>
                         </div>
                         <div class="card-body">
                             <div class="mb-0">
-                                {{ form.api_key(class="form-control font-monospace", placeholder="Leave blank to keep current key") }}
-                                <div class="form-text">Leave blank to keep the existing API key.</div>
+                                {{ form.api_key(class="form-control font-monospace", placeholder=_("Leave blank to keep current key")) }}
+                                <div class="form-text">{{ _('Leave blank to keep the existing API key.') }}</div>
                                 {% for error in form.api_key.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
                         </div>
@@ -40,23 +40,23 @@
                     <div class="card mb-3">
                         <div class="card-header bg-light py-2">
                             <div class="d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0"><i class="bi bi-person-lock"></i> WaaS Login Credentials (v2)</h6>
+                                <h6 class="mb-0"><i class="bi bi-person-lock"></i> {{ _('WaaS Login Credentials (v2)') }}</h6>
                                 {% if account.has_v2_credentials %}
-                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Configured</span>
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> {{ _('Configured') }}</span>
                                 {% else %}
-                                <span class="badge bg-secondary">Not set</span>
+                                <span class="badge bg-secondary">{{ _('Not set') }}</span>
                                 {% endif %}
                             </div>
                         </div>
                         <div class="card-body">
                             <div class="mb-3">
                                 {{ form.waas_email(class="form-control", placeholder="user@example.com") }}
-                                <div class="form-text">Email used to log into the Barracuda WaaS platform. Leave blank to keep current.</div>
+                                <div class="form-text">{{ _('Email used to log into the Barracuda WaaS platform. Leave blank to keep current.') }}</div>
                                 {% for error in form.waas_email.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
                             <div class="mb-0">
-                                {{ form.waas_password(class="form-control", placeholder="Leave blank to keep current password") }}
-                                <div class="form-text">Password for WaaS platform login. Leave blank to keep current.</div>
+                                {{ form.waas_password(class="form-control", placeholder=_("Leave blank to keep current password")) }}
+                                <div class="form-text">{{ _('Password for WaaS platform login. Leave blank to keep current.') }}</div>
                                 {% for error in form.waas_password.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
                         </div>
@@ -64,12 +64,11 @@
 
                     <div class="alert alert-info py-2 small">
                         <i class="bi bi-info-circle"></i>
-                        At least one credential type is required: API key <strong>or</strong> email + password (or both).
-                        Leave credential fields blank to keep existing values.
+                        {{ _('At least one credential type is required: API key') }} <strong>{{ _('or') }}</strong> {{ _('email + password (or both). Leave credential fields blank to keep existing values.') }}
                     </div>
 
-                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save Changes</button>
-                    <a href="{{ url_for('accounts.view_account', account_id=account.id) }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> {{ _('Save Changes') }}</button>
+                    <a href="{{ url_for('accounts.view_account', account_id=account.id) }}" class="btn btn-secondary">{{ _('Cancel') }}</a>
                 </form>
             </div>
         </div>

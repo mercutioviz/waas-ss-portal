@@ -1,4 +1,5 @@
 from flask_wtf import FlaskForm
+from flask_babel import lazy_gettext as _l
 from wtforms import StringField, PasswordField, BooleanField, SelectField, SubmitField, TextAreaField, IntegerField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, Optional, Regexp
 from flask_wtf.file import FileField, FileAllowed
@@ -7,99 +8,99 @@ from flask_wtf.file import FileField, FileAllowed
 class LoginForm(FlaskForm):
     """Form for user login"""
     username = StringField(
-        'Username',
+        _l('Username'),
         validators=[DataRequired(), Length(min=3, max=80)],
-        render_kw={'placeholder': 'Enter your username', 'class': 'form-control', 'autocomplete': 'username'}
+        render_kw={'placeholder': _l('Enter your username'), 'class': 'form-control', 'autocomplete': 'username'}
     )
     password = PasswordField(
-        'Password',
+        _l('Password'),
         validators=[DataRequired()],
-        render_kw={'placeholder': 'Enter your password', 'class': 'form-control', 'autocomplete': 'current-password'}
+        render_kw={'placeholder': _l('Enter your password'), 'class': 'form-control', 'autocomplete': 'current-password'}
     )
-    remember_me = BooleanField('Remember Me', default=False, render_kw={'class': 'form-check-input'})
-    submit = SubmitField('Login', render_kw={'class': 'btn btn-primary w-100'})
+    remember_me = BooleanField(_l('Remember Me'), default=False, render_kw={'class': 'form-check-input'})
+    submit = SubmitField(_l('Login'), render_kw={'class': 'btn btn-primary w-100'})
 
 
 class RegistrationForm(FlaskForm):
     """Form for user registration (admin only)"""
     username = StringField(
-        'Username',
+        _l('Username'),
         validators=[
             DataRequired(), Length(min=3, max=80),
-            Regexp(r'^[a-zA-Z0-9_-]+$', message='Username can only contain letters, numbers, underscores, and hyphens')
+            Regexp(r'^[a-zA-Z0-9_-]+$', message=_l('Username can only contain letters, numbers, underscores, and hyphens'))
         ],
-        render_kw={'placeholder': 'Enter username', 'class': 'form-control'}
+        render_kw={'placeholder': _l('Enter username'), 'class': 'form-control'}
     )
     email = StringField(
-        'Email',
+        _l('Email'),
         validators=[DataRequired(), Email(), Length(max=120)],
         render_kw={'placeholder': 'user@example.com', 'class': 'form-control'}
     )
     first_name = StringField(
-        'First Name',
+        _l('First Name'),
         validators=[Length(max=100)],
-        render_kw={'placeholder': 'First name (optional)', 'class': 'form-control'}
+        render_kw={'placeholder': _l('First name (optional)'), 'class': 'form-control'}
     )
     last_name = StringField(
-        'Last Name',
+        _l('Last Name'),
         validators=[Length(max=100)],
-        render_kw={'placeholder': 'Last name (optional)', 'class': 'form-control'}
+        render_kw={'placeholder': _l('Last name (optional)'), 'class': 'form-control'}
     )
     password = PasswordField(
-        'Password',
-        validators=[DataRequired(), Length(min=8, message='Password must be at least 8 characters')],
-        render_kw={'placeholder': 'Enter password', 'class': 'form-control'}
+        _l('Password'),
+        validators=[DataRequired(), Length(min=8, message=_l('Password must be at least 8 characters'))],
+        render_kw={'placeholder': _l('Enter password'), 'class': 'form-control'}
     )
     password_confirm = PasswordField(
-        'Confirm Password',
-        validators=[DataRequired(), EqualTo('password', message='Passwords must match')],
-        render_kw={'placeholder': 'Confirm password', 'class': 'form-control'}
+        _l('Confirm Password'),
+        validators=[DataRequired(), EqualTo('password', message=_l('Passwords must match'))],
+        render_kw={'placeholder': _l('Confirm password'), 'class': 'form-control'}
     )
     role = SelectField(
-        'Role',
+        _l('Role'),
         choices=[
-            ('user', 'User - Can manage own WaaS accounts and applications'),
-            ('admin', 'Admin - Full system access'),
-            ('viewer', 'Viewer - Read-only access')
+            ('user', _l('User - Can manage own WaaS accounts and applications')),
+            ('admin', _l('Admin - Full system access')),
+            ('viewer', _l('Viewer - Read-only access'))
         ],
         default='user',
         validators=[DataRequired()],
         render_kw={'class': 'form-select'}
     )
-    is_active = BooleanField('Account Active', default=True, render_kw={'class': 'form-check-input'})
-    submit = SubmitField('Create User', render_kw={'class': 'btn btn-primary'})
+    is_active = BooleanField(_l('Account Active'), default=True, render_kw={'class': 'form-check-input'})
+    submit = SubmitField(_l('Create User'), render_kw={'class': 'btn btn-primary'})
 
     def validate_username(self, username):
         from app.models import User
         user = User.query.filter_by(username=username.data).first()
         if user:
-            raise ValidationError('Username already exists.')
+            raise ValidationError(_l('Username already exists.'))
 
     def validate_email(self, email):
         from app.models import User
         user = User.query.filter_by(email=email.data).first()
         if user:
-            raise ValidationError('Email already registered.')
+            raise ValidationError(_l('Email already registered.'))
 
 
 class ChangePasswordForm(FlaskForm):
     """Form for changing password"""
     current_password = PasswordField(
-        'Current Password',
+        _l('Current Password'),
         validators=[DataRequired()],
-        render_kw={'placeholder': 'Enter current password', 'class': 'form-control'}
+        render_kw={'placeholder': _l('Enter current password'), 'class': 'form-control'}
     )
     new_password = PasswordField(
-        'New Password',
+        _l('New Password'),
         validators=[DataRequired(), Length(min=8)],
-        render_kw={'placeholder': 'Enter new password', 'class': 'form-control'}
+        render_kw={'placeholder': _l('Enter new password'), 'class': 'form-control'}
     )
     new_password_confirm = PasswordField(
-        'Confirm New Password',
-        validators=[DataRequired(), EqualTo('new_password', message='Passwords must match')],
-        render_kw={'placeholder': 'Confirm new password', 'class': 'form-control'}
+        _l('Confirm New Password'),
+        validators=[DataRequired(), EqualTo('new_password', message=_l('Passwords must match'))],
+        render_kw={'placeholder': _l('Confirm new password'), 'class': 'form-control'}
     )
-    submit = SubmitField('Change Password', render_kw={'class': 'btn btn-primary'})
+    submit = SubmitField(_l('Change Password'), render_kw={'class': 'btn btn-primary'})
 
 
 class WaasAccountForm(FlaskForm):
@@ -108,26 +109,26 @@ class WaasAccountForm(FlaskForm):
     At least one credential type is required: API key (v4) or email+password (v2).
     """
     account_name = StringField(
-        'Account Name',
+        _l('Account Name'),
         validators=[DataRequired(), Length(min=2, max=100)],
-        render_kw={'placeholder': 'e.g., Production Account', 'class': 'form-control'}
+        render_kw={'placeholder': _l('e.g., Production Account'), 'class': 'form-control'}
     )
     api_key = StringField(
-        'API Key / Token (v4)',
+        _l('API Key / Token (v4)'),
         validators=[Optional(), Length(min=10, max=500)],
-        render_kw={'placeholder': 'Paste WaaS API key here', 'class': 'form-control', 'type': 'password'}
+        render_kw={'placeholder': _l('Paste WaaS API key here'), 'class': 'form-control', 'type': 'password'}
     )
     waas_email = StringField(
-        'WaaS Email (v2)',
+        _l('WaaS Email (v2)'),
         validators=[Optional(), Email(), Length(max=120)],
         render_kw={'placeholder': 'user@example.com', 'class': 'form-control'}
     )
     waas_password = PasswordField(
-        'WaaS Password (v2)',
+        _l('WaaS Password (v2)'),
         validators=[Optional(), Length(max=255)],
-        render_kw={'placeholder': 'Enter WaaS password', 'class': 'form-control'}
+        render_kw={'placeholder': _l('Enter WaaS password'), 'class': 'form-control'}
     )
-    submit = SubmitField('Save Account', render_kw={'class': 'btn btn-primary'})
+    submit = SubmitField(_l('Save Account'), render_kw={'class': 'btn btn-primary'})
 
     def validate(self, extra_validators=None, is_edit=False, account=None):
         """Custom validation: require at least one credential type.
@@ -155,7 +156,7 @@ class WaasAccountForm(FlaskForm):
 
         if not has_api_key and not has_v2_creds and not existing_api_key and not existing_v2_creds:
             self.api_key.errors.append(
-                'At least one credential type is required: API key or WaaS email + password.'
+                _l('At least one credential type is required: API key or WaaS email + password.')
             )
             return False
 
@@ -165,10 +166,10 @@ class WaasAccountForm(FlaskForm):
 
         # On edit, having only email without new password is OK if v2 creds already exist
         if has_email_only and not (is_edit and existing_v2_creds):
-            self.waas_password.errors.append('Password is required when email is provided.')
+            self.waas_password.errors.append(_l('Password is required when email is provided.'))
             return False
         if has_pass_only and not (is_edit and existing_v2_creds):
-            self.waas_email.errors.append('Email is required when password is provided.')
+            self.waas_email.errors.append(_l('Email is required when password is provided.'))
             return False
 
         return True
@@ -177,200 +178,200 @@ class WaasAccountForm(FlaskForm):
 class UserCreateForm(FlaskForm):
     """Form for admin to create a new user"""
     username = StringField(
-        'Username',
+        _l('Username'),
         validators=[
             DataRequired(), Length(min=3, max=80),
-            Regexp(r'^[a-zA-Z0-9_-]+$', message='Username can only contain letters, numbers, underscores, and hyphens')
+            Regexp(r'^[a-zA-Z0-9_-]+$', message=_l('Username can only contain letters, numbers, underscores, and hyphens'))
         ],
-        render_kw={'placeholder': 'Enter username', 'class': 'form-control'}
+        render_kw={'placeholder': _l('Enter username'), 'class': 'form-control'}
     )
     email = StringField(
-        'Email',
+        _l('Email'),
         validators=[DataRequired(), Email(), Length(max=120)],
         render_kw={'placeholder': 'user@example.com', 'class': 'form-control'}
     )
     display_name = StringField(
-        'Display Name',
+        _l('Display Name'),
         validators=[Optional(), Length(max=200)],
-        render_kw={'placeholder': 'Display name (optional)', 'class': 'form-control'}
+        render_kw={'placeholder': _l('Display name (optional)'), 'class': 'form-control'}
     )
     password = PasswordField(
-        'Password',
-        validators=[DataRequired(), Length(min=8, message='Password must be at least 8 characters')],
-        render_kw={'placeholder': 'Enter password', 'class': 'form-control'}
+        _l('Password'),
+        validators=[DataRequired(), Length(min=8, message=_l('Password must be at least 8 characters'))],
+        render_kw={'placeholder': _l('Enter password'), 'class': 'form-control'}
     )
     password_confirm = PasswordField(
-        'Confirm Password',
-        validators=[DataRequired(), EqualTo('password', message='Passwords must match')],
-        render_kw={'placeholder': 'Confirm password', 'class': 'form-control'}
+        _l('Confirm Password'),
+        validators=[DataRequired(), EqualTo('password', message=_l('Passwords must match'))],
+        render_kw={'placeholder': _l('Confirm password'), 'class': 'form-control'}
     )
     role = SelectField(
-        'Role',
-        choices=[('user', 'User'), ('admin', 'Admin'), ('viewer', 'Viewer')],
+        _l('Role'),
+        choices=[('user', _l('User')), ('admin', _l('Admin')), ('viewer', _l('Viewer'))],
         default='user',
         validators=[DataRequired()],
         render_kw={'class': 'form-select'}
     )
-    submit = SubmitField('Create User', render_kw={'class': 'btn btn-primary'})
+    submit = SubmitField(_l('Create User'), render_kw={'class': 'btn btn-primary'})
 
     def validate_username(self, username):
         from app.models import User
         user = User.query.filter_by(username=username.data).first()
         if user:
-            raise ValidationError('Username already exists.')
+            raise ValidationError(_l('Username already exists.'))
 
     def validate_email(self, email):
         from app.models import User
         user = User.query.filter_by(email=email.data).first()
         if user:
-            raise ValidationError('Email already registered.')
+            raise ValidationError(_l('Email already registered.'))
 
 
 class UserEditForm(FlaskForm):
     """Form for admin to edit an existing user"""
     email = StringField(
-        'Email',
+        _l('Email'),
         validators=[DataRequired(), Email(), Length(max=120)],
         render_kw={'class': 'form-control'}
     )
     display_name = StringField(
-        'Display Name',
+        _l('Display Name'),
         validators=[Optional(), Length(max=200)],
         render_kw={'class': 'form-control'}
     )
     role = SelectField(
-        'Role',
-        choices=[('user', 'User'), ('admin', 'Admin'), ('viewer', 'Viewer')],
+        _l('Role'),
+        choices=[('user', _l('User')), ('admin', _l('Admin')), ('viewer', _l('Viewer'))],
         validators=[DataRequired()],
         render_kw={'class': 'form-select'}
     )
-    is_active = BooleanField('Account Active', render_kw={'class': 'form-check-input'})
+    is_active = BooleanField(_l('Account Active'), render_kw={'class': 'form-check-input'})
     new_password = PasswordField(
-        'New Password (leave blank to keep current)',
+        _l('New Password (leave blank to keep current)'),
         validators=[Optional(), Length(min=8)],
-        render_kw={'placeholder': 'Leave blank to keep current password', 'class': 'form-control'}
+        render_kw={'placeholder': _l('Leave blank to keep current password'), 'class': 'form-control'}
     )
-    submit = SubmitField('Update User', render_kw={'class': 'btn btn-primary'})
+    submit = SubmitField(_l('Update User'), render_kw={'class': 'btn btn-primary'})
 
 
 class CertificateUploadForm(FlaskForm):
     """Form for uploading SSL/TLS certificates"""
     certificate_file = FileField(
-        'Certificate File (PEM or PFX)',
+        _l('Certificate File (PEM or PFX)'),
         validators=[
-            DataRequired(message='Certificate file is required'),
-            FileAllowed(['pem', 'pfx', 'p12', 'crt', 'cer', 'key'], 'Only certificate files are allowed')
+            DataRequired(message=_l('Certificate file is required')),
+            FileAllowed(['pem', 'pfx', 'p12', 'crt', 'cer', 'key'], _l('Only certificate files are allowed'))
         ],
         render_kw={'class': 'form-control', 'accept': '.pem,.pfx,.p12,.crt,.cer,.key'}
     )
     certificate_key_file = FileField(
-        'Private Key File (PEM, optional for PFX)',
+        _l('Private Key File (PEM, optional for PFX)'),
         validators=[
             Optional(),
-            FileAllowed(['pem', 'key'], 'Only PEM/KEY files are allowed')
+            FileAllowed(['pem', 'key'], _l('Only PEM/KEY files are allowed'))
         ],
         render_kw={'class': 'form-control', 'accept': '.pem,.key'}
     )
     pfx_password = PasswordField(
-        'PFX Password (if applicable)',
+        _l('PFX Password (if applicable)'),
         validators=[Optional(), Length(max=255)],
-        render_kw={'placeholder': 'Enter PFX password if uploading PFX file', 'class': 'form-control'}
+        render_kw={'placeholder': _l('Enter PFX password if uploading PFX file'), 'class': 'form-control'}
     )
     friendly_name = StringField(
-        'Friendly Name',
+        _l('Friendly Name'),
         validators=[Optional(), Length(max=255)],
-        render_kw={'placeholder': 'Optional label for this certificate', 'class': 'form-control'}
+        render_kw={'placeholder': _l('Optional label for this certificate'), 'class': 'form-control'}
     )
-    submit = SubmitField('Upload Certificate', render_kw={'class': 'btn btn-primary'})
+    submit = SubmitField(_l('Upload Certificate'), render_kw={'class': 'btn btn-primary'})
 
 
 class ApplicationCreateForm(FlaskForm):
     """Form for creating a new WaaS application via v2 API."""
     application_name = StringField(
-        'Application Name',
+        _l('Application Name'),
         validators=[DataRequired(), Length(min=1, max=200)],
-        render_kw={'placeholder': 'e.g., My Web App', 'class': 'form-control'}
+        render_kw={'placeholder': _l('e.g., My Web App'), 'class': 'form-control'}
     )
     hostname = StringField(
-        'Hostname / Domain',
+        _l('Hostname / Domain'),
         validators=[DataRequired(), Length(min=1, max=255)],
-        render_kw={'placeholder': 'e.g., www.example.com', 'class': 'form-control'}
+        render_kw={'placeholder': _l('e.g., www.example.com'), 'class': 'form-control'}
     )
     backend_ip = StringField(
-        'Backend Server IP / Hostname',
+        _l('Backend Server IP / Hostname'),
         validators=[DataRequired(), Length(min=1, max=255)],
-        render_kw={'placeholder': 'e.g., 10.0.0.1 or origin.example.com', 'class': 'form-control'}
+        render_kw={'placeholder': _l('e.g., 10.0.0.1 or origin.example.com'), 'class': 'form-control'}
     )
     backend_port = IntegerField(
-        'Backend Port',
+        _l('Backend Port'),
         validators=[DataRequired()],
         default=443,
         render_kw={'placeholder': '443', 'class': 'form-control'}
     )
     backend_type = SelectField(
-        'Backend Protocol',
+        _l('Backend Protocol'),
         choices=[('HTTPS', 'HTTPS'), ('HTTP', 'HTTP')],
         default='HTTPS',
         validators=[DataRequired()],
         render_kw={'class': 'form-select'}
     )
     malicious_traffic = SelectField(
-        'Protection Mode',
+        _l('Protection Mode'),
         choices=[
-            ('Passive', 'Passive — Monitor only (recommended for initial setup)'),
-            ('Active', 'Active — Block malicious traffic')
+            ('Passive', _l('Passive — Monitor only (recommended for initial setup)')),
+            ('Active', _l('Active — Block malicious traffic'))
         ],
         default='Passive',
         validators=[DataRequired()],
         render_kw={'class': 'form-select'}
     )
-    use_https = BooleanField('Create HTTPS Endpoint', default=True, render_kw={'class': 'form-check-input'})
-    use_http = BooleanField('Create HTTP Endpoint', default=True, render_kw={'class': 'form-check-input'})
-    redirect_http = BooleanField('Redirect HTTP to HTTPS', default=True, render_kw={'class': 'form-check-input'})
-    submit = SubmitField('Create Application', render_kw={'class': 'btn btn-primary'})
+    use_https = BooleanField(_l('Create HTTPS Endpoint'), default=True, render_kw={'class': 'form-check-input'})
+    use_http = BooleanField(_l('Create HTTP Endpoint'), default=True, render_kw={'class': 'form-check-input'})
+    redirect_http = BooleanField(_l('Redirect HTTP to HTTPS'), default=True, render_kw={'class': 'form-check-input'})
+    submit = SubmitField(_l('Create Application'), render_kw={'class': 'btn btn-primary'})
 
 
 class ConfigTemplateForm(FlaskForm):
     """Form for creating/editing a config template"""
     name = StringField(
-        'Template Name',
+        _l('Template Name'),
         validators=[DataRequired(), Length(max=100)],
-        render_kw={'placeholder': 'e.g., Hardened Security Profile', 'class': 'form-control'}
+        render_kw={'placeholder': _l('e.g., Hardened Security Profile'), 'class': 'form-control'}
     )
     description = TextAreaField(
-        'Description',
+        _l('Description'),
         validators=[Optional(), Length(max=500)],
-        render_kw={'placeholder': 'Describe what this template configures...', 'class': 'form-control', 'rows': '3'}
+        render_kw={'placeholder': _l('Describe what this template configures...'), 'class': 'form-control', 'rows': '3'}
     )
     is_global = BooleanField(
-        'Global Template (visible to all users)',
+        _l('Global Template (visible to all users)'),
         default=False,
         render_kw={'class': 'form-check-input'}
     )
-    submit = SubmitField('Save Template', render_kw={'class': 'btn btn-primary'})
+    submit = SubmitField(_l('Save Template'), render_kw={'class': 'btn btn-primary'})
 
 
 class TemplateFromAppForm(FlaskForm):
     """Form for creating a template from a live application export"""
     name = StringField(
-        'Template Name',
+        _l('Template Name'),
         validators=[DataRequired(), Length(max=100)],
-        render_kw={'placeholder': 'e.g., Hardened Security Profile', 'class': 'form-control'}
+        render_kw={'placeholder': _l('e.g., Hardened Security Profile'), 'class': 'form-control'}
     )
     description = TextAreaField(
-        'Description',
+        _l('Description'),
         validators=[Optional(), Length(max=500)],
-        render_kw={'placeholder': 'Describe what this template configures...', 'class': 'form-control', 'rows': '3'}
+        render_kw={'placeholder': _l('Describe what this template configures...'), 'class': 'form-control', 'rows': '3'}
     )
     is_global = BooleanField(
-        'Global Template (visible to all users)',
+        _l('Global Template (visible to all users)'),
         default=False,
         render_kw={'class': 'form-check-input'}
     )
-    include_basic_security = BooleanField('Basic Security (protection mode)', default=True, render_kw={'class': 'form-check-input'})
-    include_request_limits = BooleanField('Request Limits', default=True, render_kw={'class': 'form-check-input'})
-    include_clickjacking = BooleanField('Clickjacking Protection', default=True, render_kw={'class': 'form-check-input'})
-    include_data_theft = BooleanField('Data Theft Protection', default=True, render_kw={'class': 'form-check-input'})
-    include_servers = BooleanField('Backend Servers', default=False, render_kw={'class': 'form-check-input'})
-    include_endpoints = BooleanField('Endpoints Configuration', default=False, render_kw={'class': 'form-check-input'})
-    submit = SubmitField('Create Template', render_kw={'class': 'btn btn-primary'})
+    include_basic_security = BooleanField(_l('Basic Security (protection mode)'), default=True, render_kw={'class': 'form-check-input'})
+    include_request_limits = BooleanField(_l('Request Limits'), default=True, render_kw={'class': 'form-check-input'})
+    include_clickjacking = BooleanField(_l('Clickjacking Protection'), default=True, render_kw={'class': 'form-check-input'})
+    include_data_theft = BooleanField(_l('Data Theft Protection'), default=True, render_kw={'class': 'form-check-input'})
+    include_servers = BooleanField(_l('Backend Servers'), default=False, render_kw={'class': 'form-check-input'})
+    include_endpoints = BooleanField(_l('Endpoints Configuration'), default=False, render_kw={'class': 'form-check-input'})
+    submit = SubmitField(_l('Create Template'), render_kw={'class': 'btn btn-primary'})

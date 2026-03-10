@@ -1,24 +1,24 @@
 {% extends "base.html" %}
-{% block title %}Security Config — {{ application.get('name', 'Application') }} — WaaS Portal{% endblock %}
+{% block title %}{{ _('Security Config') }} — {{ application.get('name', 'Application') }} — WaaS Portal{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
-    <h2><i class="bi bi-shield-lock"></i> Security Configuration</h2>
+    <h2><i class="bi bi-shield-lock"></i> {{ _('Security Configuration') }}</h2>
     <div class="d-flex gap-2">
         {% if current_user.role != 'viewer' %}
         <a href="{{ url_for('templates.save_as_template', account_id=account.id, app_id=app_id) }}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-file-earmark-plus"></i> Save as Template
+            <i class="bi bi-file-earmark-plus"></i> {{ _('Save as Template') }}
         </a>
         {% endif %}
         <a href="{{ url_for('applications.view_application', account_id=account.id, app_id=app_id) }}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-left"></i> Back to Application
+            <i class="bi bi-arrow-left"></i> {{ _('Back to Application') }}
         </a>
     </div>
 </div>
 
 <div class="mb-3">
-    <span class="text-muted">Account:</span> <strong>{{ account.account_name }}</strong>
-    <span class="text-muted ms-3">Application:</span> <strong>{{ application.get('name', 'N/A') }}</strong>
+    <span class="text-muted">{{ _('Account:') }}</span> <strong>{{ account.account_name }}</strong>
+    <span class="text-muted ms-3">{{ _('Application:') }}</span> <strong>{{ application.get('name', 'N/A') }}</strong>
 </div>
 
 {% if security %}
@@ -27,7 +27,7 @@
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-shield-check"></i> Protection Mode</h5>
+                <h5 class="mb-0"><i class="bi bi-shield-check"></i> {{ _('Protection Mode') }}</h5>
             </div>
             <div class="card-body">
                 {% set mode = security.get('protection_mode', security.get('mode', 'Unknown')) %}
@@ -45,7 +45,7 @@
                 </div>
                 {% if security.get('clickjacking_protection') %}
                 <hr class="my-2">
-                <h6 class="text-muted mt-2">Clickjacking Protection</h6>
+                <h6 class="text-muted mt-2">{{ _('Clickjacking Protection') }}</h6>
                 <table class="table table-borderless table-sm mb-0">
                     {% for key, value in security.get('clickjacking_protection', {}).items() %}
                     <tr>
@@ -60,7 +60,7 @@
 
                 {% if security.get('data_theft_protection') %}
                 <hr class="my-2">
-                <h6 class="text-muted mt-2">Data Theft Protection</h6>
+                <h6 class="text-muted mt-2">{{ _('Data Theft Protection') }}</h6>
                 <table class="table table-borderless table-sm mb-0">
                     {% for key, value in security.get('data_theft_protection', {}).items() %}
                     <tr>
@@ -82,36 +82,36 @@
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-speedometer2"></i> Request Limits</h5>
+                <h5 class="mb-0"><i class="bi bi-speedometer2"></i> {{ _('Request Limits') }}</h5>
             </div>
             <div class="card-body">
                 <table class="table table-borderless table-sm mb-0">
                     <tr>
-                        <th style="width:60%">Max Request Length</th>
+                        <th style="width:60%">{{ _('Max Request Length') }}</th>
                         <td>{{ security.get('max_request_length', security.get('request_limits', {}).get('max_request_length', 'N/A')) }}</td>
                     </tr>
                     <tr>
-                        <th>Max Request Line Length</th>
+                        <th>{{ _('Max Request Line Length') }}</th>
                         <td>{{ security.get('max_request_line_length', security.get('request_limits', {}).get('max_request_line_length', 'N/A')) }}</td>
                     </tr>
                     <tr>
-                        <th>Max URL Length</th>
+                        <th>{{ _('Max URL Length') }}</th>
                         <td>{{ security.get('max_url_length', security.get('request_limits', {}).get('max_url_length', 'N/A')) }}</td>
                     </tr>
                     <tr>
-                        <th>Max Number of Headers</th>
+                        <th>{{ _('Max Number of Headers') }}</th>
                         <td>{{ security.get('max_number_of_headers', security.get('request_limits', {}).get('max_number_of_headers', 'N/A')) }}</td>
                     </tr>
                     <tr>
-                        <th>Max Header Value Length</th>
+                        <th>{{ _('Max Header Value Length') }}</th>
                         <td>{{ security.get('max_header_value_length', security.get('request_limits', {}).get('max_header_value_length', 'N/A')) }}</td>
                     </tr>
                     <tr>
-                        <th>Max Cookie Name Length</th>
+                        <th>{{ _('Max Cookie Name Length') }}</th>
                         <td>{{ security.get('max_cookie_name_length', security.get('request_limits', {}).get('max_cookie_name_length', 'N/A')) }}</td>
                     </tr>
                     <tr>
-                        <th>Max Cookie Value Length</th>
+                        <th>{{ _('Max Cookie Value Length') }}</th>
                         <td>{{ security.get('max_cookie_value_length', security.get('request_limits', {}).get('max_cookie_value_length', 'N/A')) }}</td>
                     </tr>
                 </table>
@@ -127,7 +127,7 @@
     <div class="card-header">
         <h5 class="mb-0">
             <a class="text-decoration-none" data-bs-toggle="collapse" href="#editSection" role="button">
-                <i class="bi bi-pencil-square"></i> Edit Protection Mode
+                <i class="bi bi-pencil-square"></i> {{ _('Edit Protection Mode') }}
             </a>
         </h5>
     </div>
@@ -137,19 +137,19 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 <div class="mb-3">
-                    <label for="protection_mode" class="form-label">Protection Mode</label>
+                    <label for="protection_mode" class="form-label">{{ _('Protection Mode') }}</label>
                     <select name="protection_mode" id="protection_mode" class="form-select" style="max-width:300px">
-                        <option value="Active" {% if mode == 'Active' %}selected{% endif %}>Active (block attacks)</option>
-                        <option value="Passive" {% if mode == 'Passive' %}selected{% endif %}>Passive (log only)</option>
+                        <option value="Active" {% if mode == 'Active' %}selected{% endif %}>{{ _('Active (block attacks)') }}</option>
+                        <option value="Passive" {% if mode == 'Passive' %}selected{% endif %}>{{ _('Passive (log only)') }}</option>
                     </select>
                     <div class="form-text">
-                        <strong>Active:</strong> Malicious requests are blocked.<br>
-                        <strong>Passive:</strong> Attacks are logged but not blocked — useful for tuning.
+                        <strong>{{ _('Active:') }}</strong> {{ _('Malicious requests are blocked.') }}<br>
+                        <strong>{{ _('Passive:') }}</strong> {{ _('Attacks are logged but not blocked — useful for tuning.') }}
                     </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-circle"></i> Update Security Config
+                    <i class="bi bi-check-circle"></i> {{ _('Update Security Config') }}
                 </button>
             </form>
         </div>
@@ -162,7 +162,7 @@
     <div class="card-header">
         <h5 class="mb-0">
             <a class="text-decoration-none" data-bs-toggle="collapse" href="#rawSecurityData" role="button">
-                <i class="bi bi-code-slash"></i> Raw API Data
+                <i class="bi bi-code-slash"></i> {{ _('Raw API Data') }}
             </a>
         </h5>
     </div>
@@ -177,8 +177,8 @@
 <div class="card">
     <div class="card-body text-center py-5">
         <i class="bi bi-shield-x display-1 text-muted"></i>
-        <h4 class="mt-3">No Security Configuration</h4>
-        <p class="text-muted">Could not retrieve security configuration for this application.</p>
+        <h4 class="mt-3">{{ _('No Security Configuration') }}</h4>
+        <p class="text-muted">{{ _('Could not retrieve security configuration for this application.') }}</p>
     </div>
 </div>
 {% endif %}

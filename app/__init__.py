@@ -1,7 +1,8 @@
 import logging
-from flask import Flask, render_template
+from flask import Flask, render_template, request, session
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
+from flask_babel import Babel
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -11,7 +12,27 @@ from datetime import datetime
 # Initialize extensions
 db = SQLAlchemy()
 login_manager = LoginManager()
+babel = Babel()
 limiter = Limiter(key_func=get_remote_address, default_limits=[], storage_uri="memory://")
+
+
+def get_locale():
+    """Select locale: user preference → session → Accept-Language header → default."""
+    supported = config.get('default', config['default']).BABEL_SUPPORTED_LOCALES
+
+    # Check authenticated user's stored preference
+    if current_user and hasattr(current_user, 'locale') and getattr(current_user, 'is_authenticated', False):
+        user_locale = getattr(current_user, 'locale', None)
+        if user_locale and user_locale in supported:
+            return user_locale
+
+    # Check session
+    sess_locale = session.get('locale')
+    if sess_locale and sess_locale in supported:
+        return sess_locale
+
+    # Fall back to browser Accept-Language
+    return request.accept_languages.best_match(supported, default='en')
 
 
 def create_app(config_name='default'):
@@ -34,11 +55,13 @@ def create_app(config_name='default'):
     # Initialize extensions with app
     db.init_app(app)
     login_manager.init_app(app)
+    babel.init_app(app, locale_selector=get_locale)
     limiter.init_app(app)
 
     # Configure Flask-Login
+    from flask_babel import lazy_gettext as _l
     login_manager.login_view = 'auth.login'
-    login_manager.login_message = 'Please log in to access this page.'
+    login_manager.login_message = _l('Please log in to access this page.')
     login_manager.login_message_category = 'info'
 
     @login_manager.user_loader
@@ -108,6 +131,12 @@ def create_app(config_name='default'):
         """Make version available to all templates"""
         from config import VERSION
         return {'app_version': VERSION}
+
+    # Context processor to inject locale into all templates
+    @app.context_processor
+    def inject_locale():
+        """Make get_locale available to all templates"""
+        return {'get_locale': get_locale}
 
     # Context processor to inject CSRF token function
     @app.context_processor

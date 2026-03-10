@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
+from flask_babel import gettext as _
 from functools import wraps
 from app import db
 from app.models import User, WaasAccount, AuditLog
@@ -13,7 +14,7 @@ def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or current_user.role != 'admin':
-            flash('You do not have permission to access the admin area.', 'danger')
+            flash(_('You do not have permission to access the admin area.'), 'danger')
             return redirect(url_for('main.dashboard'))
         return f(*args, **kwargs)
     return decorated_function
@@ -74,7 +75,7 @@ def create_user():
             ip_address=request.remote_addr
         )
 
-        flash(f'User "{user.username}" created successfully.', 'success')
+        flash(_('User "%(username)s" created successfully.', username=user.username), 'success')
         return redirect(url_for('admin.list_users'))
 
     return render_template('admin/user_create.html', form=form)
@@ -108,7 +109,7 @@ def edit_user(user_id):
             ip_address=request.remote_addr
         )
 
-        flash(f'User "{user.username}" updated.', 'success')
+        flash(_('User "%(username)s" updated.', username=user.username), 'success')
         return redirect(url_for('admin.list_users'))
 
     return render_template('admin/user_edit.html', form=form, edit_user=user)
@@ -121,7 +122,7 @@ def toggle_user(user_id):
     """Enable/disable a user"""
     user = User.query.get_or_404(user_id)
     if user.id == current_user.id:
-        flash('You cannot disable your own account.', 'danger')
+        flash(_('You cannot disable your own account.'), 'danger')
         return redirect(url_for('admin.list_users'))
 
     user.is_active = not user.is_active
@@ -137,7 +138,10 @@ def toggle_user(user_id):
         ip_address=request.remote_addr
     )
 
-    flash(f'User "{user.username}" has been {action}.', 'success')
+    if user.is_active:
+        flash(_('User "%(username)s" has been enabled.', username=user.username), 'success')
+    else:
+        flash(_('User "%(username)s" has been disabled.', username=user.username), 'success')
     return redirect(url_for('admin.list_users'))
 
 

@@ -1,23 +1,23 @@
 {% extends "base.html" %}
-{% block title %}Upload Certificate — {{ account.account_name }} — WaaS Portal{% endblock %}
+{% block title %}{{ _('Upload Certificate') }} — {{ account.account_name }} — WaaS Portal{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
-    <h2><i class="bi bi-upload"></i> Upload Certificate</h2>
+    <h2><i class="bi bi-upload"></i> {{ _('Upload Certificate') }}</h2>
     <a href="{{ url_for('certificates.list_certificates', account_id=account.id) }}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left"></i> Back to Certificates
+        <i class="bi bi-arrow-left"></i> {{ _('Back to Certificates') }}
     </a>
 </div>
 
 <div class="mb-3">
-    <span class="text-muted">Account:</span> <strong>{{ account.account_name }}</strong>
+    <span class="text-muted">{{ _('Account:') }}</span> <strong>{{ account.account_name }}</strong>
 </div>
 
 <div class="row">
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Certificate Details</h5>
+                <h5 class="mb-0">{{ _('Certificate Details') }}</h5>
             </div>
             <div class="card-body">
                 <form method="POST" enctype="multipart/form-data">
@@ -25,21 +25,21 @@
 
                     {# Application selector — v4 certs are per-app #}
                     <div class="mb-3">
-                        <label for="app_name" class="form-label">Application <span class="badge bg-primary">v4 API</span></label>
+                        <label for="app_name" class="form-label">{{ _('Application') }} <span class="badge bg-primary">v4 API</span></label>
                         <select name="app_name" id="app_name" class="form-select" required>
-                            <option value="">Select application...</option>
+                            <option value="">{{ _('Select application...') }}</option>
                             {% for app in applications %}
                             <option value="{{ app.get('name', '') }}" {{ 'selected' if app_name == app.get('name') }}>{{ app.get('name', 'Unnamed') }}</option>
                             {% endfor %}
                         </select>
-                        <div class="form-text">SNI certificates are scoped to a specific application in the v4 API.</div>
+                        <div class="form-text">{{ _('SNI certificates are scoped to a specific application in the v4 API.') }}</div>
                     </div>
 
                     {# Certificate File #}
                     <div class="mb-3">
                         {{ form.certificate_file.label(class="form-label") }}
                         {{ form.certificate_file() }}
-                        <div class="form-text">Supported formats: PEM, PFX/P12, CRT, CER, KEY</div>
+                        <div class="form-text">{{ _('Supported formats: PEM, PFX/P12, CRT, CER, KEY') }}</div>
                         {% for error in form.certificate_file.errors %}
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
@@ -49,7 +49,7 @@
                     <div class="mb-3">
                         {{ form.certificate_key_file.label(class="form-label") }}
                         {{ form.certificate_key_file() }}
-                        <div class="form-text">Required for PEM certificates. Not needed for PFX/P12 files that already contain the key.</div>
+                        <div class="form-text">{{ _('Required for PEM certificates. Not needed for PFX/P12 files that already contain the key.') }}</div>
                         {% for error in form.certificate_key_file.errors %}
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
@@ -59,7 +59,7 @@
                     <div class="mb-3">
                         {{ form.pfx_password.label(class="form-label") }}
                         {{ form.pfx_password() }}
-                        <div class="form-text">Only required if uploading a password-protected PFX/P12 file.</div>
+                        <div class="form-text">{{ _('Only required if uploading a password-protected PFX/P12 file.') }}</div>
                         {% for error in form.pfx_password.errors %}
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
@@ -69,7 +69,7 @@
                     <div class="mb-3">
                         {{ form.friendly_name.label(class="form-label") }}
                         {{ form.friendly_name() }}
-                        <div class="form-text">An optional label to help identify this certificate in the portal.</div>
+                        <div class="form-text">{{ _('An optional label to help identify this certificate in the portal.') }}</div>
                         {% for error in form.friendly_name.errors %}
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
@@ -78,7 +78,7 @@
                     <hr>
                     <div class="d-flex justify-content-between">
                         <a href="{{ url_for('certificates.list_certificates', account_id=account.id) }}" class="btn btn-secondary">
-                            <i class="bi bi-x-circle"></i> Cancel
+                            <i class="bi bi-x-circle"></i> {{ _('Cancel') }}
                         </a>
                         {{ form.submit() }}
                     </div>
@@ -90,26 +90,26 @@
     <div class="col-lg-4">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Upload Tips</h5>
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> {{ _('Upload Tips') }}</h5>
             </div>
             <div class="card-body">
-                <h6>PEM Format</h6>
+                <h6>{{ _('PEM Format') }}</h6>
                 <ul class="small">
-                    <li>Upload the certificate file (<code>.pem</code> or <code>.crt</code>)</li>
-                    <li>Upload the private key file separately (<code>.pem</code> or <code>.key</code>)</li>
-                    <li>Include intermediate certificates in the certificate file if needed</li>
+                    <li>{{ _('Upload the certificate file') }} (<code>.pem</code> {{ _('or') }} <code>.crt</code>)</li>
+                    <li>{{ _('Upload the private key file separately') }} (<code>.pem</code> {{ _('or') }} <code>.key</code>)</li>
+                    <li>{{ _('Include intermediate certificates in the certificate file if needed') }}</li>
                 </ul>
 
-                <h6>PFX/P12 Format</h6>
+                <h6>{{ _('PFX/P12 Format') }}</h6>
                 <ul class="small">
-                    <li>Upload the <code>.pfx</code> or <code>.p12</code> file as the certificate</li>
-                    <li>No separate key file is needed</li>
-                    <li>Provide the PFX password if the file is password-protected</li>
+                    <li>{{ _('Upload the') }} <code>.pfx</code> {{ _('or') }} <code>.p12</code> {{ _('file as the certificate') }}</li>
+                    <li>{{ _('No separate key file is needed') }}</li>
+                    <li>{{ _('Provide the PFX password if the file is password-protected') }}</li>
                 </ul>
 
                 <div class="alert alert-info small mt-3 mb-0">
                     <i class="bi bi-shield-lock"></i>
-                    Certificates and keys are transmitted securely and stored encrypted on the WaaS platform.
+                    {{ _('Certificates and keys are transmitted securely and stored encrypted on the WaaS platform.') }}
                 </div>
             </div>
         </div>

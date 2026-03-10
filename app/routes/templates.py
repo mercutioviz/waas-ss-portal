@@ -2,6 +2,7 @@ import json
 import logging
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
+from flask_babel import gettext as _
 from app import db
 from app.models import WaasAccount, AuditLog, ConfigTemplate
 from app.forms import ConfigTemplateForm, TemplateFromAppForm
@@ -53,7 +54,7 @@ def list_templates():
 def add_template():
     """Create a new template"""
     if current_user.role == 'viewer':
-        flash('You do not have permission to create templates.', 'danger')
+        flash(_('You do not have permission to create templates.'), 'danger')
         return redirect(url_for('templates.list_templates'))
 
     form = ConfigTemplateForm()
@@ -81,7 +82,7 @@ def add_template():
             ip_address=request.remote_addr
         )
 
-        flash(f'Template "{template.name}" created. Now edit its configuration.', 'success')
+        flash(_('Template "%(name)s" created. Now edit its configuration.', name=template.name), 'success')
         return redirect(url_for('templates.edit_config', template_id=template.id))
 
     return render_template('templates/add.html', form=form)
@@ -93,7 +94,7 @@ def view_template(template_id):
     """View template details"""
     template = get_template_or_404(template_id)
     if not template:
-        flash('Template not found or access denied.', 'danger')
+        flash(_('Template not found or access denied.'), 'danger')
         return redirect(url_for('templates.list_templates'))
 
     accounts = WaasAccount.query.filter_by(user_id=current_user.id, is_active=True).all()
@@ -106,11 +107,11 @@ def edit_template(template_id):
     """Edit template metadata"""
     template = get_template_or_404(template_id, owner_only=True)
     if not template:
-        flash('Template not found or access denied.', 'danger')
+        flash(_('Template not found or access denied.'), 'danger')
         return redirect(url_for('templates.list_templates'))
 
     if current_user.role == 'viewer':
-        flash('You do not have permission to edit templates.', 'danger')
+        flash(_('You do not have permission to edit templates.'), 'danger')
         return redirect(url_for('templates.view_template', template_id=template_id))
 
     form = ConfigTemplateForm(obj=template)
@@ -130,7 +131,7 @@ def edit_template(template_id):
             ip_address=request.remote_addr
         )
 
-        flash(f'Template "{template.name}" updated.', 'success')
+        flash(_('Template "%(name)s" updated.', name=template.name), 'success')
         return redirect(url_for('templates.view_template', template_id=template.id))
 
     return render_template('templates/edit.html', form=form, template=template)
@@ -142,11 +143,11 @@ def edit_config(template_id):
     """Edit raw JSON config data"""
     template = get_template_or_404(template_id, owner_only=True)
     if not template:
-        flash('Template not found or access denied.', 'danger')
+        flash(_('Template not found or access denied.'), 'danger')
         return redirect(url_for('templates.list_templates'))
 
     if current_user.role == 'viewer':
-        flash('You do not have permission to edit templates.', 'danger')
+        flash(_('You do not have permission to edit templates.'), 'danger')
         return redirect(url_for('templates.view_template', template_id=template_id))
 
     if request.method == 'POST':
@@ -165,10 +166,10 @@ def edit_config(template_id):
                 ip_address=request.remote_addr
             )
 
-            flash('Template configuration updated.', 'success')
+            flash(_('Template configuration updated.'), 'success')
             return redirect(url_for('templates.view_template', template_id=template.id))
         except json.JSONDecodeError as e:
-            flash(f'Invalid JSON: {e}', 'danger')
+            flash(_('Invalid JSON: %(error)s', error=str(e)), 'danger')
 
     return render_template('templates/edit_config.html', template=template)
 
@@ -179,11 +180,11 @@ def delete_template(template_id):
     """Delete a template"""
     template = get_template_or_404(template_id, owner_only=True)
     if not template:
-        flash('Template not found or access denied.', 'danger')
+        flash(_('Template not found or access denied.'), 'danger')
         return redirect(url_for('templates.list_templates'))
 
     if current_user.role == 'viewer':
-        flash('You do not have permission to delete templates.', 'danger')
+        flash(_('You do not have permission to delete templates.'), 'danger')
         return redirect(url_for('templates.list_templates'))
 
     template_name = template.name
@@ -199,7 +200,7 @@ def delete_template(template_id):
     db.session.delete(template)
     db.session.commit()
 
-    flash(f'Template "{template_name}" deleted.', 'success')
+    flash(_('Template "%(name)s" deleted.', name=template_name), 'success')
     return redirect(url_for('templates.list_templates'))
 
 
@@ -208,18 +209,18 @@ def delete_template(template_id):
 def save_as_template(account_id, app_id):
     """Create a template from a live application's exported config"""
     if current_user.role == 'viewer':
-        flash('You do not have permission to create templates.', 'danger')
+        flash(_('You do not have permission to create templates.'), 'danger')
         return redirect(url_for('applications.view_application', account_id=account_id, app_id=app_id))
 
     client, account = get_client_for_account(account_id)
     if not client:
-        flash('Account not found or inactive.', 'danger')
+        flash(_('Account not found or inactive.'), 'danger')
         return redirect(url_for('applications.list_applications'))
 
     try:
         app_config = client.get_application(app_id)
     except WaasApiError as e:
-        flash(f'Failed to export application config: {e}', 'danger')
+        flash(_('Failed to export application config: %(error)s', error=str(e)), 'danger')
         return redirect(url_for('applications.view_application', account_id=account_id, app_id=app_id))
 
     # Also fetch security config for section-level extraction
@@ -276,7 +277,7 @@ def save_as_template(account_id, app_id):
             ip_address=request.remote_addr
         )
 
-        flash(f'Template "{template.name}" created from application "{app_id}".', 'success')
+        flash(_('Template "%(name)s" created from application "%(app_id)s".', name=template.name, app_id=app_id), 'success')
         return redirect(url_for('templates.view_template', template_id=template.id))
 
     # Pre-fill name suggestion
@@ -298,17 +299,17 @@ def save_as_template(account_id, app_id):
 def apply_template(template_id, account_id, app_id):
     """Apply a template to a single application"""
     if current_user.role == 'viewer':
-        flash('You do not have permission to apply templates.', 'danger')
+        flash(_('You do not have permission to apply templates.'), 'danger')
         return redirect(url_for('templates.view_template', template_id=template_id))
 
     template = get_template_or_404(template_id)
     if not template:
-        flash('Template not found or access denied.', 'danger')
+        flash(_('Template not found or access denied.'), 'danger')
         return redirect(url_for('templates.list_templates'))
 
     client, account = get_client_for_account(account_id)
     if not client:
-        flash('Account not found or inactive.', 'danger')
+        flash(_('Account not found or inactive.'), 'danger')
         return redirect(url_for('templates.view_template', template_id=template_id))
 
     include_servers = request.form.get('include_servers') == 'on'
@@ -331,9 +332,9 @@ def apply_template(template_id, account_id, app_id):
             ip_address=request.remote_addr
         )
 
-        flash(f'Template "{template.name}" applied to "{app_id}" successfully.', 'success')
+        flash(_('Template "%(name)s" applied to "%(app_id)s" successfully.', name=template.name, app_id=app_id), 'success')
     except WaasApiError as e:
-        flash(f'Failed to apply template to "{app_id}": {e}', 'danger')
+        flash(_('Failed to apply template to "%(app_id)s": %(error)s', app_id=app_id, error=str(e)), 'danger')
 
     return redirect(url_for('applications.view_application', account_id=account_id, app_id=app_id))
 
@@ -343,12 +344,12 @@ def apply_template(template_id, account_id, app_id):
 def bulk_apply(template_id):
     """Apply a template to multiple applications"""
     if current_user.role == 'viewer':
-        flash('You do not have permission to apply templates.', 'danger')
+        flash(_('You do not have permission to apply templates.'), 'danger')
         return redirect(url_for('templates.view_template', template_id=template_id))
 
     template = get_template_or_404(template_id)
     if not template:
-        flash('Template not found or access denied.', 'danger')
+        flash(_('Template not found or access denied.'), 'danger')
         return redirect(url_for('templates.list_templates'))
 
     accounts = WaasAccount.query.filter_by(user_id=current_user.id, is_active=True).all()
@@ -359,7 +360,7 @@ def bulk_apply(template_id):
         include_endpoints = request.form.get('include_endpoints') == 'on'
 
         if not selected_apps:
-            flash('No applications selected.', 'warning')
+            flash(_('No applications selected.'), 'warning')
             return redirect(url_for('templates.bulk_apply', template_id=template_id))
 
         results = []

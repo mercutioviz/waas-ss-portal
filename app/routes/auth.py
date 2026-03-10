@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, session, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, session, jsonify, current_app
 from flask_login import login_user, logout_user, login_required, current_user
+from flask_babel import gettext as _
 from datetime import datetime
 from app import db
 from app.models import User, AuditLog
@@ -26,7 +27,7 @@ def login():
             elapsed = (datetime.utcnow() - user.last_failed_login).total_seconds() / 60
             if elapsed < lockout_duration:
                 remaining = int(lockout_duration - elapsed) + 1
-                flash(f'Account locked due to too many failed attempts. Try again in {remaining} minutes.', 'danger')
+                flash(_('Account locked due to too many failed attempts. Try again in %(remaining)s minutes.', remaining=remaining), 'danger')
                 return render_template('auth/login.html', form=form)
             else:
                 # Lockout expired — reset counter
@@ -35,7 +36,7 @@ def login():
 
         if user and user.check_password(form.password.data):
             if not user.is_active:
-                flash('Your account has been disabled. Contact an administrator.', 'danger')
+                flash(_('Your account has been disabled. Contact an administrator.'), 'danger')
                 return render_template('auth/login.html', form=form)
 
             login_user(user, remember=form.remember_me.data)
@@ -56,7 +57,7 @@ def login():
                 user_agent=str(request.user_agent)[:255]
             )
 
-            flash(f'Welcome back, {user.display_name}!', 'success')
+            flash(_('Welcome back, %(name)s!', name=user.display_name), 'success')
 
             # Redirect to requested page or dashboard
             next_page = request.args.get('next')
@@ -70,7 +71,7 @@ def login():
                 user.last_failed_login = datetime.utcnow()
                 db.session.commit()
 
-            flash('Invalid username or password.', 'danger')
+            flash(_('Invalid username or password.'), 'danger')
 
     return render_template('auth/login.html', form=form)
 
@@ -86,7 +87,7 @@ def logout():
         ip_address=request.remote_addr
     )
     logout_user()
-    flash('You have been logged out.', 'info')
+    flash(_('You have been logged out.'), 'info')
     return redirect(url_for('auth.login'))
 
 
@@ -97,7 +98,7 @@ def change_password():
     form = ChangePasswordForm()
     if form.validate_on_submit():
         if not current_user.check_password(form.current_password.data):
-            flash('Current password is incorrect.', 'danger')
+            flash(_('Current password is incorrect.'), 'danger')
             return render_template('auth/change_password.html', form=form)
 
         current_user.set_password(form.new_password.data)
@@ -110,7 +111,7 @@ def change_password():
             ip_address=request.remote_addr
         )
 
-        flash('Your password has been updated.', 'success')
+        flash(_('Your password has been updated.'), 'success')
         return redirect(url_for('main.dashboard'))
 
     return render_template('auth/change_password.html', form=form)
@@ -129,3 +130,21 @@ def keepalive():
 def profile():
     """View current user profile"""
     return render_template('auth/profile.html')
+
+
+@bp.route('/set-locale', methods=['POST'])
+def set_locale():
+    """Set the user's preferred locale."""
+    locale = request.form.get('locale', 'en')
+    supported = current_app.config.get('BABEL_SUPPORTED_LOCALES', ['en', 'es'])
+    if locale not in supported:
+        locale = 'en'
+
+    session['locale'] = locale
+
+    if current_user.is_authenticated:
+        current_user.locale = locale
+        db.session.commit()
+
+    next_url = request.form.get('next') or request.referrer or url_for('main.dashboard')
+    return redirect(next_url)

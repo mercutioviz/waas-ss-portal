@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
+from flask_babel import gettext as _
 from datetime import datetime
 from app import db
 from app.models import WaasAccount, AuditLog
@@ -42,7 +43,7 @@ def add_account():
         db.session.commit()
 
         # Attempt verification if v2 credentials are available
-        flash_msg = f'Account "{account.account_name}" added successfully.'
+        flash_msg = _('Account "%(name)s" added successfully.', name=account.account_name)
         if account.has_v2_credentials:
             try:
                 # Login via v2 to get auth token, then verify
@@ -54,11 +55,11 @@ def add_account():
                 account.last_verified = datetime.utcnow()
                 account.is_active = True
                 db.session.commit()
-                flash_msg = f'Account "{account.account_name}" added and verified successfully.'
+                flash_msg = _('Account "%(name)s" added and verified successfully.', name=account.account_name)
             except WaasApiError as e:
-                flash_msg = f'Account "{account.account_name}" added, but verification failed: {e}. You can retry later.'
+                flash_msg = _('Account "%(name)s" added, but verification failed: %(error)s. You can retry later.', name=account.account_name, error=str(e))
         elif account.has_api_key:
-            flash_msg += ' Add WaaS email/password credentials to enable account verification.'
+            flash_msg = _('Account "%(name)s" added successfully.', name=account.account_name) + ' ' + _('Add WaaS email/password credentials to enable account verification.')
 
         AuditLog.log(
             user_id=current_user.id,
@@ -125,7 +126,7 @@ def edit_account(account_id):
             ip_address=request.remote_addr
         )
 
-        flash(f'Account "{account.account_name}" updated.', 'success')
+        flash(_('Account "%(name)s" updated.', name=account.account_name), 'success')
         return redirect(url_for('accounts.view_account', account_id=account.id))
 
     return render_template('accounts/edit.html', form=form, account=account)
@@ -140,8 +141,7 @@ def verify_account(account_id):
 
     if not account.has_v2_credentials:
         flash(
-            f'Cannot verify "{account.account_name}": WaaS email/password credentials are required for verification. '
-            'Edit the account to add v2 credentials.',
+            _('Cannot verify "%(name)s": WaaS email/password credentials are required for verification. Edit the account to add v2 credentials.', name=account.account_name),
             'warning'
         )
         return redirect(url_for('accounts.view_account', account_id=account_id))
@@ -157,9 +157,9 @@ def verify_account(account_id):
         account.is_active = True
         db.session.commit()
 
-        flash(f'Account "{account.account_name}" verified successfully.', 'success')
+        flash(_('Account "%(name)s" verified successfully.', name=account.account_name), 'success')
     except WaasApiError as e:
-        flash(f'Verification failed for "{account.account_name}": {e}', 'danger')
+        flash(_('Verification failed for "%(name)s": %(error)s', name=account.account_name, error=str(e)), 'danger')
 
     return redirect(url_for('accounts.view_account', account_id=account_id))
 
@@ -183,5 +183,5 @@ def delete_account(account_id):
     db.session.delete(account)
     db.session.commit()
 
-    flash(f'Account "{account_name}" has been deleted.', 'success')
+    flash(_('Account "%(name)s" has been deleted.', name=account_name), 'success')
     return redirect(url_for('accounts.list_accounts'))

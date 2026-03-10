@@ -1,6 +1,7 @@
 from datetime import date
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
+from flask_babel import gettext as _
 from app.models import WaasAccount, AuditLog
 from app.waas_client import WaasClient, WaasApiError
 from app.forms import CertificateUploadForm
@@ -40,7 +41,7 @@ def list_certificates():
             except WaasApiError as e:
                 error = str(e)
         else:
-            error = 'Account not found or inactive.'
+            error = _('Account not found or inactive.')
 
     return render_template(
         'certificates/list.html',
@@ -61,7 +62,7 @@ def upload_certificate(account_id):
     the SNI certificate belongs to (v4 API is per-application).
     """
     if current_user.role == 'viewer':
-        flash('You do not have permission to upload certificates.', 'danger')
+        flash(_('You do not have permission to upload certificates.'), 'danger')
         return redirect(url_for('certificates.list_certificates'))
 
     account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id, is_active=True).first_or_404()
@@ -108,13 +109,13 @@ def upload_certificate(account_id):
                 ip_address=request.remote_addr
             )
 
-            flash('Certificate uploaded successfully.', 'success')
+            flash(_('Certificate uploaded successfully.'), 'success')
             return redirect(url_for('certificates.list_certificates', account_id=account_id))
 
         except WaasApiError as e:
-            flash(f'Failed to upload certificate: {e}', 'danger')
+            flash(_('Failed to upload certificate: %(error)s', error=str(e)), 'danger')
     elif form.is_submitted() and not app_name:
-        flash('Please select an application for this certificate.', 'warning')
+        flash(_('Please select an application for this certificate.'), 'warning')
 
     return render_template(
         'certificates/upload.html',
@@ -135,7 +136,7 @@ def view_certificate(account_id, app_name, cert_id):
         client = WaasClient.from_account(account)
         certificate = client.get_certificate(app_name, cert_id)
     except WaasApiError as e:
-        flash(f'Failed to load certificate: {e}', 'danger')
+        flash(_('Failed to load certificate: %(error)s', error=str(e)), 'danger')
         return redirect(url_for('certificates.list_certificates', account_id=account_id))
 
     return render_template(
@@ -151,7 +152,7 @@ def view_certificate(account_id, app_name, cert_id):
 def delete_certificate(account_id, app_name, cert_id):
     """Delete an SNI certificate (v4 per-application)."""
     if current_user.role == 'viewer':
-        flash('You do not have permission to delete certificates.', 'danger')
+        flash(_('You do not have permission to delete certificates.'), 'danger')
         return redirect(url_for('certificates.list_certificates'))
 
     account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id, is_active=True).first_or_404()
@@ -168,8 +169,8 @@ def delete_certificate(account_id, app_name, cert_id):
             ip_address=request.remote_addr
         )
 
-        flash('Certificate deleted.', 'success')
+        flash(_('Certificate deleted.'), 'success')
     except WaasApiError as e:
-        flash(f'Failed to delete certificate: {e}', 'danger')
+        flash(_('Failed to delete certificate: %(error)s', error=str(e)), 'danger')
 
     return redirect(url_for('certificates.list_certificates', account_id=account_id))

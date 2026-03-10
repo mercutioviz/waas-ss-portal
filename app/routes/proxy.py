@@ -7,6 +7,7 @@ Chromium browser with DNS overrides, exposed via noVNC in an iframe.
 from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, abort
 from flask_login import login_required, current_user
+from flask_babel import gettext as _
 
 from app.models import WaasAccount, AuditLog, ProxySession
 from app.waas_client import WaasClient, WaasApiError
@@ -36,7 +37,7 @@ def _get_account_and_app(account_id, app_id):
     try:
         app_data = client.get_application(app_id)
     except WaasApiError as e:
-        flash(f'Failed to load application data: {e}', 'danger')
+        flash(_('Failed to load application data: %(error)s', error=str(e)), 'danger')
         app_data = None
 
     return account, app_data, client
@@ -80,7 +81,7 @@ def launch(account_id, app_id):
 def start(account_id, app_id):
     """Start a new noVNC proxy session for the selected domain."""
     if current_user.role == 'viewer':
-        flash('You do not have permission to start proxy sessions.', 'danger')
+        flash(_('You do not have permission to start proxy sessions.'), 'danger')
         return redirect(url_for('proxy.launch', account_id=account_id, app_id=app_id))
 
     account = WaasAccount.query.filter_by(
@@ -93,11 +94,11 @@ def start(account_id, app_id):
     cname = request.form.get('cname', '').strip()
 
     if not domain:
-        flash('Please select a domain to browse.', 'warning')
+        flash(_('Please select a domain to browse.'), 'warning')
         return redirect(url_for('proxy.launch', account_id=account_id, app_id=app_id))
 
     if not cname:
-        flash('CNAME is required to start a proxy session.', 'warning')
+        flash(_('CNAME is required to start a proxy session.'), 'warning')
         return redirect(url_for('proxy.launch', account_id=account_id, app_id=app_id))
 
     try:
@@ -118,11 +119,11 @@ def start(account_id, app_id):
             ip_address=request.remote_addr,
         )
 
-        flash(f'Proxy session started for {domain}.', 'success')
+        flash(_('Proxy session started for %(domain)s.', domain=domain), 'success')
         return redirect(url_for('proxy.session_view', account_id=account_id, app_id=app_id))
 
     except ProxyManagerError as e:
-        flash(f'Failed to start proxy session: {e}', 'danger')
+        flash(_('Failed to start proxy session: %(error)s', error=str(e)), 'danger')
         return redirect(url_for('proxy.launch', account_id=account_id, app_id=app_id))
 
 
@@ -138,7 +139,7 @@ def stop(account_id, app_id):
 
     active_session = get_active_session(current_user.id, account_id, app_id)
     if not active_session:
-        flash('No active session to stop.', 'warning')
+        flash(_('No active session to stop.'), 'warning')
         return redirect(url_for('proxy.launch', account_id=account_id, app_id=app_id))
 
     try:
@@ -153,9 +154,9 @@ def stop(account_id, app_id):
             ip_address=request.remote_addr,
         )
 
-        flash('Proxy session stopped.', 'success')
+        flash(_('Proxy session stopped.'), 'success')
     except ProxyManagerError as e:
-        flash(f'Error stopping session: {e}', 'danger')
+        flash(_('Error stopping session: %(error)s', error=str(e)), 'danger')
 
     return redirect(url_for('proxy.launch', account_id=account_id, app_id=app_id))
 
@@ -172,7 +173,7 @@ def session_view(account_id, app_id):
 
     active_session = get_active_session(current_user.id, account_id, app_id)
     if not active_session:
-        flash('No active proxy session. Please start one first.', 'warning')
+        flash(_('No active proxy session. Please start one first.'), 'warning')
         return redirect(url_for('proxy.launch', account_id=account_id, app_id=app_id))
 
     # Build the noVNC URL — goes through nginx /vnc/<port>/ proxy to the correct websockify

@@ -1,21 +1,21 @@
 {% extends "base.html" %}
-{% block title %}Certificate Details - WaaS Portal{% endblock %}
+{% block title %}{{ _('Certificate Details') }} - WaaS Portal{% endblock %}
 
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb" class="mt-3">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="{{ url_for('certificates.list_certificates') }}">Certificates</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">{{ _('Dashboard') }}</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('certificates.list_certificates') }}">{{ _('Certificates') }}</a></li>
         <li class="breadcrumb-item"><a href="{{ url_for('certificates.list_certificates', account_id=account.id) }}">{{ account.account_name }}</a></li>
-        <li class="breadcrumb-item active">{{ certificate.get('name', 'Certificate') if certificate else 'Details' }}</li>
+        <li class="breadcrumb-item active">{{ certificate.get('name', _('Certificate')) if certificate else _('Details') }}</li>
     </ol>
 </nav>
 {% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
-    <h2><i class="bi bi-file-earmark-lock"></i> Certificate Details</h2>
-    <a href="{{ url_for('certificates.list_certificates', account_id=account.id) }}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+    <h2><i class="bi bi-file-earmark-lock"></i> {{ _('Certificate Details') }}</h2>
+    <a href="{{ url_for('certificates.list_certificates', account_id=account.id) }}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> {{ _('Back') }}</a>
 </div>
 
 {% if error %}
@@ -26,18 +26,18 @@
 <div class="card">
     <div class="card-body">
         <table class="table table-borderless mb-0">
-            <tr><th style="width:30%">Name</th><td>{{ certificate.get('name', 'N/A') }}</td></tr>
+            <tr><th style="width:30%">{{ _('Name') }}</th><td>{{ certificate.get('name', 'N/A') }}</td></tr>
             <tr><th>ID</th><td><code>{{ certificate.get('id', 'N/A') }}</code></td></tr>
-            <tr><th>Common Name</th><td>{{ certificate.get('common_name', certificate.get('commonName', 'N/A')) }}</td></tr>
-            <tr><th>Expiry Date</th><td>{{ certificate.get('expiry', certificate.get('expiryDate', 'N/A')) }}</td></tr>
-            <tr><th>Application</th><td>{{ app_name }}</td></tr>
-            <tr><th>Account</th><td>{{ account.account_name }}</td></tr>
+            <tr><th>{{ _('Common Name') }}</th><td>{{ certificate.get('common_name', certificate.get('commonName', 'N/A')) }}</td></tr>
+            <tr><th>{{ _('Expiry Date') }}</th><td>{{ certificate.get('expiry', certificate.get('expiryDate', 'N/A')) }}</td></tr>
+            <tr><th>{{ _('Application') }}</th><td>{{ app_name }}</td></tr>
+            <tr><th>{{ _('Account') }}</th><td>{{ account.account_name }}</td></tr>
         </table>
     </div>
 </div>
 <div class="card mt-4">
     <div class="card-header">
-        <h5 class="mb-0"><a class="text-decoration-none" data-bs-toggle="collapse" href="#rawData"><i class="bi bi-code-slash"></i> Raw Data</a></h5>
+        <h5 class="mb-0"><a class="text-decoration-none" data-bs-toggle="collapse" href="#rawData"><i class="bi bi-code-slash"></i> {{ _('Raw Data') }}</a></h5>
     </div>
     <div class="collapse" id="rawData">
         <div class="card-body"><pre class="mb-0 bg-light p-3 rounded"><code>{{ certificate|tojson(indent=2) }}</code></pre></div>

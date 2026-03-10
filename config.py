@@ -29,6 +29,10 @@ class Config:
     # Pagination
     ITEMS_PER_PAGE = 20
 
+    # Internationalization
+    BABEL_DEFAULT_LOCALE = 'en'
+    BABEL_SUPPORTED_LOCALES = ['en', 'es']
+
     # File upload (for certificate files)
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max
     UPLOAD_FOLDER = os.path.join(basedir, 'uploads')

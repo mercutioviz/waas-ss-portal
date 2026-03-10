@@ -1,28 +1,28 @@
 {% extends "base.html" %}
-{% block title %}Proxy Session - {{ session.domain }} - WaaS Portal{% endblock %}
+{% block title %}{{ _('Proxy Session') }} - {{ session.domain }} - WaaS Portal{% endblock %}
 
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb" class="mt-3">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="{{ url_for('applications.list_applications', account_id=account.id) }}">Applications</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">{{ _('Dashboard') }}</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('applications.list_applications', account_id=account.id) }}">{{ _('Applications') }}</a></li>
         <li class="breadcrumb-item"><a href="{{ url_for('applications.view_application', account_id=account.id, app_id=app_id) }}">{{ app_id }}</a></li>
-        <li class="breadcrumb-item active">Proxy Session</li>
+        <li class="breadcrumb-item active">{{ _('Proxy Session') }}</li>
     </ol>
 </nav>
 {% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
-    <h2><i class="bi bi-display"></i> Proxy Session: <code>{{ session.domain }}</code></h2>
+    <h2><i class="bi bi-display"></i> {{ _('Proxy Session:') }} <code>{{ session.domain }}</code></h2>
     <div class="d-flex gap-2">
         <a href="{{ url_for('proxy.launch', account_id=account.id, app_id=app_id) }}" class="btn btn-secondary btn-sm">
-            <i class="bi bi-arrow-left"></i> Back
+            <i class="bi bi-arrow-left"></i> {{ _('Back') }}
         </a>
         <form method="POST" action="{{ url_for('proxy.stop', account_id=account.id, app_id=app_id) }}" class="d-inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-danger btn-sm" data-confirm="Stop this proxy session?">
-                <i class="bi bi-stop-circle"></i> Stop Session
+            <button type="submit" class="btn btn-danger btn-sm" data-confirm="{{ _('Stop this proxy session?') }}">
+                <i class="bi bi-stop-circle"></i> {{ _('Stop Session') }}
             </button>
         </form>
     </div>
@@ -32,7 +32,7 @@
 <div class="d-flex flex-wrap gap-3 mb-3 text-muted small">
     <span><i class="bi bi-globe"></i> <strong>{{ session.domain }}</strong> → {{ session.cname_ip }}</span>
     <span><i class="bi bi-hdd-network"></i> CNAME: <code>{{ session.cname }}</code></span>
-    <span><i class="bi bi-clock"></i> Started: {{ session.started_at|datetime_format }}</span>
+    <span><i class="bi bi-clock"></i> {{ _('Started:') }} {{ session.started_at|datetime_format }}</span>
     <span>
         <i class="bi bi-circle-fill text-success"></i>
         <span id="session-status">{{ session.status|title }}</span>
@@ -46,12 +46,12 @@
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center py-2">
-                <span><i class="bi bi-display"></i> Browser View</span>
+                <span><i class="bi bi-display"></i> {{ _('Browser View') }}</span>
                 <div>
-                    <button class="btn btn-outline-secondary btn-sm" onclick="reloadVnc()" title="Reload noVNC">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="reloadVnc()" title="{{ _('Reload noVNC') }}">
                         <i class="bi bi-arrow-clockwise"></i>
                     </button>
-                    <button class="btn btn-outline-secondary btn-sm" onclick="toggleFullscreen()" title="Fullscreen">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="toggleFullscreen()" title="{{ _('Fullscreen') }}">
                         <i class="bi bi-arrows-fullscreen"></i>
                     </button>
                 </div>
@@ -71,10 +71,10 @@
     <div class="col-lg-4">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center py-2">
-                <span><i class="bi bi-shield-exclamation"></i> WAF Logs</span>
+                <span><i class="bi bi-shield-exclamation"></i> {{ _('WAF Logs') }}</span>
                 <div>
                     <span id="log-count" class="badge bg-secondary me-1">0</span>
-                    <button class="btn btn-outline-secondary btn-sm" onclick="refreshLogs()" title="Refresh now">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="refreshLogs()" title="{{ _('Refresh now') }}">
                         <i class="bi bi-arrow-clockwise"></i>
                     </button>
                 </div>
@@ -82,24 +82,24 @@
             <div class="card-body p-0">
                 <!-- Public IP indicator -->
                 <div id="ip-filter-badge" class="px-2 py-1 border-bottom bg-light small" style="display:none;">
-                    <i class="bi bi-funnel"></i> Filtering by proxy IP: <code id="ip-filter-value"></code>
+                    <i class="bi bi-funnel"></i> {{ _('Filtering by proxy IP:') }} <code id="ip-filter-value"></code>
                 </div>
                 <div id="waf-logs-container" style="height:580px; overflow-y:auto; font-size:0.85rem;">
                     <div id="waf-logs-loading" class="text-center text-muted p-4">
                         <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-                        Loading WAF logs...
+                        {{ _('Loading WAF logs...') }}
                     </div>
                     <div id="waf-logs-empty" class="text-center text-muted p-4" style="display:none;">
                         <i class="bi bi-shield-check" style="font-size:2rem;"></i>
-                        <p class="mt-2 mb-0">No WAF events detected yet.<br>
-                        <small>Logs refresh automatically every 5 seconds.</small></p>
+                        <p class="mt-2 mb-0">{{ _('No WAF events detected yet.') }}<br>
+                        <small>{{ _('Logs refresh automatically every 5 seconds.') }}</small></p>
                     </div>
                     <table id="waf-logs-table" class="table table-sm table-hover mb-0" style="display:none;">
                         <thead class="table-light sticky-top">
                             <tr>
-                                <th>Time</th>
-                                <th>Action</th>
-                                <th>Details</th>
+                                <th>{{ _('Time') }}</th>
+                                <th>{{ _('Action') }}</th>
+                                <th>{{ _('Details') }}</th>
                             </tr>
                         </thead>
                         <tbody id="waf-logs-body">
@@ -200,7 +200,7 @@ function refreshLogs() {
 
             if (data.error && data.error !== 'No active session') {
                 empty.innerHTML = '<i class="bi bi-exclamation-triangle text-warning" style="font-size:2rem;"></i>' +
-                    '<p class="mt-2 mb-0">Error loading logs:<br><small>' + data.error + '</small></p>';
+                    '<p class="mt-2 mb-0">{{ _('Error loading logs:') }}<br><small>' + data.error + '</small></p>';
                 empty.style.display = 'block';
                 table.style.display = 'none';
                 return;

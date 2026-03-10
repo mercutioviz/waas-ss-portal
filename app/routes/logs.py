@@ -7,6 +7,7 @@ are listed via the v2 API.
 """
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
+from flask_babel import gettext as _
 from app.models import WaasAccount
 from app.waas_client import WaasClient, WaasApiError
 
@@ -38,7 +39,7 @@ def _get_applications(account):
         result = client.list_applications_v2()
         return result.get('results', [])
     except WaasApiError as e:
-        flash(f'Failed to load applications: {e}', 'danger')
+        flash(_('Failed to load applications: %(error)s', error=str(e)), 'danger')
         return []
 
 

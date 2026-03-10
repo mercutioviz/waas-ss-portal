@@ -22,6 +22,7 @@ class User(UserMixin, db.Model):
     login_count = db.Column(db.Integer, default=0)
     failed_login_attempts = db.Column(db.Integer, default=0)
     last_failed_login = db.Column(db.DateTime)
+    locale = db.Column(db.String(10), default='en')
 
     # Relationships
     waas_accounts = db.relationship('WaasAccount', backref='owner', lazy='dynamic', cascade='all, delete-orphan')

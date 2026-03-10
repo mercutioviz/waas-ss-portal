@@ -1,6 +1,7 @@
 import logging
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
+from flask_babel import gettext as _
 from app.models import WaasAccount, AuditLog
 from app.waas_client import WaasClient, WaasApiError
 from app.forms import ApplicationCreateForm
@@ -56,7 +57,7 @@ def list_applications():
                     # Fall back to v4 if v2 requested but no v2 creds
                     if api_version == 'v2' and not selected_account.has_v2_credentials:
                         api_version = 'v4'
-                        flash('v2 credentials not available — using v4 API.', 'warning')
+                        flash(_('v2 credentials not available — using v4 API.'), 'warning')
                     result = client.list_applications()
                     applications = _parse_app_list(result)
                     logger.info(f'Listed {len(applications)} apps via v4 API')
@@ -69,7 +70,7 @@ def list_applications():
             except WaasApiError as e:
                 error = str(e)
         else:
-            error = 'Account not found or inactive.'
+            error = _('Account not found or inactive.')
 
     return render_template(
         'applications/list.html',
@@ -115,13 +116,13 @@ def view_application(account_id, app_id):
     """View application details (v4 export API)."""
     client, account = get_client_for_account(account_id)
     if not client:
-        flash('Account not found or inactive.', 'danger')
+        flash(_('Account not found or inactive.'), 'danger')
         return redirect(url_for('applications.list_applications'))
 
     try:
         application = client.get_application(app_id)
     except WaasApiError as e:
-        flash(f'Failed to load application: {e}', 'danger')
+        flash(_('Failed to load application: %(error)s', error=str(e)), 'danger')
         return redirect(url_for('applications.list_applications', account_id=account_id))
 
     return render_template(
@@ -137,16 +138,16 @@ def view_application(account_id, app_id):
 def create_application(account_id):
     """Create a new WaaS application via v2 API."""
     if current_user.role == 'viewer':
-        flash('You do not have permission to create applications.', 'danger')
+        flash(_('You do not have permission to create applications.'), 'danger')
         return redirect(url_for('applications.list_applications', account_id=account_id))
 
     client, account = get_client_for_account(account_id)
     if not client:
-        flash('Account not found or inactive.', 'danger')
+        flash(_('Account not found or inactive.'), 'danger')
         return redirect(url_for('applications.list_applications'))
 
     if not account.has_v2_credentials:
-        flash('Application creation requires v2 API credentials (email + password) on this account.', 'warning')
+        flash(_('Application creation requires v2 API credentials (email + password) on this account.'), 'warning')
         return redirect(url_for('applications.list_applications', account_id=account_id))
 
     form = ApplicationCreateForm()
@@ -183,10 +184,10 @@ def create_application(account_id):
                 ip_address=request.remote_addr
             )
 
-            flash(f'Application "{app_name}" created successfully.', 'success')
+            flash(_('Application "%(name)s" created successfully.', name=app_name), 'success')
             return redirect(url_for('applications.list_applications', account_id=account_id))
         except WaasApiError as e:
-            flash(f'Failed to create application: {e}', 'danger')
+            flash(_('Failed to create application: %(error)s', error=str(e)), 'danger')
 
     return render_template(
         'applications/create.html',
@@ -203,16 +204,16 @@ def delete_application(account_id, app_id):
     ``app_id`` is the v2 integer application ID.
     """
     if current_user.role == 'viewer':
-        flash('You do not have permission to delete applications.', 'danger')
+        flash(_('You do not have permission to delete applications.'), 'danger')
         return redirect(url_for('applications.list_applications', account_id=account_id))
 
     client, account = get_client_for_account(account_id)
     if not client:
-        flash('Account not found or inactive.', 'danger')
+        flash(_('Account not found or inactive.'), 'danger')
         return redirect(url_for('applications.list_applications'))
 
     if not account.has_v2_credentials:
-        flash('Application deletion requires v2 API credentials on this account.', 'warning')
+        flash(_('Application deletion requires v2 API credentials on this account.'), 'warning')
         return redirect(url_for('applications.list_applications', account_id=account_id))
 
     app_name = request.form.get('app_name', f'ID {app_id}')
@@ -229,9 +230,9 @@ def delete_application(account_id, app_id):
             ip_address=request.remote_addr
         )
 
-        flash(f'Application "{app_name}" deleted.', 'success')
+        flash(_('Application "%(name)s" deleted.', name=app_name), 'success')
     except WaasApiError as e:
-        flash(f'Failed to delete application: {e}', 'danger')
+        flash(_('Failed to delete application: %(error)s', error=str(e)), 'danger')
 
     return redirect(url_for('applications.list_applications', account_id=account_id))
 
@@ -242,14 +243,14 @@ def security_config(account_id, app_id):
     """View/edit security configuration for an application (v4 API)."""
     client, account = get_client_for_account(account_id)
     if not client:
-        flash('Account not found or inactive.', 'danger')
+        flash(_('Account not found or inactive.'), 'danger')
         return redirect(url_for('applications.list_applications'))
 
     try:
         application = client.get_application(app_id)
         security = client.get_security_config(app_id)
     except WaasApiError as e:
-        flash(f'Failed to load security config: {e}', 'danger')
+        flash(_('Failed to load security config: %(error)s', error=str(e)), 'danger')
         return redirect(url_for('applications.view_application', account_id=account_id, app_id=app_id))
 
     return render_template(
@@ -266,12 +267,12 @@ def security_config(account_id, app_id):
 def update_security_config(account_id, app_id):
     """Update security configuration (v4 API)."""
     if current_user.role == 'viewer':
-        flash('You do not have permission to modify configurations.', 'danger')
+        flash(_('You do not have permission to modify configurations.'), 'danger')
         return redirect(url_for('applications.security_config', account_id=account_id, app_id=app_id))
 
     client, account = get_client_for_account(account_id)
     if not client:
-        flash('Account not found or inactive.', 'danger')
+        flash(_('Account not found or inactive.'), 'danger')
         return redirect(url_for('applications.list_applications'))
 
     try:
@@ -287,9 +288,9 @@ def update_security_config(account_id, app_id):
             ip_address=request.remote_addr
         )
 
-        flash('Security configuration updated.', 'success')
+        flash(_('Security configuration updated.'), 'success')
     except WaasApiError as e:
-        flash(f'Failed to update security config: {e}', 'danger')
+        flash(_('Failed to update security config: %(error)s', error=str(e)), 'danger')
 
     return redirect(url_for('applications.security_config', account_id=account_id, app_id=app_id))
 
@@ -300,14 +301,14 @@ def dns_info(account_id, app_id):
     """View DNS/CNAME information for an application (v4 API)."""
     client, account = get_client_for_account(account_id)
     if not client:
-        flash('Account not found or inactive.', 'danger')
+        flash(_('Account not found or inactive.'), 'danger')
         return redirect(url_for('applications.list_applications'))
 
     try:
         application = client.get_application(app_id)
         dns = client.get_dns_info(app_id)
     except WaasApiError as e:
-        flash(f'Failed to load DNS info: {e}', 'danger')
+        flash(_('Failed to load DNS info: %(error)s', error=str(e)), 'danger')
         return redirect(url_for('applications.view_application', account_id=account_id, app_id=app_id))
 
     return render_template(

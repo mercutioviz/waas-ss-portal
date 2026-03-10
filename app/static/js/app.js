@@ -102,7 +102,10 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             if (countEl) {
                 if (query) {
-                    countEl.textContent = 'Showing ' + visibleCount + ' of ' + totalRows;
+                    var msg = (window.i18n && window.i18n.showing_x_of_y)
+                        ? window.i18n.showing_x_of_y.replace('%(visible)s', visibleCount).replace('%(total)s', totalRows)
+                        : 'Showing ' + visibleCount + ' of ' + totalRows;
+                    countEl.textContent = msg;
                     countEl.style.display = '';
                 } else {
                     countEl.style.display = 'none';

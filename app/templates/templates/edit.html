@@ -1,20 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Edit {{ template.name }} - Config Templates - WaaS Portal{% endblock %}
+{% block title %}{{ _('Edit') }} {{ template.name }} - {{ _('Config Templates') }} - WaaS Portal{% endblock %}
 
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb" class="mt-3">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="{{ url_for('templates.list_templates') }}">Config Templates</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">{{ _('Dashboard') }}</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('templates.list_templates') }}">{{ _('Config Templates') }}</a></li>
         <li class="breadcrumb-item"><a href="{{ url_for('templates.view_template', template_id=template.id) }}">{{ template.name }}</a></li>
-        <li class="breadcrumb-item active">Edit</li>
+        <li class="breadcrumb-item active">{{ _('Edit') }}</li>
     </ol>
 </nav>
 {% endblock %}
 
 {% block content %}
 <div class="mt-4 mb-4">
-    <h2><i class="bi bi-pencil-square"></i> Edit Template</h2>
+    <h2><i class="bi bi-pencil-square"></i> {{ _('Edit Template') }}</h2>
 </div>
 
 <div class="card">
@@ -42,13 +42,13 @@
             <div class="mb-3 form-check">
                 {{ form.is_global() }}
                 {{ form.is_global.label(class="form-check-label") }}
-                <div class="form-text">Global templates are visible to all users.</div>
+                <div class="form-text">{{ _('Global templates are visible to all users.') }}</div>
             </div>
             {% endif %}
 
             <div class="d-flex gap-2">
                 {{ form.submit() }}
-                <a href="{{ url_for('templates.view_template', template_id=template.id) }}" class="btn btn-secondary">Cancel</a>
+                <a href="{{ url_for('templates.view_template', template_id=template.id) }}" class="btn btn-secondary">{{ _('Cancel') }}</a>
             </div>
         </form>
     </div>

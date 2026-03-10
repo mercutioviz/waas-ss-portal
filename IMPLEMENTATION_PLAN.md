@@ -141,60 +141,31 @@ All WaaS API calls now use the correct endpoints. Users see API version badges i
 
 ---
 
-### Phase 6: Internationalization (i18n) ⬅️ NEXT
+### Phase 6: Internationalization (i18n) ✅ DONE
 
 **Goal:** Make the UI translatable so the portal can be used in multiple languages.
 
-#### 6.1 — Flask-Babel Setup
+**What was built:**
 
-| # | Task | Files |
-|---|------|-------|
-| 6.1.1 | Install Flask-Babel, add to `requirements.txt` | `requirements.txt` |
-| 6.1.2 | Initialize Babel in `create_app()` | `app/__init__.py` |
-|       | Configure `BABEL_DEFAULT_LOCALE = 'en'`, `BABEL_SUPPORTED_LOCALES = ['en', ...]` |
-|       | Add locale selector function (from user preference, Accept-Language header, or session) |
-| 6.1.3 | Create `babel.cfg` extraction config | `babel.cfg` |
-|       | Map Jinja2 templates and Python source files for string extraction |
-| 6.1.4 | Add `LOCALE` field to `User` model (nullable, defaults to `'en'`) | `app/models.py` |
-| 6.1.5 | Add language selector to user profile / navbar | `app/templates/base.html`, `app/routes/auth.py` |
+- **Flask-Babel 4.0.0** integrated with locale selector chain: `User.locale` → `session['locale']` → `Accept-Language` header → `'en'` default
+- **606 translatable strings** extracted and fully translated to Spanish (es)
+- **All 40 HTML templates** wrapped with `{{ _('...') }}`
+- **All 83 flash messages** across 9 route files wrapped with `_()`
+- **All 61 form fields** (labels, placeholders, validators, choices) wrapped with `_l()`
+- **JavaScript strings** translated via `window.i18n` dict rendered in `base.html`
+- **Language switcher** dropdown in navbar for both authenticated and anonymous users
+- **`/auth/set-locale` POST endpoint** saves preference to session and `User.locale` (if authenticated)
+- **`User.locale`** column added for per-user language persistence
+- **`babel.cfg`** extraction config for `.py` and `.html` files
+- **Translation files** in `app/translations/es/LC_MESSAGES/` (`.po` and `.mo`)
 
-#### 6.2 — Mark Strings for Translation
-
-| # | Task | Files |
-|---|------|-------|
-| 6.2.1 | Wrap Python flash messages and form labels with `_()` / `gettext()` | All route files in `app/routes/`, `app/forms.py` |
-| 6.2.2 | Wrap template UI strings with `{{ _('...') }}` | All templates in `app/templates/` |
-|       | Targets: nav labels, headings, button text, table headers, empty-state messages, error pages, modal text |
-|       | Do NOT translate: user data, API field names, technical identifiers |
-| 6.2.3 | Wrap JavaScript strings with a `gettext()` helper | `app/static/js/app.js` |
-|       | Expose translations via a `<script>` block in `base.html` or a `/translations.js` endpoint |
-
-#### 6.3 — Extract and Compile Translations
-
-| # | Task | Files |
-|---|------|-------|
-| 6.3.1 | Run `pybabel extract` to generate `messages.pot` | `translations/messages.pot` |
-| 6.3.2 | Initialize first translation catalog (e.g., `es`, `fr`, `de`, `ja`) | `translations/<lang>/LC_MESSAGES/messages.po` |
-| 6.3.3 | Translate `.po` file (manual or machine-assisted) | `.po` files |
-| 6.3.4 | Compile with `pybabel compile` | `.mo` files |
-| 6.3.5 | Add Babel CLI commands to `CLAUDE.md` and document workflow | `CLAUDE.md` |
-
-#### 6.4 — Language Switching
-
-| # | Task | Files |
-|---|------|-------|
-| 6.4.1 | Add `/auth/set-language` POST endpoint | `app/routes/auth.py` |
-|       | Saves preference to `User.locale` (if logged in) or session (if anonymous) |
-| 6.4.2 | Add language dropdown in navbar (flag icons or language codes) | `app/templates/base.html` |
-| 6.4.3 | Login page language selector (for unauthenticated users) | `app/templates/auth/login.html` |
-
-#### Implementation Notes
-
-- **Flask-Babel** handles locale selection, message extraction, and Jinja2 integration.
-- **Translation workflow:** `pybabel extract` → `pybabel init/update` → translate `.po` → `pybabel compile`. This can be scripted as a Makefile target or Flask CLI command.
-- **Scope of first pass:** Start with English as the base. Mark all strings in Phase 6.2 but only create one additional language initially to validate the pipeline. More languages can be added later by translating `.po` files.
-- **Date/number formatting:** Flask-Babel provides `format_datetime()`, `format_decimal()`, etc. Update template filters to be locale-aware.
-- **RTL support:** Not in initial scope. Can be added later with a CSS class toggle on `<html>` for Arabic/Hebrew if needed.
+**Translation workflow:**
+```bash
+pybabel extract -F babel.cfg -k _l -o app/translations/messages.pot .
+pybabel update -i app/translations/messages.pot -d app/translations
+# Edit .po files...
+pybabel compile -d app/translations
+```
 
 ---
 
@@ -240,11 +211,11 @@ All WaaS API calls now use the correct endpoints. Users see API version badges i
 - v2 uses integer app IDs; v4 uses app names as identifiers
 
 ### Translation Workflow (i18n)
-1. Mark new strings with `_()` in Python or `{{ _('...') }}` in templates
-2. Run `pybabel extract -F babel.cfg -o translations/messages.pot .`
-3. Run `pybabel update -i translations/messages.pot -d translations`
-4. Edit `.po` files in `translations/<lang>/LC_MESSAGES/`
-5. Run `pybabel compile -d translations`
+1. Mark new strings with `_()` in Python or `{{ _('...') }}` in templates; use `_l()` for class-definition-time strings (form labels, validators)
+2. Run `pybabel extract -F babel.cfg -k _l -o app/translations/messages.pot .`
+3. Run `pybabel update -i app/translations/messages.pot -d app/translations`
+4. Edit `.po` files in `app/translations/<lang>/LC_MESSAGES/`
+5. Run `pybabel compile -d app/translations`
 
 ### Template Checklist for New Pages
 - [ ] Extends `base.html`

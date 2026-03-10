@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -341,7 +342,6 @@ class SystemSettings(db.Model):
         elif setting.value_type == 'int':
             return int(setting.value)
         elif setting.value_type == 'json':
-            import json
             return json.loads(setting.value)
         return setting.value
 
@@ -354,7 +354,6 @@ class SystemSettings(db.Model):
         if value_type == 'bool':
             str_value = 'true' if value else 'false'
         elif value_type == 'json':
-            import json
             str_value = json.dumps(value)
         else:
             str_value = str(value)
@@ -388,8 +387,40 @@ class SystemSettings(db.Model):
             elif setting.value_type == 'int':
                 settings[setting.key] = int(setting.value)
             elif setting.value_type == 'json':
-                import json
                 settings[setting.key] = json.loads(setting.value)
             else:
                 settings[setting.key] = setting.value
         return settings
+
+
+class ConfigTemplate(db.Model):
+    """Model for reusable WaaS application configuration templates"""
+    __tablename__ = 'config_templates'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    config_data = db.Column(db.Text, nullable=False, default='{}')
+    is_global = db.Column(db.Boolean, default=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationship
+    user = db.relationship('User', backref=db.backref('config_templates', lazy='dynamic'))
+
+    def __repr__(self):
+        return f'<ConfigTemplate {self.id}: {self.name}>'
+
+    @property
+    def config_dict(self):
+        """Parse config_data JSON string into a dict"""
+        try:
+            return json.loads(self.config_data) if self.config_data else {}
+        except (json.JSONDecodeError, TypeError):
+            return {}
+
+    @config_dict.setter
+    def config_dict(self, value):
+        """Serialize dict to JSON string for storage"""
+        self.config_data = json.dumps(value, indent=2)

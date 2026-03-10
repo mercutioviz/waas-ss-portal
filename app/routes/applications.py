@@ -82,6 +82,33 @@ def list_applications():
     )
 
 
+@bp.route('/api/list')
+@login_required
+def api_list_applications():
+    """JSON endpoint returning app names for a given account_id."""
+    account_id = request.args.get('account_id', type=int)
+    if not account_id:
+        return jsonify({'applications': [], 'error': 'account_id required'}), 400
+
+    client, account = get_client_for_account(account_id)
+    if not client:
+        return jsonify({'applications': [], 'error': 'Account not found or inactive'}), 404
+
+    try:
+        result = client.list_applications()
+        apps = _parse_app_list(result)
+        app_list = []
+        for app in apps:
+            if isinstance(app, dict):
+                app_list.append({
+                    'name': app.get('name', ''),
+                    'app_group': app.get('app_group', ''),
+                })
+        return jsonify({'applications': app_list})
+    except WaasApiError as e:
+        return jsonify({'applications': [], 'error': str(e)}), 500
+
+
 @bp.route('/<int:account_id>/<app_id>')
 @login_required
 def view_application(account_id, app_id):

@@ -344,6 +344,18 @@ class WaasClient:
             'include_endpoints': 'true'
         })
 
+    def import_application(self, app_id, data, include_servers=False, include_endpoints=False):
+        """Import (merge) partial config into an existing application.
+
+        Uses PATCH /applications/{appName}/import/ which merges the provided
+        JSON into the app config without replacing missing fields with defaults.
+        """
+        params = {
+            'include_servers': 'true' if include_servers else 'false',
+            'include_endpoints': 'true' if include_endpoints else 'false'
+        }
+        return self._make_request('PATCH', f'/applications/{app_id}/import/', data=data, params=params)
+
     def create_application(self, data):
         """Create a new application"""
         return self._make_request('POST', '/applications/', data=data)

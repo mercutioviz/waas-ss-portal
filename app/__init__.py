@@ -117,7 +117,7 @@ def create_app(config_name='default'):
         return {'csrf_token': generate_csrf}
 
     # Register blueprints
-    from app.routes import main, auth, admin, accounts, applications, certificates, logs, proxy
+    from app.routes import main, auth, admin, accounts, applications, certificates, logs, proxy, templates
     app.register_blueprint(main.bp)
     app.register_blueprint(auth.bp)
     app.register_blueprint(admin.bp)
@@ -126,6 +126,7 @@ def create_app(config_name='default'):
     app.register_blueprint(certificates.bp)
     app.register_blueprint(logs.bp)
     app.register_blueprint(proxy.bp)
+    app.register_blueprint(templates.bp)
 
     # Register error handlers
     @app.errorhandler(404)

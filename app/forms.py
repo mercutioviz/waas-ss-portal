@@ -328,3 +328,49 @@ class ApplicationCreateForm(FlaskForm):
     use_http = BooleanField('Create HTTP Endpoint', default=True, render_kw={'class': 'form-check-input'})
     redirect_http = BooleanField('Redirect HTTP to HTTPS', default=True, render_kw={'class': 'form-check-input'})
     submit = SubmitField('Create Application', render_kw={'class': 'btn btn-primary'})
+
+
+class ConfigTemplateForm(FlaskForm):
+    """Form for creating/editing a config template"""
+    name = StringField(
+        'Template Name',
+        validators=[DataRequired(), Length(max=100)],
+        render_kw={'placeholder': 'e.g., Hardened Security Profile', 'class': 'form-control'}
+    )
+    description = TextAreaField(
+        'Description',
+        validators=[Optional(), Length(max=500)],
+        render_kw={'placeholder': 'Describe what this template configures...', 'class': 'form-control', 'rows': '3'}
+    )
+    is_global = BooleanField(
+        'Global Template (visible to all users)',
+        default=False,
+        render_kw={'class': 'form-check-input'}
+    )
+    submit = SubmitField('Save Template', render_kw={'class': 'btn btn-primary'})
+
+
+class TemplateFromAppForm(FlaskForm):
+    """Form for creating a template from a live application export"""
+    name = StringField(
+        'Template Name',
+        validators=[DataRequired(), Length(max=100)],
+        render_kw={'placeholder': 'e.g., Hardened Security Profile', 'class': 'form-control'}
+    )
+    description = TextAreaField(
+        'Description',
+        validators=[Optional(), Length(max=500)],
+        render_kw={'placeholder': 'Describe what this template configures...', 'class': 'form-control', 'rows': '3'}
+    )
+    is_global = BooleanField(
+        'Global Template (visible to all users)',
+        default=False,
+        render_kw={'class': 'form-check-input'}
+    )
+    include_basic_security = BooleanField('Basic Security (protection mode)', default=True, render_kw={'class': 'form-check-input'})
+    include_request_limits = BooleanField('Request Limits', default=True, render_kw={'class': 'form-check-input'})
+    include_clickjacking = BooleanField('Clickjacking Protection', default=True, render_kw={'class': 'form-check-input'})
+    include_data_theft = BooleanField('Data Theft Protection', default=True, render_kw={'class': 'form-check-input'})
+    include_servers = BooleanField('Backend Servers', default=False, render_kw={'class': 'form-check-input'})
+    include_endpoints = BooleanField('Endpoints Configuration', default=False, render_kw={'class': 'form-check-input'})
+    submit = SubmitField('Create Template', render_kw={'class': 'btn btn-primary'})

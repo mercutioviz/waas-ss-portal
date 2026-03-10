@@ -52,6 +52,12 @@
                             <i class="bi bi-journal-text"></i> Logs
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint and request.endpoint.startswith('templates.') %}active{% endif %}"
+                           href="{{ url_for('templates.list_templates') }}">
+                            <i class="bi bi-file-earmark-code"></i> Templates
+                        </a>
+                    </li>
                     {% if current_user.role == 'admin' %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {% if request.endpoint and request.endpoint.startswith('admin.') %}active{% endif %}"

@@ -58,11 +58,11 @@
             </div>
             <div class="col-auto">
                 <label class="form-label form-label-sm mb-0">{{ _('Client IP') }}</label>
-                <input type="text" name="client_ip" value="{{ client_ip }}" class="form-control form-control-sm" placeholder="e.g. 1.2.3.4" style="width:160px">
+                <input type="text" name="client_ip" value="{{ client_ip }}" class="form-control form-control-sm filter-ip-input" placeholder="e.g. 1.2.3.4">
             </div>
             <div class="col-auto">
                 <label class="form-label form-label-sm mb-0">{{ _('Per Page') }}</label>
-                <select name="per_page" class="form-select form-select-sm" style="width:80px">
+                <select name="per_page" class="form-select form-select-sm filter-perpage-select">
                     {% for n in [25, 50, 100, 200] %}
                     <option value="{{ n }}" {% if n == per_page %}selected{% endif %}>{{ n }}</option>
                     {% endfor %}
@@ -107,15 +107,15 @@
                     <tr>
                         <th>{{ _('Timestamp') }}</th>
                         <th>{{ _('Client IP') }}</th>
-                        <th>{{ _('Country') }}</th>
-                        <th>{{ _('Method') }}</th>
+                        <th class="d-none d-lg-table-cell">{{ _('Country') }}</th>
+                        <th class="d-none d-md-table-cell">{{ _('Method') }}</th>
                         <th>URL</th>
                         <th>{{ _('Status') }}</th>
-                        <th>{{ _('Bytes Sent') }}</th>
-                        <th>{{ _('Time (ms)') }}</th>
-                        <th>{{ _('Protocol') }}</th>
-                        <th>{{ _('Protected') }}</th>
-                        <th>{{ _('Response') }}</th>
+                        <th class="d-none d-md-table-cell">{{ _('Bytes Sent') }}</th>
+                        <th class="d-none d-lg-table-cell">{{ _('Time (ms)') }}</th>
+                        <th class="d-none d-lg-table-cell">{{ _('Protocol') }}</th>
+                        <th class="d-none d-md-table-cell">{{ _('Protected') }}</th>
+                        <th class="d-none d-lg-table-cell">{{ _('Response') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -123,10 +123,10 @@
                     <tr>
                         <td><small>{{ log.get('EpochTime')|epoch_ms }}</small></td>
                         <td><code>{{ log.get('ClientIP', '') }}</code></td>
-                        <td>
+                        <td class="d-none d-lg-table-cell">
                             <small title="{{ log.get('countryName', '') }}">{{ log.get('ClientIP_country_code', '') }}</small>
                         </td>
-                        <td><span class="badge bg-secondary">{{ log.get('Method', '') }}</span></td>
+                        <td class="d-none d-md-table-cell"><span class="badge bg-secondary">{{ log.get('Method', '') }}</span></td>
                         <td>
                             <small class="text-truncate d-inline-block" style="max-width:250px" title="{{ log.get('URL', '') }}">
                                 {{ log.get('URL', '')|null_dash }}
@@ -138,16 +138,16 @@
                                 {{ sc }}
                             </span>
                         </td>
-                        <td><small>{{ log.get('BytesSent', 0)|filesizeformat }}</small></td>
-                        <td><small>{{ log.get('TimeTaken', 0) }}</small></td>
-                        <td><small>{{ log.get('Protocol', '') }}</small></td>
-                        <td>
+                        <td class="d-none d-md-table-cell"><small>{{ log.get('BytesSent', 0)|filesizeformat }}</small></td>
+                        <td class="d-none d-lg-table-cell"><small>{{ log.get('TimeTaken', 0) }}</small></td>
+                        <td class="d-none d-lg-table-cell"><small>{{ log.get('Protocol', '') }}</small></td>
+                        <td class="d-none d-md-table-cell">
                             {% set prot = log.get('Protected', '') %}
                             <span class="badge {% if prot == 'PROTECTED' %}bg-success{% elif prot == 'UNPROTECTED' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
                                 {{ prot }}
                             </span>
                         </td>
-                        <td><small>{{ log.get('ResponseType', '')|null_dash }}</small></td>
+                        <td class="d-none d-lg-table-cell"><small>{{ log.get('ResponseType', '')|null_dash }}</small></td>
                     </tr>
                     {% endfor %}
                 </tbody>

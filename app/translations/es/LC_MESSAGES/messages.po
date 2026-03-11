@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-03-10 12:05+0000\n"
+"POT-Creation-Date: 2026-03-11 19:07+0000\n"
 "PO-Revision-Date: 2026-03-10 01:11+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: es <LL@li.org>\n"
@@ -294,7 +294,7 @@ msgid "Upload Certificate"
 msgstr "Subir certificado"
 
 #: app/forms.py:291 app/templates/applications/create.html:25
-#: app/templates/applications/list.html:98
+#: app/templates/applications/list.html:108
 msgid "Application Name"
 msgstr "Nombre de la aplicación"
 
@@ -326,9 +326,11 @@ msgstr "Puerto del backend"
 msgid "Backend Protocol"
 msgstr "Protocolo del backend"
 
-#: app/forms.py:319 app/templates/applications/create.html:65
+#: app/forms.py:319 app/templates/applications/compare.html:49
+#: app/templates/applications/compare.html:63
+#: app/templates/applications/create.html:65
 #: app/templates/applications/security.html:30
-#: app/templates/applications/security.html:140
+#: app/templates/applications/security.html:142
 msgid "Protection Mode"
 msgstr "Modo de protección"
 
@@ -355,7 +357,7 @@ msgstr "Redirigir HTTP a HTTPS"
 #: app/forms.py:331 app/templates/applications/create.html:2
 #: app/templates/applications/create.html:8
 #: app/templates/applications/list.html:49
-#: app/templates/applications/list.html:180
+#: app/templates/applications/list.html:195
 msgid "Create Application"
 msgstr "Crear aplicación"
 
@@ -407,15 +409,18 @@ msgstr "Guardar plantilla"
 msgid "Basic Security (protection mode)"
 msgstr "Seguridad básica (modo de protección)"
 
-#: app/forms.py:383 app/templates/applications/security.html:85
+#: app/forms.py:383 app/templates/applications/compare.html:77
+#: app/templates/applications/security.html:85
 msgid "Request Limits"
 msgstr "Límites de solicitudes"
 
-#: app/forms.py:384 app/templates/applications/security.html:48
+#: app/forms.py:384 app/templates/applications/compare.html:108
+#: app/templates/applications/security.html:48
 msgid "Clickjacking Protection"
 msgstr "Protección contra clickjacking"
 
-#: app/forms.py:385 app/templates/applications/security.html:63
+#: app/forms.py:385 app/templates/applications/compare.html:140
+#: app/templates/applications/security.html:63
 msgid "Data Theft Protection"
 msgstr "Protección contra robo de datos"
 
@@ -533,8 +538,9 @@ msgstr "Credenciales v2 no disponibles — usando API v4."
 #: app/routes/applications.py:73 app/routes/applications.py:119
 #: app/routes/applications.py:146 app/routes/applications.py:212
 #: app/routes/applications.py:246 app/routes/applications.py:275
-#: app/routes/applications.py:304 app/routes/certificates.py:44
-#: app/routes/templates.py:219 app/routes/templates.py:314
+#: app/routes/applications.py:348 app/routes/applications.py:382
+#: app/routes/certificates.py:44 app/routes/templates.py:219
+#: app/routes/templates.py:314
 msgid "Account not found or inactive."
 msgstr "Cuenta no encontrada o inactiva."
 
@@ -593,16 +599,25 @@ msgstr "Error al cargar la configuración de seguridad: %(error)s"
 msgid "You do not have permission to modify configurations."
 msgstr "No tiene permiso para modificar configuraciones."
 
-#: app/routes/applications.py:291
+#: app/routes/applications.py:320
 msgid "Security configuration updated."
 msgstr "Configuración de seguridad actualizada."
 
-#: app/routes/applications.py:293
+#: app/routes/applications.py:322
 #, python-format
 msgid "Failed to update security config: %(error)s"
 msgstr "Error al actualizar la configuración de seguridad: %(error)s"
 
-#: app/routes/applications.py:311
+#: app/routes/applications.py:354
+msgid "Please select exactly 2 applications to compare."
+msgstr "Por favor, seleccione exactamente 2 aplicaciones para comparar."
+
+#: app/routes/applications.py:364
+#, python-format
+msgid "Failed to load config for %(name)s: %(error)s"
+msgstr "Error al cargar la configuración de %(name)s: %(error)s"
+
+#: app/routes/applications.py:389
 #, python-format
 msgid "Failed to load DNS info: %(error)s"
 msgstr "Error al cargar la información DNS: %(error)s"
@@ -831,6 +846,7 @@ msgid "Template \"%(name)s\" imported successfully."
 msgstr "Plantilla \"%(name)s\" importada exitosamente."
 
 #: app/templates/accounts/rotate_key.html:7
+#: app/templates/applications/compare.html:7
 #: app/templates/applications/list.html:7
 #: app/templates/applications/view.html:7 app/templates/base.html:28
 #: app/templates/certificates/list.html:7
@@ -852,6 +868,7 @@ msgstr "Panel de control"
 msgid "Accounts"
 msgstr "Cuentas"
 
+#: app/templates/applications/compare.html:8
 #: app/templates/applications/list.html:2
 #: app/templates/applications/list.html:9
 #: app/templates/applications/list.html:12
@@ -908,6 +925,7 @@ msgid "Logout"
 msgstr "Cerrar sesión"
 
 #: app/templates/base.html:162 app/templates/base.html:214
+#: app/templates/templates/view.html:158
 msgid "Close"
 msgstr "Cerrar"
 
@@ -960,7 +978,7 @@ msgid "Confirm"
 msgstr "Confirmar"
 
 #: app/templates/base.html:229 app/templates/base.html:231
-#: app/templates/templates/view.html:147
+#: app/templates/templates/view.html:179 app/templates/templates/view.html:225
 msgid "Loading..."
 msgstr "Cargando..."
 
@@ -1100,7 +1118,7 @@ msgstr "Expirado"
 msgid "days"
 msgstr "días"
 
-#: app/templates/applications/list.html:150
+#: app/templates/applications/list.html:165
 #: app/templates/certificates/list.html:92 app/templates/dashboard.html:233
 #: app/templates/templates/list.html:113
 msgid "View"
@@ -1249,7 +1267,7 @@ msgid "Last Verified"
 msgstr "Última verificación"
 
 #: app/templates/accounts/list.html:21 app/templates/admin/users.html:15
-#: app/templates/applications/list.html:106
+#: app/templates/applications/list.html:116
 #: app/templates/certificates/list.html:64
 #: app/templates/templates/list.html:48 app/templates/templates/list.html:102
 msgid "Actions"
@@ -1270,6 +1288,7 @@ msgid "Add a WaaS API account to get started."
 msgstr "Agregue una cuenta API de WaaS para comenzar."
 
 #: app/templates/accounts/rotate_key.html:24
+#: app/templates/applications/compare.html:23
 #: app/templates/applications/dns.html:13
 #: app/templates/applications/list.html:43
 #: app/templates/applications/security.html:20
@@ -1473,6 +1492,26 @@ msgstr "Deshabilitado"
 msgid "No users found."
 msgstr "No se encontraron usuarios."
 
+#: app/templates/applications/compare.html:2
+#: app/templates/applications/compare.html:16
+msgid "Compare Applications"
+msgstr "Comparar aplicaciones"
+
+#: app/templates/applications/compare.html:9
+msgid "Compare"
+msgstr "Comparar"
+
+#: app/templates/applications/compare.html:18
+msgid "Back to Applications"
+msgstr "Volver a aplicaciones"
+
+#: app/templates/applications/compare.html:54
+#: app/templates/applications/compare.html:82
+#: app/templates/applications/compare.html:113
+#: app/templates/applications/compare.html:145
+msgid "Setting"
+msgstr "Configuración"
+
 #: app/templates/applications/create.html:14
 msgid "Creating application on account"
 msgstr "Creando aplicación en la cuenta"
@@ -1612,7 +1651,7 @@ msgstr ""
 "tiempo para la propagación DNS."
 
 #: app/templates/applications/dns.html:127
-#: app/templates/applications/security.html:165
+#: app/templates/applications/security.html:295
 #: app/templates/applications/view.html:369
 msgid "Raw API Data"
 msgstr "Datos sin procesar de la API"
@@ -1632,13 +1671,13 @@ msgstr "No hay cuentas WaaS configuradas."
 
 #: app/templates/applications/list.html:24
 #: app/templates/certificates/list.html:24 app/templates/logs/index.html:26
-#: app/templates/templates/view.html:128
+#: app/templates/templates/view.html:129
 msgid "Add an account"
 msgstr "Agregar una cuenta"
 
 #: app/templates/applications/list.html:24
 #: app/templates/certificates/list.html:24 app/templates/logs/index.html:26
-#: app/templates/templates/view.html:128
+#: app/templates/templates/view.html:129
 msgid "first."
 msgstr "primero."
 
@@ -1668,50 +1707,58 @@ msgstr "Muestra IDs de aplicaciones v2 — requerido para crear/eliminar"
 msgid "API version"
 msgstr "Versión de API"
 
-#: app/templates/applications/list.html:85
+#: app/templates/applications/list.html:86
 msgid "Filter applications..."
 msgstr "Filtrar aplicaciones..."
 
-#: app/templates/applications/list.html:96
+#: app/templates/applications/list.html:92
+msgid "Compare Selected"
+msgstr "Comparar seleccionados"
+
+#: app/templates/applications/list.html:106
 msgid "ID"
 msgstr "ID"
 
-#: app/templates/applications/list.html:99
+#: app/templates/applications/list.html:109
 #: app/templates/applications/view.html:40 app/templates/logs/index.html:69
 msgid "Group"
 msgstr "Grupo"
 
-#: app/templates/applications/list.html:101
-#: app/templates/applications/list.html:104
+#: app/templates/applications/list.html:111
+#: app/templates/applications/list.html:114
 msgid "Servers"
 msgstr "Servidores"
 
-#: app/templates/applications/list.html:102
+#: app/templates/applications/list.html:112
 #: app/templates/applications/view.html:49
 msgid "Server Health"
 msgstr "Estado del servidor"
 
-#: app/templates/applications/list.html:133
+#: app/templates/applications/list.html:127
+msgid "Select for comparison"
+msgstr "Seleccionar para comparar"
+
+#: app/templates/applications/list.html:148
 #: app/templates/applications/view.html:52
 msgid "All Up"
 msgstr "Todos activos"
 
-#: app/templates/applications/list.html:135
+#: app/templates/applications/list.html:150
 #: app/templates/applications/view.html:54
 #: app/templates/applications/view.html:147
 msgid "Up"
 msgstr "Activo"
 
-#: app/templates/applications/list.html:137
+#: app/templates/applications/list.html:152
 #: app/templates/applications/view.html:56
 msgid "All Down"
 msgstr "Todos caídos"
 
-#: app/templates/applications/list.html:149
+#: app/templates/applications/list.html:164
 msgid "View (v4 API)"
 msgstr "Ver (API v4)"
 
-#: app/templates/applications/list.html:155
+#: app/templates/applications/list.html:170
 #, python-format
 msgid ""
 "Are you sure you want to delete application &quot;%(name)s&quot;? This "
@@ -1720,16 +1767,16 @@ msgstr ""
 "¿Está seguro de que desea eliminar la aplicación &quot;%(name)s&quot;? Esta "
 "acción no se puede deshacer."
 
-#: app/templates/applications/list.html:158
+#: app/templates/applications/list.html:173
 msgid "Delete (v2 API)"
 msgstr "Eliminar (API v2)"
 
-#: app/templates/applications/list.html:176
+#: app/templates/applications/list.html:191
 #: app/templates/templates/bulk_apply.html:91
 msgid "No Applications Found"
 msgstr "No se encontraron aplicaciones"
 
-#: app/templates/applications/list.html:177
+#: app/templates/applications/list.html:192
 msgid "This account has no applications configured in WaaS."
 msgstr "Esta cuenta no tiene aplicaciones configuradas en WaaS."
 
@@ -1751,70 +1798,101 @@ msgid "Save as Template"
 msgstr "Guardar como plantilla"
 
 #: app/templates/applications/security.html:90
+#: app/templates/applications/security.html:179
 msgid "Max Request Length"
 msgstr "Longitud máxima de solicitud"
 
 #: app/templates/applications/security.html:94
+#: app/templates/applications/security.html:184
 msgid "Max Request Line Length"
 msgstr "Longitud máxima de línea de solicitud"
 
 #: app/templates/applications/security.html:98
+#: app/templates/applications/security.html:189
 msgid "Max URL Length"
 msgstr "Longitud máxima de URL"
 
 #: app/templates/applications/security.html:102
+#: app/templates/applications/security.html:194
 msgid "Max Number of Headers"
 msgstr "Número máximo de encabezados"
 
 #: app/templates/applications/security.html:106
+#: app/templates/applications/security.html:199
 msgid "Max Header Value Length"
 msgstr "Longitud máxima de valor de encabezado"
 
 #: app/templates/applications/security.html:110
+#: app/templates/applications/security.html:204
 msgid "Max Cookie Name Length"
 msgstr "Longitud máxima de nombre de cookie"
 
 #: app/templates/applications/security.html:114
+#: app/templates/applications/security.html:209
 msgid "Max Cookie Value Length"
 msgstr "Longitud máxima de valor de cookie"
 
-#: app/templates/applications/security.html:130
+#: app/templates/applications/security.html:131
 msgid "Edit Protection Mode"
 msgstr "Editar modo de protección"
 
-#: app/templates/applications/security.html:142
+#: app/templates/applications/security.html:144
 msgid "Active (block attacks)"
 msgstr "Activo (bloquear ataques)"
 
-#: app/templates/applications/security.html:143
+#: app/templates/applications/security.html:145
 msgid "Passive (log only)"
 msgstr "Pasivo (solo registrar)"
 
-#: app/templates/applications/security.html:146
+#: app/templates/applications/security.html:148
 msgid "Active:"
 msgstr "Activo:"
 
-#: app/templates/applications/security.html:146
+#: app/templates/applications/security.html:148
 msgid "Malicious requests are blocked."
 msgstr "Las solicitudes maliciosas son bloqueadas."
 
-#: app/templates/applications/security.html:147
+#: app/templates/applications/security.html:149
 msgid "Passive:"
 msgstr "Pasivo:"
 
-#: app/templates/applications/security.html:147
+#: app/templates/applications/security.html:149
 msgid "Attacks are logged but not blocked — useful for tuning."
 msgstr "Los ataques se registran pero no se bloquean — útil para ajustes."
 
-#: app/templates/applications/security.html:152
-msgid "Update Security Config"
-msgstr "Actualizar configuración de seguridad"
+#: app/templates/applications/security.html:154
+msgid "Update Protection Mode"
+msgstr "Actualizar modo de protección"
 
-#: app/templates/applications/security.html:180
+#: app/templates/applications/security.html:167
+msgid "Edit Request Limits"
+msgstr "Editar límites de solicitudes"
+
+#: app/templates/applications/security.html:216
+msgid "Update Request Limits"
+msgstr "Actualizar límites de solicitudes"
+
+#: app/templates/applications/security.html:229
+msgid "Edit Clickjacking Protection"
+msgstr "Editar protección contra clickjacking"
+
+#: app/templates/applications/security.html:249
+msgid "Update Clickjacking Protection"
+msgstr "Actualizar protección contra clickjacking"
+
+#: app/templates/applications/security.html:262
+msgid "Edit Data Theft Protection"
+msgstr "Editar protección contra robo de datos"
+
+#: app/templates/applications/security.html:282
+msgid "Update Data Theft Protection"
+msgstr "Actualizar protección contra robo de datos"
+
+#: app/templates/applications/security.html:310
 msgid "No Security Configuration"
 msgstr "Sin configuración de seguridad"
 
-#: app/templates/applications/security.html:181
+#: app/templates/applications/security.html:311
 msgid "Could not retrieve security configuration for this application."
 msgstr ""
 "No se pudo obtener la configuración de seguridad para esta aplicación."
@@ -2110,7 +2188,7 @@ msgid "Certificate Details"
 msgstr "Detalles del certificado"
 
 #: app/templates/certificates/upload.html:30
-#: app/templates/templates/view.html:159
+#: app/templates/templates/view.html:192
 msgid "Select application..."
 msgstr "Seleccionar aplicación..."
 
@@ -2668,7 +2746,7 @@ msgstr "Las plantillas globales son visibles para todos los usuarios."
 
 #: app/templates/templates/bulk_apply.html:2
 #: app/templates/templates/bulk_apply.html:10
-#: app/templates/templates/view.html:124
+#: app/templates/templates/view.html:125
 msgid "Bulk Apply"
 msgstr "Aplicar en lote"
 
@@ -2946,18 +3024,62 @@ msgstr "¿Aplicar esta plantilla a la aplicación seleccionada?"
 msgid "Select account..."
 msgstr "Seleccionar cuenta..."
 
-#: app/templates/templates/view.html:108 app/templates/templates/view.html:152
+#: app/templates/templates/view.html:108 app/templates/templates/view.html:185
 msgid "Select account first..."
 msgstr "Seleccione una cuenta primero..."
 
-#: app/templates/templates/view.html:123
+#: app/templates/templates/view.html:123 app/templates/templates/view.html:242
+msgid "Preview Changes"
+msgstr "Vista previa de cambios"
+
+#: app/templates/templates/view.html:124
 msgid "Apply Template"
 msgstr "Aplicar plantilla"
 
-#: app/templates/templates/view.html:128
+#: app/templates/templates/view.html:129
 msgid "No active WaaS accounts found."
 msgstr "No se encontraron cuentas WaaS activas."
 
-#: app/templates/templates/view.html:169
+#: app/templates/templates/view.html:141
+msgid "Template Preview"
+msgstr "Vista previa de plantilla"
+
+#: app/templates/templates/view.html:148
+msgid "Current Config"
+msgstr "Configuración actual"
+
+#: app/templates/templates/view.html:152
+msgid "After Template"
+msgstr "Después de plantilla"
+
+#: app/templates/templates/view.html:202
 msgid "Failed to load apps"
 msgstr "Error al cargar aplicaciones"
+
+#: app/templates/templates/view.html:231
+msgid "Failed to load config"
+msgstr "Error al cargar la configuración"
+
+#: app/templates/templates/view.html:238
+#, python-format
+msgid "Failed to load application config"
+msgstr "Error al cargar la configuración de la aplicación"
+
+#: app/templates/templates/view.html:299 app/templates/templates/view.html:300
+msgid "Empty"
+msgstr "Vacío"
+
+#: app/templates/templates/view.html:302
+msgid "added"
+msgstr "agregados"
+
+#: app/templates/templates/view.html:303
+msgid "modified"
+msgstr "modificados"
+
+#: app/templates/templates/view.html:304
+msgid "removed"
+msgstr "eliminados"
+
+#~ msgid "Update Security Config"
+#~ msgstr "Actualizar configuración de seguridad"

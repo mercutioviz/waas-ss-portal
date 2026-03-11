@@ -58,11 +58,11 @@
             </div>
             <div class="col-auto">
                 <label class="form-label form-label-sm mb-0">{{ _('Client IP') }}</label>
-                <input type="text" name="client_ip" value="{{ client_ip }}" class="form-control form-control-sm" placeholder="e.g. 1.2.3.4" style="width:160px">
+                <input type="text" name="client_ip" value="{{ client_ip }}" class="form-control form-control-sm filter-ip-input" placeholder="e.g. 1.2.3.4">
             </div>
             <div class="col-auto">
                 <label class="form-label form-label-sm mb-0">{{ _('Per Page') }}</label>
-                <select name="per_page" class="form-select form-select-sm" style="width:80px">
+                <select name="per_page" class="form-select form-select-sm filter-perpage-select">
                     {% for n in [25, 50, 100, 200] %}
                     <option value="{{ n }}" {% if n == per_page %}selected{% endif %}>{{ n }}</option>
                     {% endfor %}
@@ -109,13 +109,13 @@
                         <th>{{ _('Severity') }}</th>
                         <th>{{ _('Action') }}</th>
                         <th>{{ _('Attack Group') }}</th>
-                        <th>{{ _('Attack') }}</th>
+                        <th class="d-none d-lg-table-cell">{{ _('Attack') }}</th>
                         <th>URL</th>
-                        <th>{{ _('Method') }}</th>
+                        <th class="d-none d-md-table-cell">{{ _('Method') }}</th>
                         <th>{{ _('Client IP') }}</th>
-                        <th>{{ _('Country') }}</th>
-                        <th>OWASP</th>
-                        <th>{{ _('Risk') }}</th>
+                        <th class="d-none d-lg-table-cell">{{ _('Country') }}</th>
+                        <th class="d-none d-lg-table-cell">OWASP</th>
+                        <th class="d-none d-md-table-cell">{{ _('Risk') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -135,15 +135,15 @@
                             </span>
                         </td>
                         <td><small>{{ log.get('AttackGroup', '')|null_dash }}</small></td>
-                        <td><small>{{ log.get('Attack', '')|null_dash }}</small></td>
+                        <td class="d-none d-lg-table-cell"><small>{{ log.get('Attack', '')|null_dash }}</small></td>
                         <td><small class="text-truncate d-inline-block" style="max-width:200px" title="{{ log.get('URL', '') }}">{{ log.get('URL', '')|null_dash }}</small></td>
-                        <td><span class="badge bg-secondary">{{ log.get('Method', '') }}</span></td>
+                        <td class="d-none d-md-table-cell"><span class="badge bg-secondary">{{ log.get('Method', '') }}</span></td>
                         <td><code>{{ log.get('ClientIP', '') }}</code></td>
-                        <td>
+                        <td class="d-none d-lg-table-cell">
                             <small title="{{ log.get('countryName', '') }}">{{ log.get('ClientIP_country_code', '') }}</small>
                         </td>
-                        <td><small>{{ log.get('owasp', '')|null_dash }}</small></td>
-                        <td>
+                        <td class="d-none d-lg-table-cell"><small>{{ log.get('owasp', '')|null_dash }}</small></td>
+                        <td class="d-none d-md-table-cell">
                             {% set risk = log.get('owasp_risk_score', 0)|int %}
                             <span class="badge {% if risk >= 80 %}bg-danger{% elif risk >= 50 %}bg-warning text-dark{% elif risk > 0 %}bg-info{% else %}bg-secondary{% endif %}">
                                 {{ risk }}

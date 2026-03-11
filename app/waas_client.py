@@ -417,6 +417,27 @@ class WaasClient:
         """
         return self._make_request('PATCH', f'/applications/{app_id}/basic_security/', data=data)
 
+    def update_request_limits(self, app_id, data):
+        """Update request limits configuration (v4 API).
+
+        Endpoint: PATCH /applications/{appName}/request_limits/
+        """
+        return self._make_request('PATCH', f'/applications/{app_id}/request_limits/', data=data)
+
+    def update_clickjacking_protection(self, app_id, data):
+        """Update clickjacking protection configuration (v4 API).
+
+        Endpoint: PATCH /applications/{appName}/clickjacking_protection/
+        """
+        return self._make_request('PATCH', f'/applications/{app_id}/clickjacking_protection/', data=data)
+
+    def update_data_theft_protection(self, app_id, data):
+        """Update data theft protection configuration (v4 API).
+
+        Endpoint: PATCH /applications/{appName}/data_theft_protection/
+        """
+        return self._make_request('PATCH', f'/applications/{app_id}/data_theft_protection/', data=data)
+
     # === Certificates (v4 — per-application SNI certificates) ===
     def list_certificates(self, app_name=None):
         """List certificates.

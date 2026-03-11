@@ -24,7 +24,7 @@
 {% if security %}
 <div class="row g-4">
     {# Protection Mode #}
-    <div class="col-md-6">
+    <div class="col-lg-6">
         <div class="card h-100">
             <div class="card-header">
                 <h5 class="mb-0"><i class="bi bi-shield-check"></i> {{ _('Protection Mode') }}</h5>
@@ -79,7 +79,7 @@
     </div>
 
     {# Request Limits #}
-    <div class="col-md-6">
+    <div class="col-lg-6">
         <div class="card h-100">
             <div class="card-header">
                 <h5 class="mb-0"><i class="bi bi-speedometer2"></i> {{ _('Request Limits') }}</h5>
@@ -121,20 +121,22 @@
 </div>
 
 
-{# Edit Form (for non-viewer users) #}
+{# Edit Forms (for non-viewer users) #}
 {% if current_user.role != 'viewer' %}
+{# Protection Mode #}
 <div class="card mt-4">
     <div class="card-header">
         <h5 class="mb-0">
-            <a class="text-decoration-none" data-bs-toggle="collapse" href="#editSection" role="button">
+            <a class="text-decoration-none" data-bs-toggle="collapse" href="#editProtectionMode" role="button">
                 <i class="bi bi-pencil-square"></i> {{ _('Edit Protection Mode') }}
             </a>
         </h5>
     </div>
-    <div class="collapse" id="editSection">
+    <div class="collapse" id="editProtectionMode">
         <div class="card-body">
             <form method="POST" action="{{ url_for('applications.update_security_config', account_id=account.id, app_id=app_id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="section" value="basic_security">
 
                 <div class="mb-3">
                     <label for="protection_mode" class="form-label">{{ _('Protection Mode') }}</label>
@@ -149,7 +151,135 @@
                 </div>
 
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-circle"></i> {{ _('Update Security Config') }}
+                    <i class="bi bi-check-circle"></i> {{ _('Update Protection Mode') }}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# Request Limits #}
+{% set rl = security.get('request_limits', {}) %}
+<div class="card mt-3">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <a class="text-decoration-none" data-bs-toggle="collapse" href="#editRequestLimits" role="button">
+                <i class="bi bi-pencil-square"></i> {{ _('Edit Request Limits') }}
+            </a>
+        </h5>
+    </div>
+    <div class="collapse" id="editRequestLimits">
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('applications.update_security_config', account_id=account.id, app_id=app_id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="section" value="request_limits">
+
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <label for="max_request_length" class="form-label">{{ _('Max Request Length') }}</label>
+                        <input type="number" name="max_request_length" id="max_request_length" class="form-control"
+                               value="{{ rl.get('max_request_length', '') }}">
+                    </div>
+                    <div class="col-lg-6">
+                        <label for="max_request_line_length" class="form-label">{{ _('Max Request Line Length') }}</label>
+                        <input type="number" name="max_request_line_length" id="max_request_line_length" class="form-control"
+                               value="{{ rl.get('max_request_line_length', '') }}">
+                    </div>
+                    <div class="col-lg-6">
+                        <label for="max_url_length" class="form-label">{{ _('Max URL Length') }}</label>
+                        <input type="number" name="max_url_length" id="max_url_length" class="form-control"
+                               value="{{ rl.get('max_url_length', '') }}">
+                    </div>
+                    <div class="col-lg-6">
+                        <label for="max_number_of_headers" class="form-label">{{ _('Max Number of Headers') }}</label>
+                        <input type="number" name="max_number_of_headers" id="max_number_of_headers" class="form-control"
+                               value="{{ rl.get('max_number_of_headers', '') }}">
+                    </div>
+                    <div class="col-lg-6">
+                        <label for="max_header_value_length" class="form-label">{{ _('Max Header Value Length') }}</label>
+                        <input type="number" name="max_header_value_length" id="max_header_value_length" class="form-control"
+                               value="{{ rl.get('max_header_value_length', '') }}">
+                    </div>
+                    <div class="col-lg-6">
+                        <label for="max_cookie_name_length" class="form-label">{{ _('Max Cookie Name Length') }}</label>
+                        <input type="number" name="max_cookie_name_length" id="max_cookie_name_length" class="form-control"
+                               value="{{ rl.get('max_cookie_name_length', '') }}">
+                    </div>
+                    <div class="col-lg-6">
+                        <label for="max_cookie_value_length" class="form-label">{{ _('Max Cookie Value Length') }}</label>
+                        <input type="number" name="max_cookie_value_length" id="max_cookie_value_length" class="form-control"
+                               value="{{ rl.get('max_cookie_value_length', '') }}">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary mt-3">
+                    <i class="bi bi-check-circle"></i> {{ _('Update Request Limits') }}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# Clickjacking Protection #}
+{% set cj = security.get('clickjacking_protection', {}) %}
+<div class="card mt-3">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <a class="text-decoration-none" data-bs-toggle="collapse" href="#editClickjacking" role="button">
+                <i class="bi bi-pencil-square"></i> {{ _('Edit Clickjacking Protection') }}
+            </a>
+        </h5>
+    </div>
+    <div class="collapse" id="editClickjacking">
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('applications.update_security_config', account_id=account.id, app_id=app_id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="section" value="clickjacking_protection">
+
+                {% for key, value in cj.items() %}
+                {% if value is sameas true or value is sameas false %}
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="cj_{{ key }}" name="{{ key }}" value="true" {% if value %}checked{% endif %}>
+                    <label class="form-check-label" for="cj_{{ key }}">{{ key | replace('_', ' ') | title }}</label>
+                </div>
+                {% endif %}
+                {% endfor %}
+
+                <button type="submit" class="btn btn-primary mt-3">
+                    <i class="bi bi-check-circle"></i> {{ _('Update Clickjacking Protection') }}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# Data Theft Protection #}
+{% set dtp = security.get('data_theft_protection', {}) %}
+<div class="card mt-3">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <a class="text-decoration-none" data-bs-toggle="collapse" href="#editDataTheft" role="button">
+                <i class="bi bi-pencil-square"></i> {{ _('Edit Data Theft Protection') }}
+            </a>
+        </h5>
+    </div>
+    <div class="collapse" id="editDataTheft">
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('applications.update_security_config', account_id=account.id, app_id=app_id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="section" value="data_theft_protection">
+
+                {% for key, value in dtp.items() %}
+                {% if value is sameas true or value is sameas false %}
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="dtp_{{ key }}" name="{{ key }}" value="true" {% if value %}checked{% endif %}>
+                    <label class="form-check-label" for="dtp_{{ key }}">{{ key | replace('_', ' ') | title }}</label>
+                </div>
+                {% endif %}
+                {% endfor %}
+
+                <button type="submit" class="btn btn-primary mt-3">
+                    <i class="bi bi-check-circle"></i> {{ _('Update Data Theft Protection') }}
                 </button>
             </form>
         </div>

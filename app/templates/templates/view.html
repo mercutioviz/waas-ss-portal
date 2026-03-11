@@ -93,7 +93,7 @@
         <form method="POST" id="quickApplyForm" data-confirm-message="{{ _('Apply this template to the selected application?') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="row g-3 align-items-end">
-                <div class="col-md-4">
+                <div class="col-12 col-md-4">
                     <label for="applyAccount" class="form-label">{{ _('Account') }}</label>
                     <select class="form-select" id="applyAccount" required>
                         <option value="">{{ _('Select account...') }}</option>
@@ -102,13 +102,13 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-12 col-md-4">
                     <label for="applyApp" class="form-label">{{ _('Application') }}</label>
                     <select class="form-select" id="applyApp" name="app_id" required disabled>
                         <option value="">{{ _('Select account first...') }}</option>
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-12 col-md-4">
                     <div class="form-check mb-2">
                         <input class="form-check-input" type="checkbox" name="include_servers" id="applyServers">
                         <label class="form-check-label" for="applyServers">{{ _('Include Servers') }}</label>
@@ -120,6 +120,7 @@
                 </div>
             </div>
             <div class="mt-3">
+                <button type="button" class="btn btn-outline-info" id="previewBtn" disabled><i class="bi bi-eye"></i> {{ _('Preview Changes') }}</button>
                 <button type="submit" class="btn btn-primary" id="applyBtn" disabled><i class="bi bi-play-circle"></i> {{ _('Apply Template') }}</button>
                 <a href="{{ url_for('templates.bulk_apply', template_id=template.id) }}" class="btn btn-outline-secondary ms-2"><i class="bi bi-collection-play"></i> {{ _('Bulk Apply') }}</a>
             </div>
@@ -132,12 +133,43 @@
 {% endif %}
 {% endblock %}
 
+{# Diff Preview Modal #}
+<div class="modal fade" id="diffPreviewModal" tabindex="-1" aria-labelledby="diffPreviewLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="diffPreviewLabel"><i class="bi bi-eye"></i> {{ _('Template Preview') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="diffSummary" class="alert alert-info mb-3"></div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>{{ _('Current Config') }}</h6>
+                        <div id="diffCurrent" class="diff-preview"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>{{ _('After Template') }}</h6>
+                        <div id="diffTemplate" class="diff-preview"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Close') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% block extra_js %}
 <script>
+window.TEMPLATE_CONFIG = {{ template.config_dict|tojson }};
+
 (function() {
     const accountSelect = document.getElementById('applyAccount');
     const appSelect = document.getElementById('applyApp');
     const applyBtn = document.getElementById('applyBtn');
+    const previewBtn = document.getElementById('previewBtn');
     const form = document.getElementById('quickApplyForm');
 
     if (!accountSelect) return;
@@ -147,6 +179,7 @@
         appSelect.innerHTML = '<option value="">{{ _('Loading...') }}</option>';
         appSelect.disabled = true;
         applyBtn.disabled = true;
+        if (previewBtn) previewBtn.disabled = true;
 
         if (!accountId) {
             appSelect.innerHTML = '<option value="">{{ _('Select account first...') }}</option>';
@@ -171,13 +204,105 @@
     });
 
     appSelect.addEventListener('change', function() {
-        applyBtn.disabled = !this.value;
+        var hasSelection = !!this.value;
+        applyBtn.disabled = !hasSelection;
+        if (previewBtn) previewBtn.disabled = !hasSelection;
         if (this.value && accountSelect.value) {
             form.action = '{{ url_for("templates.apply_template", template_id=template.id, account_id=0, app_id="__APP__") }}'
                 .replace('/0/', '/' + accountSelect.value + '/')
                 .replace('__APP__', encodeURIComponent(this.value));
         }
     });
+
+    // Diff preview
+    if (previewBtn) {
+        previewBtn.addEventListener('click', function() {
+            var accountId = accountSelect.value;
+            var appId = appSelect.value;
+            if (!accountId || !appId) return;
+
+            previewBtn.disabled = true;
+            previewBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> {{ _('Loading...') }}';
+
+            fetch('/applications/api/' + accountId + '/' + encodeURIComponent(appId) + '/config')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data.success) {
+                        window.showToast(data.error || '{{ _("Failed to load config") }}', 'danger');
+                        return;
+                    }
+                    renderDiff(data.config, window.TEMPLATE_CONFIG);
+                    new bootstrap.Modal(document.getElementById('diffPreviewModal')).show();
+                })
+                .catch(function() {
+                    window.showToast('{{ _("Failed to load application config") }}', 'danger');
+                })
+                .finally(function() {
+                    previewBtn.disabled = false;
+                    previewBtn.innerHTML = '<i class="bi bi-eye"></i> {{ _('Preview Changes') }}';
+                });
+        });
+    }
+
+    function renderDiff(current, template) {
+        var allKeys = new Set();
+        function collectKeys(obj, prefix) {
+            for (var k in obj) {
+                if (!obj.hasOwnProperty(k)) continue;
+                var fullKey = prefix ? prefix + '.' + k : k;
+                if (obj[k] && typeof obj[k] === 'object' && !Array.isArray(obj[k])) {
+                    collectKeys(obj[k], fullKey);
+                } else {
+                    allKeys.add(fullKey);
+                }
+            }
+        }
+        collectKeys(current, '');
+        collectKeys(template, '');
+
+        var added = 0, modified = 0, removed = 0;
+        var currentHtml = '', templateHtml = '';
+
+        function getNestedVal(obj, path) {
+            var parts = path.split('.');
+            var val = obj;
+            for (var i = 0; i < parts.length; i++) {
+                if (val === undefined || val === null) return undefined;
+                val = val[parts[i]];
+            }
+            return val;
+        }
+
+        var sortedKeys = Array.from(allKeys).sort();
+        sortedKeys.forEach(function(key) {
+            var curVal = getNestedVal(current, key);
+            var tplVal = getNestedVal(template, key);
+            var curStr = curVal !== undefined ? JSON.stringify(curVal) : '';
+            var tplStr = tplVal !== undefined ? JSON.stringify(tplVal) : '';
+            var cssClass = '';
+
+            if (curVal === undefined && tplVal !== undefined) {
+                cssClass = 'diff-added';
+                added++;
+            } else if (curVal !== undefined && tplVal === undefined) {
+                cssClass = 'diff-removed';
+                removed++;
+            } else if (curStr !== tplStr) {
+                cssClass = 'diff-modified';
+                modified++;
+            }
+
+            currentHtml += '<div class="' + cssClass + '"><strong>' + key + ':</strong> ' + (curStr || '<em>—</em>') + '</div>';
+            templateHtml += '<div class="' + cssClass + '"><strong>' + key + ':</strong> ' + (tplStr || '<em>—</em>') + '</div>';
+        });
+
+        document.getElementById('diffCurrent').innerHTML = currentHtml || '<em>{{ _('Empty') }}</em>';
+        document.getElementById('diffTemplate').innerHTML = templateHtml || '<em>{{ _('Empty') }}</em>';
+        document.getElementById('diffSummary').innerHTML =
+            '<strong>' + added + '</strong> {{ _('added') }}, ' +
+            '<strong>' + modified + '</strong> {{ _('modified') }}, ' +
+            '<strong>' + removed + '</strong> {{ _('removed') }}';
+    }
 })();
 </script>
 {% endblock %}

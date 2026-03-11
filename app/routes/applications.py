@@ -277,14 +277,43 @@ def update_security_config(account_id, app_id):
 
     try:
         data = request.get_json() if request.is_json else request.form.to_dict()
-        client.update_security_config(app_id, data)
+        section = data.pop('section', 'basic_security')
+
+        if section == 'request_limits':
+            # Convert string values to integers for request limits
+            int_data = {}
+            for k, v in data.items():
+                if k == 'csrf_token':
+                    continue
+                try:
+                    int_data[k] = int(v)
+                except (ValueError, TypeError):
+                    int_data[k] = v
+            client.update_request_limits(app_id, int_data)
+        elif section == 'clickjacking_protection':
+            bool_data = {k: (v == 'true' or v is True) for k, v in data.items() if k != 'csrf_token'}
+            client.update_clickjacking_protection(app_id, bool_data)
+        elif section == 'data_theft_protection':
+            bool_data = {k: (v == 'true' or v is True) for k, v in data.items() if k != 'csrf_token'}
+            client.update_data_theft_protection(app_id, bool_data)
+        else:
+            data.pop('csrf_token', None)
+            client.update_security_config(app_id, data)
+
+        section_labels = {
+            'basic_security': 'protection mode',
+            'request_limits': 'request limits',
+            'clickjacking_protection': 'clickjacking protection',
+            'data_theft_protection': 'data theft protection',
+        }
+        section_label = section_labels.get(section, section)
 
         AuditLog.log(
             user_id=current_user.id,
             action='security_config_update',
             resource_type='application',
             resource_id=None,
-            details=f'Updated security config for app {app_id} on account {account.account_name}',
+            details=f'Updated {section_label} for app {app_id} on account {account.account_name}',
             ip_address=request.remote_addr
         )
 
@@ -293,6 +322,55 @@ def update_security_config(account_id, app_id):
         flash(_('Failed to update security config: %(error)s', error=str(e)), 'danger')
 
     return redirect(url_for('applications.security_config', account_id=account_id, app_id=app_id))
+
+
+@bp.route('/api/<int:account_id>/<app_id>/config')
+@login_required
+def api_get_application_config(account_id, app_id):
+    """JSON endpoint returning security config for an application."""
+    client, account = get_client_for_account(account_id)
+    if not client:
+        return jsonify({'success': False, 'error': 'Account not found or inactive'}), 404
+
+    try:
+        config = client.get_security_config(app_id)
+        return jsonify({'success': True, 'config': config})
+    except WaasApiError as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/<int:account_id>/compare')
+@login_required
+def compare_applications(account_id):
+    """Compare security configs of two applications side-by-side."""
+    client, account = get_client_for_account(account_id)
+    if not client:
+        flash(_('Account not found or inactive.'), 'danger')
+        return redirect(url_for('applications.list_applications'))
+
+    apps_param = request.args.get('apps', '')
+    app_names = [a.strip() for a in apps_param.split(',') if a.strip()]
+    if len(app_names) != 2:
+        flash(_('Please select exactly 2 applications to compare.'), 'warning')
+        return redirect(url_for('applications.list_applications', account_id=account_id))
+
+    configs = {}
+    app_details = {}
+    for name in app_names:
+        try:
+            app_details[name] = client.get_application(name)
+            configs[name] = client.get_security_config(name)
+        except WaasApiError as e:
+            flash(_('Failed to load config for %(name)s: %(error)s', name=name, error=str(e)), 'danger')
+            return redirect(url_for('applications.list_applications', account_id=account_id))
+
+    return render_template(
+        'applications/compare.html',
+        account=account,
+        app_names=app_names,
+        app_details=app_details,
+        configs=configs
+    )
 
 
 @bp.route('/<int:account_id>/<app_id>/dns')

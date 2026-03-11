@@ -15,15 +15,28 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
     <h2><i class="bi bi-shield-exclamation"></i> {{ _('WAF Logs') }}</h2>
-    {% if request.args.get('from') == 'app' %}
-    <a href="{{ url_for('applications.view_application', account_id=account.id, app_id=app_name) }}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left"></i> {{ _('Back to Application') }}
-    </a>
-    {% else %}
-    <a href="{{ url_for('logs.index', account_id=account.id) }}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left"></i> {{ _('Back to Log Viewer') }}
-    </a>
-    {% endif %}
+    <div class="d-flex gap-2">
+        {% if logs %}
+        <div class="dropdown">
+            <button class="btn btn-outline-success btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="bi bi-download"></i> {{ _('Export') }}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="{{ url_for('logs.waf_logs', account_id=account.id, app_name=app_name, quick_range=quick_range, client_ip=client_ip, per_page=per_page, page=page, format='csv') }}"><i class="bi bi-filetype-csv"></i> {{ _('Export CSV') }}</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('logs.waf_logs', account_id=account.id, app_name=app_name, quick_range=quick_range, client_ip=client_ip, per_page=per_page, page=page, format='json') }}"><i class="bi bi-filetype-json"></i> {{ _('Export JSON') }}</a></li>
+            </ul>
+        </div>
+        {% endif %}
+        {% if request.args.get('from') == 'app' %}
+        <a href="{{ url_for('applications.view_application', account_id=account.id, app_id=app_name) }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> {{ _('Back to Application') }}
+        </a>
+        {% else %}
+        <a href="{{ url_for('logs.index', account_id=account.id) }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> {{ _('Back to Log Viewer') }}
+        </a>
+        {% endif %}
+    </div>
 </div>
 
 <div class="mb-3">

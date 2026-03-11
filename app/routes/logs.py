@@ -5,10 +5,13 @@ Uses the v4 unified logs API which returns both WAF (LogType=WF) and
 access/traffic (LogType=TR) entries in a single response.  Applications
 are listed via the v2 API.
 """
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+import csv
+import io
+import json
+from flask import Blueprint, render_template, request, flash, redirect, url_for, make_response
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
-from app.models import WaasAccount
+from app.models import WaasAccount, AuditLog
 from app.waas_client import WaasClient, WaasApiError
 
 bp = Blueprint('logs', __name__, url_prefix='/logs')
@@ -41,6 +44,63 @@ def _get_applications(account):
     except WaasApiError as e:
         flash(_('Failed to load applications: %(error)s', error=str(e)), 'danger')
         return []
+
+
+WAF_CSV_FIELDS = [
+    'EpochTime', 'Severity', 'Action', 'AttackGroup', 'Attack', 'URL',
+    'Method', 'ClientIP', 'ClientIP_country_code', 'countryName',
+    'owasp', 'owasp_risk_score',
+]
+
+ACCESS_CSV_FIELDS = [
+    'EpochTime', 'ClientIP', 'ClientIP_country_code', 'countryName',
+    'Method', 'URL', 'HTTPStatus', 'BytesSent', 'TimeTaken',
+    'Protocol', 'Protected', 'ResponseType',
+]
+
+
+def _export_logs_as_csv(logs, log_type):
+    """Export log entries as a CSV string."""
+    fields = WAF_CSV_FIELDS if log_type == 'waf' else ACCESS_CSV_FIELDS
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=fields, extrasaction='ignore')
+    writer.writeheader()
+    for entry in logs:
+        writer.writerow({f: entry.get(f, '') for f in fields})
+    return output.getvalue()
+
+
+def _export_logs_as_json(logs):
+    """Export log entries as a JSON string."""
+    return json.dumps(logs, indent=2, default=str)
+
+
+def _make_export_response(logs, log_type, fmt, app_name, account_id):
+    """Build a file download response for log export and create audit entry."""
+    if fmt == 'csv':
+        data = _export_logs_as_csv(logs, log_type)
+        mimetype = 'text/csv'
+        ext = 'csv'
+    else:
+        data = _export_logs_as_json(logs)
+        mimetype = 'application/json'
+        ext = 'json'
+
+    filename = f'{log_type}_logs_{app_name}.{ext}'
+    response = make_response(data)
+    response.headers['Content-Type'] = mimetype
+    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    AuditLog.log(
+        user_id=current_user.id,
+        action='log_export',
+        resource_type=f'{log_type}_logs',
+        resource_id=account_id,
+        details=f'Exported {len(logs)} {log_type} log entries as {fmt.upper()} for {app_name}',
+        ip_address=request.remote_addr,
+    )
+
+    return response
 
 
 # ------------------------------------------------------------------
@@ -92,6 +152,8 @@ def waf_logs(account_id, app_name):
     if client_ip:
         filter_fields['ClientIP'] = [{'condition': 'is', 'value': client_ip}]
 
+    export_fmt = request.args.get('format', '').lower()
+
     logs = []
     total = 0
     error = None
@@ -111,6 +173,9 @@ def waf_logs(account_id, app_name):
         total = result.get('count', len(all_entries))
     except WaasApiError as e:
         error = str(e)
+
+    if export_fmt in ('csv', 'json') and logs:
+        return _make_export_response(logs, 'waf', export_fmt, app_name, account.id)
 
     return render_template(
         'logs/waf.html',
@@ -140,6 +205,7 @@ def access_logs(account_id, app_name):
     client_ip = request.args.get('client_ip', '').strip()
     page = request.args.get('page', 1, type=int)
     items_per_page = request.args.get('per_page', 50, type=int)
+    export_fmt = request.args.get('format', '').lower()
 
     filter_fields = {}
     if client_ip:
@@ -164,6 +230,9 @@ def access_logs(account_id, app_name):
         total = result.get('count', len(all_entries))
     except WaasApiError as e:
         error = str(e)
+
+    if export_fmt in ('csv', 'json') and logs:
+        return _make_export_response(logs, 'access', export_fmt, app_name, account.id)
 
     return render_template(
         'logs/access.html',

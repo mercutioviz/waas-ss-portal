@@ -331,6 +331,17 @@ class ApplicationCreateForm(FlaskForm):
     submit = SubmitField(_l('Create Application'), render_kw={'class': 'btn btn-primary'})
 
 
+class RotateApiKeyForm(FlaskForm):
+    """Form for rotating an API key on a WaaS account"""
+    new_api_key = StringField(
+        _l('New API Key'),
+        validators=[DataRequired(), Length(min=10, max=500)],
+        render_kw={'placeholder': _l('Paste new WaaS API key here'), 'class': 'form-control', 'type': 'password'}
+    )
+    verify_key = BooleanField(_l('Verify new key before saving'), default=True, render_kw={'class': 'form-check-input'})
+    submit = SubmitField(_l('Rotate API Key'), render_kw={'class': 'btn btn-primary'})
+
+
 class ConfigTemplateForm(FlaskForm):
     """Form for creating/editing a config template"""
     name = StringField(

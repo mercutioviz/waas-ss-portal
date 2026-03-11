@@ -4,7 +4,7 @@ from flask_babel import gettext as _
 from datetime import datetime
 from app import db
 from app.models import WaasAccount, AuditLog
-from app.forms import WaasAccountForm
+from app.forms import WaasAccountForm, RotateApiKeyForm
 from app.waas_client import WaasClient, WaasApiError
 from app import limiter
 
@@ -185,3 +185,45 @@ def delete_account(account_id):
 
     flash(_('Account "%(name)s" has been deleted.', name=account_name), 'success')
     return redirect(url_for('accounts.list_accounts'))
+
+
+@bp.route('/<int:account_id>/rotate-key', methods=['GET', 'POST'])
+@login_required
+@limiter.limit("10 per minute")
+def rotate_key(account_id):
+    """Rotate the API key for a WaaS account."""
+    account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id).first_or_404()
+    form = RotateApiKeyForm()
+
+    if form.validate_on_submit():
+        new_key = form.new_api_key.data.strip()
+
+        # Optionally verify the new key with a lightweight API call
+        if form.verify_key.data:
+            try:
+                test_client = WaasClient(api_key=new_key)
+                test_client.list_applications()
+            except WaasApiError as e:
+                flash(_('New API key verification failed: %(error)s. Key was NOT saved.', error=str(e)), 'danger')
+                return render_template('accounts/rotate_key.html', form=form, account=account)
+
+        # Save the new key
+        account.api_key = new_key
+        # Invalidate cached v2 tokens
+        account.v2_auth_token = None
+        account.v2_token_expiry = None
+        db.session.commit()
+
+        AuditLog.log(
+            user_id=current_user.id,
+            action='account_key_rotation',
+            resource_type='waas_account',
+            resource_id=account.id,
+            details=f'Rotated API key for account: {account.account_name}',
+            ip_address=request.remote_addr,
+        )
+
+        flash(_('API key rotated successfully for "%(name)s".', name=account.account_name), 'success')
+        return redirect(url_for('accounts.view_account', account_id=account.id))
+
+    return render_template('accounts/rotate_key.html', form=form, account=account)

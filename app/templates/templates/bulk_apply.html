@@ -18,7 +18,7 @@
     <p class="text-muted">{{ _('Template:') }} <strong>{{ template.name }}</strong></p>
 </div>
 
-<form method="POST" data-confirm-message="{{ _('Apply this template to all selected applications?') }}">
+<form method="POST" data-confirm-message="{{ _('Apply this template to all selected applications?') }}" data-loading="Applying template...">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
     <!-- Options -->

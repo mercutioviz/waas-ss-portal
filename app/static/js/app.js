@@ -2,13 +2,77 @@
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    // Auto-dismiss flash alerts after 5 seconds
-    const alerts = document.querySelectorAll('.alert-dismissible');
-    alerts.forEach(function (alert) {
-        setTimeout(function () {
-            const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
-            bsAlert.close();
-        }, 5000);
+    // -------------------------------------------------------
+    // Toast Notifications (7.9)
+    // Initialize server-rendered toasts and provide global showToast()
+    // -------------------------------------------------------
+    document.querySelectorAll('.toast').forEach(function (el) {
+        new bootstrap.Toast(el).show();
+    });
+
+    /**
+     * Show a toast notification from JavaScript.
+     * @param {string} message - The message to display
+     * @param {string} [category='info'] - Bootstrap category: success, danger, warning, info
+     */
+    window.showToast = function (message, category) {
+        category = category || 'info';
+        var icons = {
+            danger: '<i class="bi bi-exclamation-triangle"></i> ',
+            success: '<i class="bi bi-check-circle"></i> ',
+            warning: '<i class="bi bi-exclamation-circle"></i> ',
+            info: '<i class="bi bi-info-circle"></i> '
+        };
+        var delay = category === 'danger' ? 8000 : 5000;
+        var container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        var toastEl = document.createElement('div');
+        toastEl.className = 'toast align-items-center border-0 toast-' + category;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+        toastEl.setAttribute('data-bs-autohide', 'true');
+        toastEl.setAttribute('data-bs-delay', delay);
+        toastEl.innerHTML =
+            '<div class="d-flex">' +
+                '<div class="toast-body">' + (icons[category] || '') + message + '</div>' +
+                '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>' +
+            '</div>';
+        container.appendChild(toastEl);
+
+        toastEl.addEventListener('hidden.bs.toast', function () {
+            toastEl.remove();
+        });
+        new bootstrap.Toast(toastEl).show();
+    };
+
+    // -------------------------------------------------------
+    // Loading Indicators (7.8)
+    // Global overlay spinner for form submissions and AJAX
+    // -------------------------------------------------------
+    var loadingOverlay = document.getElementById('globalLoadingOverlay');
+    var loadingMessage = loadingOverlay ? loadingOverlay.querySelector('.loading-message') : null;
+
+    window.showLoading = function (message) {
+        if (!loadingOverlay) return;
+        if (loadingMessage) loadingMessage.textContent = message || 'Loading...';
+        loadingOverlay.classList.remove('d-none');
+    };
+
+    window.hideLoading = function () {
+        if (!loadingOverlay) return;
+        loadingOverlay.classList.add('d-none');
+    };
+
+    // Auto-wire forms with data-loading attribute
+    document.querySelectorAll('form[data-loading]').forEach(function (form) {
+        form.addEventListener('submit', function () {
+            // Skip if form has validation and is invalid
+            if (form.classList.contains('needs-validation') && !form.checkValidity()) return;
+            var msg = form.getAttribute('data-loading') || 'Loading...';
+            window.showLoading(msg);
+        });
     });
 
     // -------------------------------------------------------

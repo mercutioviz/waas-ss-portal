@@ -144,23 +144,28 @@
     <!-- Main Content -->
     <main class="main-content">
         <div class="container-fluid">
-            <!-- Flash Messages -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            <div class="flash-messages mt-3">
+            <!-- Toast Container (flash messages rendered as toasts) -->
+            <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer" style="z-index: 11000;">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
                 {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {% if category == 'danger' %}<i class="bi bi-exclamation-triangle"></i>
-                    {% elif category == 'success' %}<i class="bi bi-check-circle"></i>
-                    {% elif category == 'warning' %}<i class="bi bi-exclamation-circle"></i>
-                    {% else %}<i class="bi bi-info-circle"></i>{% endif %}
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <div class="toast align-items-center border-0 toast-{{ category }}" role="alert" aria-live="assertive" aria-atomic="true"
+                     data-bs-autohide="true" data-bs-delay="{{ 8000 if category == 'danger' else 5000 }}">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            {% if category == 'danger' %}<i class="bi bi-exclamation-triangle"></i>
+                            {% elif category == 'success' %}<i class="bi bi-check-circle"></i>
+                            {% elif category == 'warning' %}<i class="bi bi-exclamation-circle"></i>
+                            {% else %}<i class="bi bi-info-circle"></i>{% endif %}
+                            {{ message }}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="{{ _('Close') }}"></button>
+                    </div>
                 </div>
                 {% endfor %}
+                {% endif %}
+                {% endwith %}
             </div>
-            {% endif %}
-            {% endwith %}
 
             <!-- Breadcrumbs -->
             {% block breadcrumbs %}{% endblock %}
@@ -214,6 +219,16 @@
                     <button type="button" class="btn btn-danger" id="confirmModalBtn">{{ _('Confirm') }}</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Global Loading Overlay -->
+    <div class="loading-overlay d-none" id="globalLoadingOverlay">
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">{{ _('Loading...') }}</span>
+            </div>
+            <div class="loading-message mt-3 text-white fs-5">{{ _('Loading...') }}</div>
         </div>
     </div>
 

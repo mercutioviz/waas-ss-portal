@@ -1,8 +1,10 @@
 import json
 import logging
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from datetime import datetime, timezone
+from flask import Blueprint, render_template, redirect, url_for, flash, request, make_response
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
+from werkzeug.utils import secure_filename
 from app import db
 from app.models import WaasAccount, AuditLog, ConfigTemplate
 from app.forms import ConfigTemplateForm, TemplateFromAppForm
@@ -426,6 +428,103 @@ def bulk_apply(template_id):
         template=template,
         accounts_with_apps=accounts_with_apps
     )
+
+
+@bp.route('/<int:template_id>/export')
+@login_required
+def export_template(template_id):
+    """Export a template as a JSON file download."""
+    template = get_template_or_404(template_id)
+    if not template:
+        flash(_('Template not found or access denied.'), 'danger')
+        return redirect(url_for('templates.list_templates'))
+
+    export_data = {
+        'name': template.name,
+        'description': template.description or '',
+        'config_data': template.config_dict,
+        'is_global': template.is_global,
+        'exported_at': datetime.now(timezone.utc).isoformat(),
+        'version': '1.0',
+    }
+
+    data = json.dumps(export_data, indent=2, default=str)
+    filename = secure_filename(f'{template.name}.json') or 'template.json'
+
+    AuditLog.log(
+        user_id=current_user.id,
+        action='template_export',
+        resource_type='config_template',
+        resource_id=template.id,
+        details=f'Exported config template: {template.name}',
+        ip_address=request.remote_addr,
+    )
+
+    response = make_response(data)
+    response.headers['Content-Type'] = 'application/json'
+    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+@bp.route('/import', methods=['GET', 'POST'])
+@login_required
+def import_template():
+    """Import a template from a JSON file."""
+    if current_user.role == 'viewer':
+        flash(_('You do not have permission to import templates.'), 'danger')
+        return redirect(url_for('templates.list_templates'))
+
+    if request.method == 'POST':
+        file = request.files.get('template_file')
+        if not file or not file.filename:
+            flash(_('Please select a JSON file to import.'), 'warning')
+            return redirect(url_for('templates.import_template'))
+
+        if not file.filename.lower().endswith('.json'):
+            flash(_('Only .json files are supported.'), 'danger')
+            return redirect(url_for('templates.import_template'))
+
+        try:
+            content = file.read().decode('utf-8')
+            data = json.loads(content)
+        except (UnicodeDecodeError, json.JSONDecodeError) as e:
+            flash(_('Invalid JSON file: %(error)s', error=str(e)), 'danger')
+            return redirect(url_for('templates.import_template'))
+
+        # Validate required fields
+        if not isinstance(data, dict) or 'name' not in data or 'config_data' not in data:
+            flash(_('Invalid template format. File must contain "name" and "config_data" fields.'), 'danger')
+            return redirect(url_for('templates.import_template'))
+
+        if not isinstance(data['config_data'], dict):
+            flash(_('Invalid template format. "config_data" must be a JSON object.'), 'danger')
+            return redirect(url_for('templates.import_template'))
+
+        is_global = data.get('is_global', False) and current_user.is_admin
+
+        template = ConfigTemplate(
+            user_id=current_user.id,
+            name=data['name'].strip()[:100],
+            description=(data.get('description', '') or '').strip()[:500] or None,
+            is_global=is_global,
+        )
+        template.config_dict = data['config_data']
+        db.session.add(template)
+        db.session.commit()
+
+        AuditLog.log(
+            user_id=current_user.id,
+            action='template_import',
+            resource_type='config_template',
+            resource_id=template.id,
+            details=f'Imported config template: {template.name}',
+            ip_address=request.remote_addr,
+        )
+
+        flash(_('Template "%(name)s" imported successfully.', name=template.name), 'success')
+        return redirect(url_for('templates.view_template', template_id=template.id))
+
+    return render_template('templates/import.html')
 
 
 def _parse_app_list(result):

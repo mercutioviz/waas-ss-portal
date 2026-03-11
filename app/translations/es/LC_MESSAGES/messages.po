@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-03-10 01:11+0000\n"
+"POT-Creation-Date: 2026-03-10 12:05+0000\n"
 "PO-Revision-Date: 2026-03-10 01:11+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: es <LL@li.org>\n"
@@ -169,7 +169,7 @@ msgstr "Cambiar contraseña"
 
 #: app/forms.py:112 app/templates/accounts/add.html:13
 #: app/templates/accounts/edit.html:13 app/templates/accounts/list.html:17
-#: app/templates/accounts/view.html:29 app/templates/admin/panel.html:97
+#: app/templates/accounts/view.html:30 app/templates/admin/panel.html:97
 msgid "Account Name"
 msgstr "Nombre de la cuenta"
 
@@ -359,56 +359,75 @@ msgstr "Redirigir HTTP a HTTPS"
 msgid "Create Application"
 msgstr "Crear aplicación"
 
-#: app/forms.py:337 app/forms.py:357
+#: app/forms.py:337 app/templates/accounts/rotate_key.html:42
+msgid "New API Key"
+msgstr "Nueva clave API"
+
+#: app/forms.py:339
+msgid "Paste new WaaS API key here"
+msgstr "Pegue aquí la nueva clave API de WaaS"
+
+#: app/forms.py:341 app/templates/accounts/rotate_key.html:52
+msgid "Verify new key before saving"
+msgstr "Verificar nueva clave antes de guardar"
+
+#: app/forms.py:342 app/templates/accounts/rotate_key.html:2
+#: app/templates/accounts/rotate_key.html:10
+#: app/templates/accounts/rotate_key.html:20
+#: app/templates/accounts/view.html:18
+msgid "Rotate API Key"
+msgstr "Rotar clave API"
+
+#: app/forms.py:348 app/forms.py:368
 msgid "Template Name"
 msgstr "Nombre de la plantilla"
 
-#: app/forms.py:339 app/forms.py:359
+#: app/forms.py:350 app/forms.py:370
 msgid "e.g., Hardened Security Profile"
 msgstr "ej., Perfil de seguridad reforzado"
 
-#: app/forms.py:342 app/forms.py:362 app/templates/templates/list.html:40
-#: app/templates/templates/list.html:93 app/templates/templates/view.html:56
+#: app/forms.py:353 app/forms.py:373 app/templates/templates/list.html:45
+#: app/templates/templates/list.html:99 app/templates/templates/view.html:57
 msgid "Description"
 msgstr "Descripción"
 
-#: app/forms.py:344 app/forms.py:364
+#: app/forms.py:355 app/forms.py:375
 msgid "Describe what this template configures..."
 msgstr "Describa lo que configura esta plantilla..."
 
-#: app/forms.py:347 app/forms.py:367
+#: app/forms.py:358 app/forms.py:378
 msgid "Global Template (visible to all users)"
 msgstr "Plantilla global (visible para todos los usuarios)"
 
-#: app/forms.py:351
+#: app/forms.py:362
 msgid "Save Template"
 msgstr "Guardar plantilla"
 
-#: app/forms.py:371
+#: app/forms.py:382
 msgid "Basic Security (protection mode)"
 msgstr "Seguridad básica (modo de protección)"
 
-#: app/forms.py:372 app/templates/applications/security.html:85
+#: app/forms.py:383 app/templates/applications/security.html:85
 msgid "Request Limits"
 msgstr "Límites de solicitudes"
 
-#: app/forms.py:373 app/templates/applications/security.html:48
+#: app/forms.py:384 app/templates/applications/security.html:48
 msgid "Clickjacking Protection"
 msgstr "Protección contra clickjacking"
 
-#: app/forms.py:374 app/templates/applications/security.html:63
+#: app/forms.py:385 app/templates/applications/security.html:63
 msgid "Data Theft Protection"
 msgstr "Protección contra robo de datos"
 
-#: app/forms.py:375 app/templates/applications/view.html:110
+#: app/forms.py:386 app/templates/applications/view.html:110
 msgid "Backend Servers"
 msgstr "Servidores backend"
 
-#: app/forms.py:376
+#: app/forms.py:387
 msgid "Endpoints Configuration"
 msgstr "Configuración de endpoints"
 
-#: app/forms.py:377 app/templates/templates/list.html:75
+#: app/forms.py:388 app/templates/templates/list.html:81
 msgid "Create Template"
 msgstr "Crear plantilla"
 
@@ -467,6 +486,18 @@ msgstr "La verificación falló para \"%(name)s\": %(error)s"
 msgid "Account \"%(name)s\" has been deleted."
 msgstr "La cuenta \"%(name)s\" ha sido eliminada."
 
+#: app/routes/accounts.py:207
+#, python-format
+msgid "New API key verification failed: %(error)s. Key was NOT saved."
+msgstr ""
+"La verificación de la nueva clave API falló: %(error)s. La clave NO fue "
+"guardada."
+
+#: app/routes/accounts.py:226
+#, python-format
+msgid "API key rotated successfully for \"%(name)s\"."
+msgstr "Clave API rotada exitosamente para \"%(name)s\"."
+
 #: app/routes/admin.py:17
 msgid "You do not have permission to access the admin area."
 msgstr "No tiene permiso para acceder al área de administración."
@@ -503,7 +534,7 @@ msgstr "Credenciales v2 no disponibles — usando API v4."
 #: app/routes/applications.py:146 app/routes/applications.py:212
 #: app/routes/applications.py:246 app/routes/applications.py:275
 #: app/routes/applications.py:304 app/routes/certificates.py:44
-#: app/routes/templates.py:217 app/routes/templates.py:312
+#: app/routes/templates.py:219 app/routes/templates.py:314
 msgid "Account not found or inactive."
 msgstr "Cuenta no encontrada o inactiva."
 
@@ -645,7 +676,7 @@ msgstr "Certificado eliminado."
 msgid "Failed to delete certificate: %(error)s"
 msgstr "Error al eliminar el certificado: %(error)s"
 
-#: app/routes/logs.py:42
+#: app/routes/logs.py:45
 #, python-format
 msgid "Failed to load applications: %(error)s"
 msgstr "Error al cargar las aplicaciones: %(error)s"
@@ -694,76 +725,112 @@ msgstr "Error al detener la sesión: %(error)s"
 msgid "No active proxy session. Please start one first."
 msgstr "No hay sesión de proxy activa. Inicie una primero."
 
-#: app/routes/templates.py:57 app/routes/templates.py:212
+#: app/routes/templates.py:59 app/routes/templates.py:214
 msgid "You do not have permission to create templates."
 msgstr "No tiene permiso para crear plantillas."
 
-#: app/routes/templates.py:85
+#: app/routes/templates.py:87
 #, python-format
 msgid "Template \"%(name)s\" created. Now edit its configuration."
 msgstr "Plantilla \"%(name)s\" creada. Ahora edite su configuración."
 
-#: app/routes/templates.py:97 app/routes/templates.py:110
-#: app/routes/templates.py:146 app/routes/templates.py:183
-#: app/routes/templates.py:307 app/routes/templates.py:352
+#: app/routes/templates.py:99 app/routes/templates.py:112
+#: app/routes/templates.py:148 app/routes/templates.py:185
+#: app/routes/templates.py:309 app/routes/templates.py:354
+#: app/routes/templates.py:439
 msgid "Template not found or access denied."
 msgstr "Plantilla no encontrada o acceso denegado."
 
-#: app/routes/templates.py:114 app/routes/templates.py:150
+#: app/routes/templates.py:116 app/routes/templates.py:152
 msgid "You do not have permission to edit templates."
 msgstr "No tiene permiso para editar plantillas."
 
-#: app/routes/templates.py:134
+#: app/routes/templates.py:136
 #, python-format
 msgid "Template \"%(name)s\" updated."
 msgstr "Plantilla \"%(name)s\" actualizada."
 
-#: app/routes/templates.py:169
+#: app/routes/templates.py:171
 msgid "Template configuration updated."
 msgstr "Configuración de plantilla actualizada."
 
-#: app/routes/templates.py:172
+#: app/routes/templates.py:174
 #, python-format
 msgid "Invalid JSON: %(error)s"
 msgstr "JSON inválido: %(error)s"
 
-#: app/routes/templates.py:187
+#: app/routes/templates.py:189
 msgid "You do not have permission to delete templates."
 msgstr "No tiene permiso para eliminar plantillas."
 
-#: app/routes/templates.py:203
+#: app/routes/templates.py:205
 #, python-format
 msgid "Template \"%(name)s\" deleted."
 msgstr "Plantilla \"%(name)s\" eliminada."
 
-#: app/routes/templates.py:223
+#: app/routes/templates.py:225
 #, python-format
 msgid "Failed to export application config: %(error)s"
 msgstr "Error al exportar la configuración de la aplicación: %(error)s"
 
-#: app/routes/templates.py:280
+#: app/routes/templates.py:282
 #, python-format
 msgid "Template \"%(name)s\" created from application \"%(app_id)s\"."
 msgstr "Plantilla \"%(name)s\" creada a partir de la aplicación \"%(app_id)s\"."
 
-#: app/routes/templates.py:302 app/routes/templates.py:347
+#: app/routes/templates.py:304 app/routes/templates.py:349
 msgid "You do not have permission to apply templates."
 msgstr "No tiene permiso para aplicar plantillas."
 
-#: app/routes/templates.py:335
+#: app/routes/templates.py:337
 #, python-format
 msgid "Template \"%(name)s\" applied to \"%(app_id)s\" successfully."
 msgstr "Plantilla \"%(name)s\" aplicada a \"%(app_id)s\" exitosamente."
 
-#: app/routes/templates.py:337
+#: app/routes/templates.py:339
 #, python-format
 msgid "Failed to apply template to \"%(app_id)s\": %(error)s"
 msgstr "Error al aplicar la plantilla a \"%(app_id)s\": %(error)s"
 
-#: app/routes/templates.py:363
+#: app/routes/templates.py:365
 msgid "No applications selected."
 msgstr "No se seleccionaron aplicaciones."
 
+#: app/routes/templates.py:474
+msgid "You do not have permission to import templates."
+msgstr "No tiene permiso para importar plantillas."
+
+#: app/routes/templates.py:480
+msgid "Please select a JSON file to import."
+msgstr "Seleccione un archivo JSON para importar."
+
+#: app/routes/templates.py:484
+msgid "Only .json files are supported."
+msgstr "Solo se admiten archivos .json."
+
+#: app/routes/templates.py:491
+#, python-format
+msgid "Invalid JSON file: %(error)s"
+msgstr "Archivo JSON inválido: %(error)s"
+
+#: app/routes/templates.py:496
+msgid ""
+"Invalid template format. File must contain \"name\" and \"config_data\" "
+"fields."
+msgstr ""
+"Formato de plantilla inválido. El archivo debe contener los campos \"name\" "
+"y \"config_data\"."
+
+#: app/routes/templates.py:500
+msgid "Invalid template format. \"config_data\" must be a JSON object."
+msgstr "Formato de plantilla inválido. \"config_data\" debe ser un objeto JSON."
+
+#: app/routes/templates.py:524
+#, python-format
+msgid "Template \"%(name)s\" imported successfully."
+msgstr "Plantilla \"%(name)s\" importada exitosamente."
+
+#: app/templates/accounts/rotate_key.html:7
 #: app/templates/applications/list.html:7
 #: app/templates/applications/view.html:7 app/templates/base.html:28
 #: app/templates/certificates/list.html:7
@@ -776,12 +843,12 @@ msgstr "No se seleccionaron aplicaciones."
 #: app/templates/templates/bulk_results.html:7
 #: app/templates/templates/edit.html:7
 #: app/templates/templates/edit_config.html:7
-#: app/templates/templates/list.html:7 app/templates/templates/save_as.html:7
-#: app/templates/templates/view.html:7
+#: app/templates/templates/import.html:7 app/templates/templates/list.html:7
+#: app/templates/templates/save_as.html:7 app/templates/templates/view.html:7
 msgid "Dashboard"
 msgstr "Panel de control"
 
-#: app/templates/base.html:34
+#: app/templates/accounts/rotate_key.html:8 app/templates/base.html:34
 msgid "Accounts"
 msgstr "Cuentas"
 
@@ -840,11 +907,15 @@ msgstr "Perfil"
 msgid "Logout"
 msgstr "Cerrar sesión"
 
-#: app/templates/base.html:189
+#: app/templates/base.html:162 app/templates/base.html:214
+msgid "Close"
+msgstr "Cerrar"
+
+#: app/templates/base.html:194
 msgid "Session Expiring"
 msgstr "Sesión expirando"
 
-#: app/templates/base.html:192
+#: app/templates/base.html:197
 msgid ""
 "Your session is about to expire due to inactivity. You will be logged out in"
 " 2 minutes."
@@ -852,45 +923,48 @@ msgstr ""
 "Su sesión está a punto de expirar por inactividad. Se cerrará su sesión en 2"
 " minutos."
 
-#: app/templates/base.html:195
+#: app/templates/base.html:200
 msgid "Logout Now"
 msgstr "Cerrar sesión ahora"
 
-#: app/templates/base.html:196
+#: app/templates/base.html:201
 msgid "Continue Session"
 msgstr "Continuar sesión"
 
-#: app/templates/base.html:208
+#: app/templates/base.html:213
 msgid "Confirm Action"
 msgstr "Confirmar acción"
 
-#: app/templates/base.html:209
-msgid "Close"
-msgstr "Cerrar"
-
-#: app/templates/admin/users.html:29 app/templates/base.html:211
+#: app/templates/admin/users.html:29 app/templates/base.html:216
 msgid "Are you sure?"
 msgstr "¿Está seguro?"
 
 #: app/templates/accounts/add.html:58 app/templates/accounts/edit.html:71
+#: app/templates/accounts/rotate_key.html:58
 #: app/templates/admin/user_create.html:43
 #: app/templates/admin/user_edit.html:41
 #: app/templates/applications/create.html:94
-#: app/templates/auth/change_password.html:28 app/templates/base.html:213
+#: app/templates/auth/change_password.html:28 app/templates/base.html:218
 #: app/templates/certificates/upload.html:81
 #: app/templates/templates/add.html:50
 #: app/templates/templates/bulk_apply.html:85
 #: app/templates/templates/edit.html:51
 #: app/templates/templates/edit_config.html:36
+#: app/templates/templates/import.html:40
 #: app/templates/templates/save_as.html:112
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: app/templates/base.html:214
+#: app/templates/base.html:219
 msgid "Confirm"
 msgstr "Confirmar"
 
-#: app/templates/base.html:222
+#: app/templates/base.html:229 app/templates/base.html:231
+#: app/templates/templates/view.html:147
+msgid "Loading..."
+msgstr "Cargando..."
+
+#: app/templates/base.html:237
 #, python-format
 msgid "Showing %(visible)s of %(total)s"
 msgstr "Mostrando %(visible)s de %(total)s"
@@ -905,11 +979,11 @@ msgstr "Cuentas WaaS"
 msgid "Manage Accounts"
 msgstr "Gestionar cuentas"
 
-#: app/templates/accounts/view.html:77 app/templates/dashboard.html:35
+#: app/templates/accounts/view.html:78 app/templates/dashboard.html:35
 msgid "View Applications"
 msgstr "Ver aplicaciones"
 
-#: app/templates/accounts/view.html:80 app/templates/dashboard.html:49
+#: app/templates/accounts/view.html:81 app/templates/dashboard.html:49
 msgid "View Certificates"
 msgstr "Ver certificados"
 
@@ -917,14 +991,14 @@ msgstr "Ver certificados"
 msgid "Your WaaS Accounts"
 msgstr "Sus cuentas WaaS"
 
-#: app/templates/accounts/list.html:30 app/templates/accounts/view.html:31
+#: app/templates/accounts/list.html:30 app/templates/accounts/view.html:32
 #: app/templates/admin/panel.html:65 app/templates/admin/panel.html:112
 #: app/templates/admin/users.html:23 app/templates/applications/create.html:69
 #: app/templates/dashboard.html:66
 msgid "Active"
 msgstr "Activo"
 
-#: app/templates/accounts/list.html:31 app/templates/accounts/view.html:31
+#: app/templates/accounts/list.html:31 app/templates/accounts/view.html:32
 #: app/templates/admin/panel.html:113 app/templates/dashboard.html:68
 msgid "Inactive"
 msgstr "Inactivo"
@@ -974,7 +1048,7 @@ msgstr "Agregar nueva cuenta WaaS"
 msgid "Browse Applications"
 msgstr "Explorar aplicaciones"
 
-#: app/templates/accounts/view.html:83 app/templates/dashboard.html:139
+#: app/templates/accounts/view.html:84 app/templates/dashboard.html:139
 #: app/templates/logs/index.html:70
 msgid "View Logs"
 msgstr "Ver registros"
@@ -993,7 +1067,7 @@ msgid "Time"
 msgstr "Hora"
 
 #: app/templates/admin/audit_log.html:43 app/templates/admin/index.html:46
-#: app/templates/dashboard.html:159 app/templates/logs/waf.html:97
+#: app/templates/dashboard.html:159 app/templates/logs/waf.html:110
 #: app/templates/proxy/session.html:101
 msgid "Action"
 msgstr "Acción"
@@ -1028,7 +1102,7 @@ msgstr "días"
 
 #: app/templates/applications/list.html:150
 #: app/templates/certificates/list.html:92 app/templates/dashboard.html:233
-#: app/templates/templates/list.html:107
+#: app/templates/templates/list.html:113
 msgid "View"
 msgstr "Ver"
 
@@ -1051,7 +1125,7 @@ msgid "A friendly name to identify this account."
 msgstr "Un nombre descriptivo para identificar esta cuenta."
 
 #: app/templates/accounts/add.html:22 app/templates/accounts/edit.html:22
-#: app/templates/accounts/view.html:44
+#: app/templates/accounts/view.html:45
 msgid "API Key (v4)"
 msgstr "Clave API (v4)"
 
@@ -1100,9 +1174,9 @@ msgstr ""
 "correo + contraseña (o ambos). Correo/contraseña habilita la verificación de"
 " cuenta y funciones de API v2."
 
-#: app/templates/accounts/edit.html:2 app/templates/accounts/view.html:18
+#: app/templates/accounts/edit.html:2 app/templates/accounts/view.html:19
 #: app/templates/templates/edit.html:2 app/templates/templates/edit.html:10
-#: app/templates/templates/list.html:60 app/templates/templates/view.html:19
+#: app/templates/templates/list.html:65 app/templates/templates/view.html:20
 msgid "Edit"
 msgstr "Editar"
 
@@ -1111,12 +1185,14 @@ msgid "Edit Account:"
 msgstr "Editar cuenta:"
 
 #: app/templates/accounts/edit.html:24 app/templates/accounts/edit.html:45
-#: app/templates/accounts/view.html:47 app/templates/accounts/view.html:57
+#: app/templates/accounts/rotate_key.html:30
+#: app/templates/accounts/view.html:48 app/templates/accounts/view.html:58
 msgid "Configured"
 msgstr "Configurado"
 
 #: app/templates/accounts/edit.html:26 app/templates/accounts/edit.html:47
-#: app/templates/accounts/view.html:49 app/templates/accounts/view.html:59
+#: app/templates/accounts/rotate_key.html:32
+#: app/templates/accounts/view.html:50 app/templates/accounts/view.html:60
 #: app/templates/auth/profile.html:13
 msgid "Not set"
 msgstr "No establecido"
@@ -1155,19 +1231,19 @@ msgstr ""
 msgid "Save Changes"
 msgstr "Guardar cambios"
 
-#: app/templates/accounts/list.html:18 app/templates/accounts/view.html:30
+#: app/templates/accounts/list.html:18 app/templates/accounts/view.html:31
 #: app/templates/admin/panel.html:99
 msgid "WaaS Account ID"
 msgstr "ID de cuenta WaaS"
 
-#: app/templates/accounts/list.html:19 app/templates/accounts/view.html:31
+#: app/templates/accounts/list.html:19 app/templates/accounts/view.html:32
 #: app/templates/admin/panel.html:100 app/templates/admin/users.html:15
-#: app/templates/logs/access.html:100 app/templates/proxy/launch.html:97
+#: app/templates/logs/access.html:113 app/templates/proxy/launch.html:97
 #: app/templates/templates/bulk_results.html:58
 msgid "Status"
 msgstr "Estado"
 
-#: app/templates/accounts/list.html:20 app/templates/accounts/view.html:33
+#: app/templates/accounts/list.html:20 app/templates/accounts/view.html:34
 #: app/templates/admin/panel.html:102
 msgid "Last Verified"
 msgstr "Última verificación"
@@ -1175,11 +1251,11 @@ msgstr "Última verificación"
 #: app/templates/accounts/list.html:21 app/templates/admin/users.html:15
 #: app/templates/applications/list.html:106
 #: app/templates/certificates/list.html:64
-#: app/templates/templates/list.html:43 app/templates/templates/list.html:96
+#: app/templates/templates/list.html:48 app/templates/templates/list.html:102
 msgid "Actions"
 msgstr "Acciones"
 
-#: app/templates/accounts/list.html:33 app/templates/accounts/view.html:33
+#: app/templates/accounts/list.html:33 app/templates/accounts/view.html:34
 #: app/templates/admin/panel.html:76 app/templates/admin/panel.html:116
 #: app/templates/admin/users.html:24
 msgid "Never"
@@ -1193,6 +1269,33 @@ msgstr "Sin cuentas aún"
 msgid "Add a WaaS API account to get started."
 msgstr "Agregue una cuenta API de WaaS para comenzar."
 
+#: app/templates/accounts/rotate_key.html:24
+#: app/templates/applications/dns.html:13
+#: app/templates/applications/list.html:43
+#: app/templates/applications/security.html:20
+#: app/templates/certificates/list.html:40
+#: app/templates/certificates/upload.html:13 app/templates/logs/access.html:43
+#: app/templates/logs/fp_analysis.html:30 app/templates/logs/index.html:47
+#: app/templates/logs/waf.html:43 app/templates/proxy/launch.html:24
+msgid "Account:"
+msgstr "Cuenta:"
+
+#: app/templates/accounts/rotate_key.html:28
+msgid "Current API Key Status:"
+msgstr "Estado actual de la clave API:"
+
+#: app/templates/accounts/rotate_key.html:47
+msgid "Paste the new API key from your WaaS account settings."
+msgstr "Pegue la nueva clave API desde la configuración de su cuenta WaaS."
+
+#: app/templates/accounts/rotate_key.html:53
+msgid ""
+"If checked, the new key will be tested with a lightweight API call before "
+"saving."
+msgstr ""
+"Si está marcado, la nueva clave se probará con una llamada API ligera antes "
+"de guardar."
+
 #: app/templates/accounts/view.html:11 app/templates/accounts/view.html:15
 msgid "Verify"
 msgstr "Verificar"
@@ -1201,50 +1304,50 @@ msgstr "Verificar"
 msgid "Add v2 credentials to enable verification"
 msgstr "Agregue credenciales v2 para habilitar la verificación"
 
-#: app/templates/accounts/view.html:19
+#: app/templates/accounts/view.html:20
 #: app/templates/applications/create.html:9
 #: app/templates/applications/view.html:23
 #: app/templates/certificates/view.html:18 app/templates/proxy/session.html:20
-#: app/templates/templates/view.html:26
+#: app/templates/templates/view.html:27
 msgid "Back"
 msgstr "Volver"
 
-#: app/templates/accounts/view.html:26
+#: app/templates/accounts/view.html:27
 msgid "Account Details"
 msgstr "Detalles de la cuenta"
 
-#: app/templates/accounts/view.html:30
+#: app/templates/accounts/view.html:31
 msgid "Not verified"
 msgstr "No verificado"
 
-#: app/templates/accounts/view.html:32 app/templates/admin/panel.html:101
-#: app/templates/templates/view.html:46
+#: app/templates/accounts/view.html:33 app/templates/admin/panel.html:101
+#: app/templates/templates/view.html:47
 msgid "Created"
 msgstr "Creado"
 
-#: app/templates/accounts/view.html:40
+#: app/templates/accounts/view.html:41
 msgid "Credentials"
 msgstr "Credenciales"
 
-#: app/templates/accounts/view.html:54
+#: app/templates/accounts/view.html:55
 msgid "v2 Login (Email)"
 msgstr "Inicio de sesión v2 (Correo)"
 
-#: app/templates/accounts/view.html:67
+#: app/templates/accounts/view.html:68
 msgid "v2 login credentials are required for account verification."
 msgstr ""
 "Se requieren credenciales de inicio de sesión v2 para la verificación de "
 "cuenta."
 
-#: app/templates/accounts/view.html:68
+#: app/templates/accounts/view.html:69
 msgid "Edit account"
 msgstr "Editar cuenta"
 
-#: app/templates/accounts/view.html:68
+#: app/templates/accounts/view.html:69
 msgid "to add them."
 msgstr "para agregarlas."
 
-#: app/templates/accounts/view.html:74
+#: app/templates/accounts/view.html:75
 msgid "Quick Links"
 msgstr "Enlaces rápidos"
 
@@ -1264,8 +1367,8 @@ msgstr "Filtrar por acción"
 msgid "All Actions"
 msgstr "Todas las acciones"
 
-#: app/templates/admin/audit_log.html:31 app/templates/logs/access.html:59
-#: app/templates/logs/waf.html:59
+#: app/templates/admin/audit_log.html:31 app/templates/logs/access.html:72
+#: app/templates/logs/waf.html:72
 msgid "Filter"
 msgstr "Filtrar"
 
@@ -1273,8 +1376,8 @@ msgstr "Filtrar"
 msgid "Clear"
 msgstr "Limpiar"
 
-#: app/templates/admin/audit_log.html:43 app/templates/logs/access.html:95
-#: app/templates/logs/fp_analysis.html:153 app/templates/logs/waf.html:95
+#: app/templates/admin/audit_log.html:43 app/templates/logs/access.html:108
+#: app/templates/logs/fp_analysis.html:153 app/templates/logs/waf.html:108
 msgid "Timestamp"
 msgstr "Marca de tiempo"
 
@@ -1286,14 +1389,14 @@ msgstr "IP"
 msgid "No audit log entries found."
 msgstr "No se encontraron entradas en el registro de auditoría."
 
-#: app/templates/admin/audit_log.html:68 app/templates/logs/access.html:150
-#: app/templates/logs/waf.html:151
+#: app/templates/admin/audit_log.html:68 app/templates/logs/access.html:163
+#: app/templates/logs/waf.html:164
 msgid "Previous"
 msgstr "Anterior"
 
-#: app/templates/admin/audit_log.html:78 app/templates/logs/access.html:84
-#: app/templates/logs/access.html:154 app/templates/logs/waf.html:84
-#: app/templates/logs/waf.html:155
+#: app/templates/admin/audit_log.html:78 app/templates/logs/access.html:97
+#: app/templates/logs/access.html:167 app/templates/logs/waf.html:97
+#: app/templates/logs/waf.html:168
 msgid "Next"
 msgstr "Siguiente"
 
@@ -1350,7 +1453,7 @@ msgstr "No"
 msgid "All WaaS Accounts"
 msgstr "Todas las cuentas WaaS"
 
-#: app/templates/admin/panel.html:98 app/templates/templates/view.html:38
+#: app/templates/admin/panel.html:98 app/templates/templates/view.html:39
 msgid "Owner"
 msgstr "Propietario"
 
@@ -1438,25 +1541,15 @@ msgstr "Información DNS / CNAME"
 
 #: app/templates/applications/dns.html:8
 #: app/templates/applications/security.html:14
-#: app/templates/logs/access.html:20 app/templates/logs/fp_analysis.html:20
-#: app/templates/logs/waf.html:20
+#: app/templates/logs/access.html:32 app/templates/logs/fp_analysis.html:20
+#: app/templates/logs/waf.html:32
 msgid "Back to Application"
 msgstr "Volver a la aplicación"
 
-#: app/templates/applications/dns.html:13
-#: app/templates/applications/list.html:43
-#: app/templates/applications/security.html:20
-#: app/templates/certificates/list.html:40
-#: app/templates/certificates/upload.html:13 app/templates/logs/access.html:30
-#: app/templates/logs/fp_analysis.html:30 app/templates/logs/index.html:47
-#: app/templates/logs/waf.html:30 app/templates/proxy/launch.html:24
-msgid "Account:"
-msgstr "Cuenta:"
-
 #: app/templates/applications/dns.html:14
 #: app/templates/applications/security.html:21
-#: app/templates/applications/view.html:239 app/templates/logs/access.html:31
-#: app/templates/logs/fp_analysis.html:31 app/templates/logs/waf.html:31
+#: app/templates/applications/view.html:239 app/templates/logs/access.html:44
+#: app/templates/logs/fp_analysis.html:31 app/templates/logs/waf.html:44
 #: app/templates/proxy/launch.html:25
 msgid "Application:"
 msgstr "Aplicación:"
@@ -1539,13 +1632,13 @@ msgstr "No hay cuentas WaaS configuradas."
 
 #: app/templates/applications/list.html:24
 #: app/templates/certificates/list.html:24 app/templates/logs/index.html:26
-#: app/templates/templates/view.html:127
+#: app/templates/templates/view.html:128
 msgid "Add an account"
 msgstr "Agregar una cuenta"
 
 #: app/templates/applications/list.html:24
 #: app/templates/certificates/list.html:24 app/templates/logs/index.html:26
-#: app/templates/templates/view.html:127
+#: app/templates/templates/view.html:128
 msgid "first."
 msgstr "primero."
 
@@ -1732,15 +1825,15 @@ msgstr "Navegar aplicación"
 
 #: app/templates/applications/view.html:39
 #: app/templates/certificates/view.html:29 app/templates/proxy/launch.html:48
-#: app/templates/templates/list.html:39 app/templates/templates/list.html:92
-#: app/templates/templates/view.html:37
+#: app/templates/templates/list.html:44 app/templates/templates/list.html:98
+#: app/templates/templates/view.html:38
 msgid "Name"
 msgstr "Nombre"
 
 #: app/templates/applications/view.html:47
 #: app/templates/certificates/view.html:34
 #: app/templates/templates/bulk_results.html:57
-#: app/templates/templates/view.html:96
+#: app/templates/templates/view.html:97
 msgid "Account"
 msgstr "Cuenta"
 
@@ -1790,7 +1883,7 @@ msgid "Port"
 msgstr "Puerto"
 
 #: app/templates/applications/view.html:121
-#: app/templates/applications/view.html:275 app/templates/logs/access.html:103
+#: app/templates/applications/view.html:275 app/templates/logs/access.html:116
 msgid "Protocol"
 msgstr "Protocolo"
 
@@ -1842,8 +1935,8 @@ msgstr "Intervalo"
 msgid "URL"
 msgstr "URL"
 
-#: app/templates/applications/view.html:205 app/templates/logs/access.html:98
-#: app/templates/logs/fp_analysis.html:156 app/templates/logs/waf.html:101
+#: app/templates/applications/view.html:205 app/templates/logs/access.html:111
+#: app/templates/logs/fp_analysis.html:156 app/templates/logs/waf.html:114
 msgid "Method"
 msgstr "Método"
 
@@ -1981,7 +2074,7 @@ msgstr "Nombre del certificado"
 #: app/templates/certificates/upload.html:28
 #: app/templates/certificates/view.html:33 app/templates/logs/index.html:67
 #: app/templates/templates/bulk_results.html:56
-#: app/templates/templates/view.html:105
+#: app/templates/templates/view.html:106
 msgid "Application"
 msgstr "Aplicación"
 
@@ -2017,7 +2110,7 @@ msgid "Certificate Details"
 msgstr "Detalles del certificado"
 
 #: app/templates/certificates/upload.html:30
-#: app/templates/templates/view.html:158
+#: app/templates/templates/view.html:159
 msgid "Select application..."
 msgstr "Seleccionar aplicación..."
 
@@ -2158,76 +2251,90 @@ msgstr "Algo salió mal de nuestro lado. Intente de nuevo más tarde."
 msgid "Access Logs"
 msgstr "Registros de acceso"
 
-#: app/templates/logs/access.html:24 app/templates/logs/fp_analysis.html:24
-#: app/templates/logs/waf.html:24
+#: app/templates/logs/access.html:22 app/templates/logs/waf.html:22
+#: app/templates/templates/list.html:67 app/templates/templates/list.html:114
+#: app/templates/templates/view.html:18
+msgid "Export"
+msgstr "Exportar"
+
+#: app/templates/logs/access.html:25 app/templates/logs/waf.html:25
+msgid "Export CSV"
+msgstr "Exportar CSV"
+
+#: app/templates/logs/access.html:26 app/templates/logs/waf.html:26
+msgid "Export JSON"
+msgstr "Exportar JSON"
+
+#: app/templates/logs/access.html:36 app/templates/logs/fp_analysis.html:24
+#: app/templates/logs/waf.html:36
 msgid "Back to Log Viewer"
 msgstr "Volver al visor de registros"
 
-#: app/templates/logs/access.html:39 app/templates/logs/fp_analysis.html:39
-#: app/templates/logs/waf.html:39
+#: app/templates/logs/access.html:52 app/templates/logs/fp_analysis.html:39
+#: app/templates/logs/waf.html:52
 msgid "Time Range"
 msgstr "Rango de tiempo"
 
-#: app/templates/logs/access.html:47 app/templates/logs/access.html:96
-#: app/templates/logs/fp_analysis.html:154 app/templates/logs/waf.html:47
-#: app/templates/logs/waf.html:102
+#: app/templates/logs/access.html:60 app/templates/logs/access.html:109
+#: app/templates/logs/fp_analysis.html:154 app/templates/logs/waf.html:60
+#: app/templates/logs/waf.html:115
 msgid "Client IP"
 msgstr "IP del cliente"
 
-#: app/templates/logs/access.html:51 app/templates/logs/waf.html:51
+#: app/templates/logs/access.html:64 app/templates/logs/waf.html:64
 msgid "Per Page"
 msgstr "Por página"
 
-#: app/templates/logs/access.html:64 app/templates/logs/waf.html:64
+#: app/templates/logs/access.html:77 app/templates/logs/waf.html:77
 msgid "Clear IP Filter"
 msgstr "Limpiar filtro de IP"
 
-#: app/templates/logs/access.html:75 app/templates/logs/waf.html:75
+#: app/templates/logs/access.html:88 app/templates/logs/waf.html:88
 msgid "Showing"
 msgstr "Mostrando"
 
-#: app/templates/logs/access.html:75
+#: app/templates/logs/access.html:88
 msgid "access entries"
 msgstr "entradas de acceso"
 
-#: app/templates/logs/access.html:75 app/templates/logs/waf.html:75
+#: app/templates/logs/access.html:88 app/templates/logs/waf.html:88
 msgid "total results from API"
 msgstr "resultados totales de la API"
 
-#: app/templates/logs/access.html:79 app/templates/logs/waf.html:79
+#: app/templates/logs/access.html:92 app/templates/logs/waf.html:92
 msgid "Prev"
 msgstr "Ant"
 
-#: app/templates/logs/access.html:81 app/templates/logs/waf.html:81
+#: app/templates/logs/access.html:94 app/templates/logs/waf.html:94
 msgid "Page"
 msgstr "Página"
 
-#: app/templates/logs/access.html:97 app/templates/logs/fp_analysis.html:155
-#: app/templates/logs/waf.html:103
+#: app/templates/logs/access.html:110 app/templates/logs/fp_analysis.html:155
+#: app/templates/logs/waf.html:116
 msgid "Country"
 msgstr "País"
 
-#: app/templates/logs/access.html:101
+#: app/templates/logs/access.html:114
 msgid "Bytes Sent"
 msgstr "Bytes enviados"
 
-#: app/templates/logs/access.html:102
+#: app/templates/logs/access.html:115
 msgid "Time (ms)"
 msgstr "Tiempo (ms)"
 
-#: app/templates/logs/access.html:104
+#: app/templates/logs/access.html:117
 msgid "Protected"
 msgstr "Protegido"
 
-#: app/templates/logs/access.html:105
+#: app/templates/logs/access.html:118
 msgid "Response"
 msgstr "Respuesta"
 
-#: app/templates/logs/access.html:162
+#: app/templates/logs/access.html:175
 msgid "No Access Log Entries"
 msgstr "Sin entradas de registro de acceso"
 
-#: app/templates/logs/access.html:163
+#: app/templates/logs/access.html:176
 msgid ""
 "No access/traffic log entries found for this application in the selected "
 "time range."
@@ -2329,31 +2436,31 @@ msgstr "Seleccionar aplicación y tipo de registro"
 msgid "WAF Logs"
 msgstr "Registros WAF"
 
-#: app/templates/logs/waf.html:75
+#: app/templates/logs/waf.html:88
 msgid "WAF entries"
 msgstr "entradas WAF"
 
-#: app/templates/logs/waf.html:96
+#: app/templates/logs/waf.html:109
 msgid "Severity"
 msgstr "Severidad"
 
-#: app/templates/logs/waf.html:98
+#: app/templates/logs/waf.html:111
 msgid "Attack Group"
 msgstr "Grupo de ataque"
 
-#: app/templates/logs/waf.html:99
+#: app/templates/logs/waf.html:112
 msgid "Attack"
 msgstr "Ataque"
 
-#: app/templates/logs/waf.html:105
+#: app/templates/logs/waf.html:118
 msgid "Risk"
 msgstr "Riesgo"
 
-#: app/templates/logs/waf.html:163
+#: app/templates/logs/waf.html:176
 msgid "No WAF Log Entries"
 msgstr "Sin entradas de registro WAF"
 
-#: app/templates/logs/waf.html:164
+#: app/templates/logs/waf.html:177
 msgid ""
 "No WAF (firewall) log entries found for this application in the selected "
 "time range."
@@ -2536,7 +2643,7 @@ msgid "Error loading logs:"
 msgstr "Error al cargar registros:"
 
 #: app/templates/templates/add.html:2 app/templates/templates/add.html:9
-#: app/templates/templates/list.html:18
+#: app/templates/templates/list.html:22
 msgid "New Template"
 msgstr "Nueva plantilla"
 
@@ -2545,9 +2652,9 @@ msgstr "Nueva plantilla"
 #: app/templates/templates/bulk_results.html:8
 #: app/templates/templates/edit.html:2 app/templates/templates/edit.html:8
 #: app/templates/templates/edit_config.html:8
-#: app/templates/templates/list.html:2 app/templates/templates/list.html:8
-#: app/templates/templates/list.html:15 app/templates/templates/view.html:2
-#: app/templates/templates/view.html:8
+#: app/templates/templates/import.html:8 app/templates/templates/list.html:2
+#: app/templates/templates/list.html:8 app/templates/templates/list.html:15
+#: app/templates/templates/view.html:2 app/templates/templates/view.html:8
 msgid "Config Templates"
 msgstr "Plantillas de configuración"
 
@@ -2561,7 +2668,7 @@ msgstr "Las plantillas globales son visibles para todos los usuarios."
 
 #: app/templates/templates/bulk_apply.html:2
 #: app/templates/templates/bulk_apply.html:10
-#: app/templates/templates/view.html:123
+#: app/templates/templates/view.html:124
 msgid "Bulk Apply"
 msgstr "Aplicar en lote"
 
@@ -2584,12 +2691,12 @@ msgid "Import Options"
 msgstr "Opciones de importación"
 
 #: app/templates/templates/bulk_apply.html:30
-#: app/templates/templates/view.html:113
+#: app/templates/templates/view.html:114
 msgid "Include Servers"
 msgstr "Incluir servidores"
 
 #: app/templates/templates/bulk_apply.html:34
-#: app/templates/templates/view.html:117
+#: app/templates/templates/view.html:118
 msgid "Include Endpoints"
 msgstr "Incluir endpoints"
 
@@ -2654,7 +2761,7 @@ msgstr "Editar plantilla"
 
 #: app/templates/templates/edit_config.html:2
 #: app/templates/templates/edit_config.html:10
-#: app/templates/templates/list.html:61 app/templates/templates/view.html:20
+#: app/templates/templates/list.html:66 app/templates/templates/view.html:21
 msgid "Edit Config"
 msgstr "Editar configuración"
 
@@ -2690,46 +2797,80 @@ msgstr "JSON inválido:"
 msgid "Cannot format:"
 msgstr "No se puede formatear:"
 
-#: app/templates/templates/list.html:25
+#: app/templates/templates/import.html:2
+#: app/templates/templates/import.html:19 app/templates/templates/list.html:19
+msgid "Import Template"
+msgstr "Importar plantilla"
+
+#: app/templates/templates/import.html:9
+#: app/templates/templates/import.html:39
+msgid "Import"
+msgstr "Importar"
+
+#: app/templates/templates/import.html:22
+msgid ""
+"Upload a JSON file previously exported from this portal to create a new "
+"template."
+msgstr ""
+"Suba un archivo JSON previamente exportado desde este portal para crear una "
+"nueva plantilla."
+
+#: app/templates/templates/import.html:28
+msgid "Template File"
+msgstr "Archivo de plantilla"
+
+#: app/templates/templates/import.html:30
+msgid "Accepted format: .json"
+msgstr "Formato aceptado: .json"
+
+#: app/templates/templates/import.html:35
+msgid ""
+"The JSON file must contain at minimum a \"name\" (string) and "
+"\"config_data\" (object) field."
+msgstr ""
+"El archivo JSON debe contener como mínimo un campo \"name\" (texto) y "
+"\"config_data\" (objeto)."
+
+#: app/templates/templates/list.html:30
 msgid "Search templates..."
 msgstr "Buscar plantillas..."
 
-#: app/templates/templates/list.html:31
+#: app/templates/templates/list.html:36
 msgid "My Templates"
 msgstr "Mis plantillas"
 
-#: app/templates/templates/list.html:41 app/templates/templates/view.html:39
+#: app/templates/templates/list.html:46 app/templates/templates/view.html:40
 msgid "Visibility"
 msgstr "Visibilidad"
 
-#: app/templates/templates/list.html:42 app/templates/templates/list.html:95
-#: app/templates/templates/view.html:47
+#: app/templates/templates/list.html:47 app/templates/templates/list.html:101
+#: app/templates/templates/view.html:48
 msgid "Updated"
 msgstr "Actualizado"
 
-#: app/templates/templates/list.html:53 app/templates/templates/view.html:41
+#: app/templates/templates/list.html:58 app/templates/templates/view.html:42
 msgid "Global"
 msgstr "Global"
 
-#: app/templates/templates/list.html:55 app/templates/templates/view.html:43
+#: app/templates/templates/list.html:60 app/templates/templates/view.html:44
 msgid "Private"
 msgstr "Privado"
 
-#: app/templates/templates/list.html:72
+#: app/templates/templates/list.html:78
 msgid "No Templates Yet"
 msgstr "Sin plantillas aún"
 
-#: app/templates/templates/list.html:73
+#: app/templates/templates/list.html:79
 msgid "Create a template to save and reuse application configurations."
 msgstr ""
 "Cree una plantilla para guardar y reutilizar configuraciones de "
 "aplicaciones."
 
-#: app/templates/templates/list.html:85
+#: app/templates/templates/list.html:91
 msgid "Global Templates"
 msgstr "Plantillas globales"
 
-#: app/templates/templates/list.html:94
+#: app/templates/templates/list.html:100
 msgid "Created By"
 msgstr "Creado por"
 
@@ -2773,54 +2914,50 @@ msgstr "Puertos, dominios, CNAME, configuración TLS"
 msgid "Preview Exported Config"
 msgstr "Vista previa de la configuración exportada"
 
-#: app/templates/templates/view.html:21
+#: app/templates/templates/view.html:22
 msgid "Are you sure you want to delete this template?"
 msgstr "¿Está seguro de que desea eliminar esta plantilla?"
 
-#: app/templates/templates/view.html:23
+#: app/templates/templates/view.html:24
 msgid "Delete"
 msgstr "Eliminar"
 
-#: app/templates/templates/view.html:34
+#: app/templates/templates/view.html:35
 msgid "Template Details"
 msgstr "Detalles de la plantilla"
 
-#: app/templates/templates/view.html:61
+#: app/templates/templates/view.html:62
 msgid "No description provided."
 msgstr "Sin descripción proporcionada."
 
-#: app/templates/templates/view.html:73
+#: app/templates/templates/view.html:74
 msgid "Configuration Data"
 msgstr "Datos de configuración"
 
-#: app/templates/templates/view.html:88
+#: app/templates/templates/view.html:89
 msgid "Quick Apply"
 msgstr "Aplicación rápida"
 
-#: app/templates/templates/view.html:92
+#: app/templates/templates/view.html:93
 msgid "Apply this template to the selected application?"
 msgstr "¿Aplicar esta plantilla a la aplicación seleccionada?"
 
-#: app/templates/templates/view.html:98
+#: app/templates/templates/view.html:99
 msgid "Select account..."
 msgstr "Seleccionar cuenta..."
 
-#: app/templates/templates/view.html:107 app/templates/templates/view.html:151
+#: app/templates/templates/view.html:108 app/templates/templates/view.html:152
 msgid "Select account first..."
 msgstr "Seleccione una cuenta primero..."
 
-#: app/templates/templates/view.html:122
+#: app/templates/templates/view.html:123
 msgid "Apply Template"
 msgstr "Aplicar plantilla"
 
-#: app/templates/templates/view.html:127
+#: app/templates/templates/view.html:128
 msgid "No active WaaS accounts found."
 msgstr "No se encontraron cuentas WaaS activas."
 
-#: app/templates/templates/view.html:146
-msgid "Loading..."
-msgstr "Cargando..."
-
-#: app/templates/templates/view.html:168
+#: app/templates/templates/view.html:169
 msgid "Failed to load apps"
 msgstr "Error al cargar aplicaciones"

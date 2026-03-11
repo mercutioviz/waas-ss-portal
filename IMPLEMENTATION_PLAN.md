@@ -1,6 +1,6 @@
 # WaaS Self-Service Portal — Implementation Plan
 
-*Last updated: 2026-03-11*
+*Last updated: 2026-03-11 (Phase 7 medium items)*
 
 ---
 
@@ -14,7 +14,7 @@
 | **Main** | index (redirect), dashboard, counts | dashboard.html | `/` redirects to `/dashboard`; AJAX cert/app counts |
 | **Accounts** | list, add, edit, view, verify, delete, rotate_key | list.html, add.html, edit.html, view.html, rotate_key.html | Full CRUD, API key encryption, account verification, key rotation |
 | **Admin** | index, users, user_create, user_edit, toggle_active, audit_log | index.html, users.html, user_create.html, user_edit.html, audit_log.html, panel.html | Role-based access, audit logging |
-| **Applications** | list, view, create, delete, security, dns | list.html, view.html, create.html, security.html, dns.html | v4/v2 toggle, create/delete via v2, security/DNS via v4 |
+| **Applications** | list, view, create, delete, security, dns, compare, api_config | list.html, view.html, create.html, security.html, dns.html, compare.html | v4/v2 toggle, create/delete via v2, security/DNS via v4, side-by-side comparison, JSON config API |
 | **Certificates** | list, view, upload, delete | list.html, view.html, upload.html | Per-application SNI certificates (v4), aggregated list view |
 | **Logs** | index, waf, access, fp_analysis | index.html, waf.html, access.html, fp_analysis.html | Account/app selector, WAF/access log viewers, CSV/JSON export |
 | **Proxy** | launch, start, stop, session, waf-logs | launch.html, session.html | noVNC browser proxy sessions |
@@ -31,7 +31,7 @@ All WaaS API calls now use the correct endpoints. Users see API version badges i
 | Create application | v2 | `POST /applications/` |
 | Delete application | v2 | `DELETE /applications/{id}/` |
 | Security config | v4 | `GET /applications/{name}/basic_security/`, `/request_limits/`, `/clickjacking_protection/`, `/data_theft_protection/` |
-| Update security | v4 | `PATCH /applications/{name}/basic_security/` |
+| Update security | v4 | `PATCH /applications/{name}/basic_security/`, `/request_limits/`, `/clickjacking_protection/`, `/data_theft_protection/` |
 | DNS/CNAME info | v4 | Extracted from application export (`endpoints.cname`, `endpoints.domains`) |
 | Certificates | v4 | `GET /applications/{name}/sni_certificates/` (per-app) |
 | Account verify | v2 | `GET /accounts/` |
@@ -169,9 +169,9 @@ pybabel compile -d app/translations
 
 ---
 
-### Phase 7: Advanced Features (Small Items) ✅ DONE (5 of 11)
+### Phase 7: Advanced Features ✅ DONE (9 of 11)
 
-**Goal:** Add power-user and operational features. Small-complexity items completed first.
+**Goal:** Add power-user and operational features. Small-complexity items completed first, then medium items.
 
 **What was built (small items):**
 
@@ -180,20 +180,27 @@ pybabel compile -d app/translations
 - **Log Export (7.2)** — `?format=csv` and `?format=json` query params on WAF and access log routes. CSV uses `DictWriter` with correct field lists per log type. JSON with `json.dumps`. File download with `Content-Disposition: attachment`. Audit log entries on export. Export dropdown buttons in log page headers.
 - **API Key Rotation (7.7)** — `RotateApiKeyForm` with new key input and verify checkbox. `/accounts/<id>/rotate-key` route. Optional verification via lightweight API call before saving. Invalidates cached v2 tokens. Audit log with `action='account_key_rotation'`. "Rotate API Key" button on account view page.
 - **Template Import/Export (7.4)** — Export route returns JSON with name, description, config_data, is_global, exported_at, version. Import route validates JSON structure (name + config_data required), creates `ConfigTemplate`. `is_global` only honored for admins. "Import Template" button in list header, export icon per row and on view page.
-- **i18n** — All 25 new strings translated to Spanish (630 total, 0 untranslated, 0 fuzzy).
+
+**What was built (medium items):**
+
+- **Expanded Security Config Editing (7.1)** — 3 new `WaasClient` methods (`update_request_limits`, `update_clickjacking_protection`, `update_data_theft_protection`) for individual PATCH endpoints. Route dispatches based on `section` form field with proper type conversion (int for limits, bool for toggles). 3 new collapsible edit forms in security.html with pre-populated values from API. Section name included in audit log details.
+- **Template Diff/Preview (7.3)** — JSON API endpoint (`/applications/api/<account_id>/<app_id>/config`) returns current security config. "Preview Changes" button on template quick-apply fetches current config and renders side-by-side diff modal with color-coded differences (green=added, yellow=modified, red=removed) and summary counts.
+- **Comparison Views (7.5)** — Checkbox column in v4 app list with "Compare Selected (N)" button (enabled at exactly 2). `compare_applications` route fetches security configs for both apps. `compare.html` template shows side-by-side tables per section (protection mode, request limits, clickjacking, data theft) with `table-success`/`table-warning` row highlighting for matching/differing values.
+- **Responsive Improvements (7.10)** — Mobile breakpoints at 575.98px (compact card padding, smaller stat numbers, compact tables, 44px touch targets) and 576–768px (intermediate sizing). Dashboard stat cards `col-6 col-md-4`. App list hides Group/Servers/Health on mobile with `d-none d-md-table-cell`. Security cards use `col-lg-6` for tablet stacking. App view header stacks on mobile (`flex-column flex-sm-row`). WAF/access log filter inputs use responsive CSS classes instead of inline widths; low-priority columns hidden on mobile. Template quick-apply uses `col-12 col-md-4`.
+- **i18n** — All new strings translated to Spanish (655 total, 0 untranslated, 0 fuzzy).
 
 | # | Task | Description | Complexity | Status |
 |---|------|-------------|------------|--------|
-| 7.1 | Expand security config editing | Edit request limits, clickjacking, data theft (not just protection mode) via individual PATCH endpoints | Medium | Pending |
+| 7.1 | Expand security config editing | Edit request limits, clickjacking, data theft (not just protection mode) via individual PATCH endpoints | Medium | ✅ Complete |
 | 7.2 | Log export | Download WAF/access logs as CSV or JSON | Small | ✅ Complete |
-| 7.3 | Template diff/preview | Show before/after diff when applying a template to an app | Medium | Pending |
+| 7.3 | Template diff/preview | Show before/after diff when applying a template to an app | Medium | ✅ Complete |
 | 7.4 | Template import/export | Download templates as JSON files, upload to import | Small | ✅ Complete |
-| 7.5 | Comparison views | Compare security configs between apps side-by-side | Medium | Pending |
+| 7.5 | Comparison views | Compare security configs between apps side-by-side | Medium | ✅ Complete |
 | 7.6 | Multi-user account sharing | Allow WaaS accounts to be shared between portal users | Large | Pending |
 | 7.7 | API key rotation | Rotate WaaS API keys from the portal | Small | ✅ Complete |
 | 7.8 | Loading indicators | Spinners/overlays while API calls are in progress | Small | ✅ Complete |
 | 7.9 | Toast notifications | Replace flash messages with auto-dismissing toasts | Small | ✅ Complete |
-| 7.10 | Responsive improvements | Test and fix mobile layout issues | Medium | Pending |
+| 7.10 | Responsive improvements | Test and fix mobile layout issues | Medium | ✅ Complete |
 | 7.11 | Scheduled reports | Email summaries of WAF activity | Large | Pending |
 
 ---

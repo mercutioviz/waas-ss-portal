@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from flask_babel import lazy_gettext as _l
-from wtforms import StringField, PasswordField, BooleanField, SelectField, SubmitField, TextAreaField, IntegerField
-from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, Optional, Regexp
+from wtforms import StringField, PasswordField, BooleanField, SelectField, SubmitField, TextAreaField, IntegerField, SelectMultipleField
+from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, Optional, Regexp, NumberRange
 from flask_wtf.file import FileField, FileAllowed
 
 
@@ -360,6 +360,101 @@ class ConfigTemplateForm(FlaskForm):
         render_kw={'class': 'form-check-input'}
     )
     submit = SubmitField(_l('Save Template'), render_kw={'class': 'btn btn-primary'})
+
+
+class ShareAccountForm(FlaskForm):
+    """Form for sharing a WaaS account with another user"""
+    username = StringField(
+        _l('Username or Email'),
+        validators=[DataRequired(), Length(max=120)],
+        render_kw={'placeholder': _l('Enter username or email'), 'class': 'form-control'}
+    )
+    permission = SelectField(
+        _l('Permission Level'),
+        choices=[
+            ('read', _l('Read — View only')),
+            ('write', _l('Write — View + modify')),
+            ('admin', _l('Admin — Full access + reshare')),
+        ],
+        default='read',
+        validators=[DataRequired()],
+        render_kw={'class': 'form-select'}
+    )
+    submit = SubmitField(_l('Share Account'), render_kw={'class': 'btn btn-primary'})
+
+    def validate_username(self, username):
+        from app.models import User
+        user = User.query.filter(
+            (User.username == username.data) | (User.email == username.data)
+        ).first()
+        if not user:
+            raise ValidationError(_l('User not found.'))
+        if not user.is_active:
+            raise ValidationError(_l('User account is inactive.'))
+
+
+class ScheduledReportForm(FlaskForm):
+    """Form for creating/editing a scheduled report"""
+    name = StringField(
+        _l('Report Name'),
+        validators=[DataRequired(), Length(max=200)],
+        render_kw={'placeholder': _l('e.g., Weekly WAF Summary'), 'class': 'form-control'}
+    )
+    account_id = SelectField(
+        _l('WaaS Account'),
+        coerce=int,
+        validators=[DataRequired()],
+        render_kw={'class': 'form-select'}
+    )
+    report_type = SelectField(
+        _l('Report Type'),
+        choices=[
+            ('waf_summary', _l('WAF Summary — Top attacks, IPs, severity')),
+            ('access_summary', _l('Access Summary — Request totals, URLs, status codes')),
+            ('security_overview', _l('Security Overview — Current config state')),
+        ],
+        validators=[DataRequired()],
+        render_kw={'class': 'form-select'}
+    )
+    frequency = SelectField(
+        _l('Frequency'),
+        choices=[
+            ('daily', _l('Daily')),
+            ('weekly', _l('Weekly')),
+            ('monthly', _l('Monthly')),
+        ],
+        default='weekly',
+        validators=[DataRequired()],
+        render_kw={'class': 'form-select'}
+    )
+    day_of_week = SelectField(
+        _l('Day of Week'),
+        choices=[
+            ('', _l('— Select —')),
+            ('0', _l('Monday')),
+            ('1', _l('Tuesday')),
+            ('2', _l('Wednesday')),
+            ('3', _l('Thursday')),
+            ('4', _l('Friday')),
+            ('5', _l('Saturday')),
+            ('6', _l('Sunday')),
+        ],
+        default='0',
+        validators=[Optional()],
+        render_kw={'class': 'form-select'}
+    )
+    hour = IntegerField(
+        _l('Hour (0-23)'),
+        default=8,
+        validators=[DataRequired(), NumberRange(min=0, max=23)],
+        render_kw={'class': 'form-control', 'min': '0', 'max': '23'}
+    )
+    recipients = StringField(
+        _l('Recipients (comma-separated emails)'),
+        validators=[DataRequired(), Length(max=1000)],
+        render_kw={'placeholder': _l('user@example.com, admin@example.com'), 'class': 'form-control'}
+    )
+    submit = SubmitField(_l('Save Report'), render_kw={'class': 'btn btn-primary'})
 
 
 class TemplateFromAppForm(FlaskForm):

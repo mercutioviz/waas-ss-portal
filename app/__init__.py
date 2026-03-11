@@ -1,3 +1,4 @@
+import os
 import logging
 from flask import Flask, render_template, request, session
 from flask_sqlalchemy import SQLAlchemy
@@ -5,6 +6,8 @@ from flask_login import LoginManager, current_user
 from flask_babel import Babel
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_mail import Mail
+from flask_apscheduler import APScheduler
 from werkzeug.middleware.proxy_fix import ProxyFix
 from config import config
 from datetime import datetime
@@ -14,6 +17,8 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 babel = Babel()
 limiter = Limiter(key_func=get_remote_address, default_limits=[], storage_uri="memory://")
+mail = Mail()
+scheduler = APScheduler()
 
 
 def get_locale():
@@ -57,6 +62,7 @@ def create_app(config_name='default'):
     login_manager.init_app(app)
     babel.init_app(app, locale_selector=get_locale)
     limiter.init_app(app)
+    mail.init_app(app)
 
     # Configure Flask-Login
     from flask_babel import lazy_gettext as _l
@@ -146,7 +152,7 @@ def create_app(config_name='default'):
         return {'csrf_token': generate_csrf}
 
     # Register blueprints
-    from app.routes import main, auth, admin, accounts, applications, certificates, logs, proxy, templates
+    from app.routes import main, auth, admin, accounts, applications, certificates, logs, proxy, templates, reports
     app.register_blueprint(main.bp)
     app.register_blueprint(auth.bp)
     app.register_blueprint(admin.bp)
@@ -156,6 +162,7 @@ def create_app(config_name='default'):
     app.register_blueprint(logs.bp)
     app.register_blueprint(proxy.bp)
     app.register_blueprint(templates.bp)
+    app.register_blueprint(reports.bp)
 
     # Register error handlers
     @app.errorhandler(404)
@@ -187,5 +194,17 @@ def create_app(config_name='default'):
                 value_type='string',
                 user_id=None
             )
+
+    # Start scheduler (avoid double-start in debug reloader)
+    if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        from app.report_service import run_scheduled_reports
+
+        scheduler.init_app(app)
+
+        @scheduler.task('interval', id='run_scheduled_reports', minutes=15, misfire_grace_time=300)
+        def _run_reports_job():
+            run_scheduled_reports(app)
+
+        scheduler.start()
 
     return app

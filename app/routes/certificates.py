@@ -2,7 +2,7 @@ from datetime import date
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
-from app.models import WaasAccount, AuditLog
+from app.models import WaasAccount, AuditLog, get_user_accounts, get_account_for_user, can_write
 from app.waas_client import WaasClient, WaasApiError
 from app.forms import CertificateUploadForm
 from app.routes.main import _parse_cert_expiry
@@ -13,12 +13,8 @@ bp = Blueprint('certificates', __name__, url_prefix='/certificates')
 @bp.route('/')
 @login_required
 def list_certificates():
-    """List certificates — user selects which WaaS account to view.
-
-    Certificates in the v4 API are per-application (SNI certificates).
-    This view aggregates across all applications on the selected account.
-    """
-    accounts = WaasAccount.query.filter_by(user_id=current_user.id, is_active=True).all()
+    """List certificates — user selects which WaaS account to view."""
+    accounts = get_user_accounts(current_user)
     selected_account_id = request.args.get('account_id', type=int)
 
     certificates = []
@@ -26,7 +22,7 @@ def list_certificates():
     error = None
 
     if selected_account_id:
-        account = WaasAccount.query.filter_by(id=selected_account_id, user_id=current_user.id, is_active=True).first()
+        account, perm = get_account_for_user(selected_account_id, current_user)
         if account:
             selected_account = account
             try:
@@ -56,19 +52,22 @@ def list_certificates():
 @bp.route('/<int:account_id>/upload', methods=['GET', 'POST'])
 @login_required
 def upload_certificate(account_id):
-    """Upload a certificate to a WaaS application.
-
-    Requires an ``app_name`` query parameter to specify which application
-    the SNI certificate belongs to (v4 API is per-application).
-    """
+    """Upload a certificate to a WaaS application."""
     if current_user.role == 'viewer':
         flash(_('You do not have permission to upload certificates.'), 'danger')
         return redirect(url_for('certificates.list_certificates'))
 
-    account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id, is_active=True).first_or_404()
+    account, perm = get_account_for_user(account_id, current_user, min_permission='write')
+    if not account:
+        flash(_('Account not found or insufficient permissions.'), 'danger')
+        return redirect(url_for('certificates.list_certificates'))
+
+    if not can_write(perm):
+        flash(_('You do not have write permission on this account.'), 'danger')
+        return redirect(url_for('certificates.list_certificates'))
+
     app_name = request.args.get('app_name') or request.form.get('app_name')
 
-    # We need to know which application to upload to
     client = WaasClient.from_account(account)
     applications = []
     try:
@@ -130,7 +129,10 @@ def upload_certificate(account_id):
 @login_required
 def view_certificate(account_id, app_name, cert_id):
     """View certificate details (v4 per-application SNI certificate)."""
-    account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id, is_active=True).first_or_404()
+    account, perm = get_account_for_user(account_id, current_user)
+    if not account:
+        flash(_('Account not found or access denied.'), 'danger')
+        return redirect(url_for('certificates.list_certificates'))
 
     try:
         client = WaasClient.from_account(account)
@@ -155,7 +157,10 @@ def delete_certificate(account_id, app_name, cert_id):
         flash(_('You do not have permission to delete certificates.'), 'danger')
         return redirect(url_for('certificates.list_certificates'))
 
-    account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id, is_active=True).first_or_404()
+    account, perm = get_account_for_user(account_id, current_user, min_permission='write')
+    if not account or not can_write(perm):
+        flash(_('Account not found or insufficient permissions.'), 'danger')
+        return redirect(url_for('certificates.list_certificates'))
 
     try:
         client = WaasClient.from_account(account)

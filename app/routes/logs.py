@@ -11,7 +11,7 @@ import json
 from flask import Blueprint, render_template, request, flash, redirect, url_for, make_response
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
-from app.models import WaasAccount, AuditLog
+from app.models import WaasAccount, AuditLog, get_user_accounts, get_account_for_user
 from app.waas_client import WaasClient, WaasApiError
 
 bp = Blueprint('logs', __name__, url_prefix='/logs')
@@ -29,10 +29,12 @@ QUICK_RANGES = [
 
 
 def _get_account(account_id):
-    """Load an active account owned by the current user, or 404."""
-    return WaasAccount.query.filter_by(
-        id=account_id, user_id=current_user.id, is_active=True
-    ).first_or_404()
+    """Load an active account accessible by the current user, or 404."""
+    from flask import abort
+    account, perm = get_account_for_user(account_id, current_user)
+    if not account:
+        abort(404)
+    return account
 
 
 def _get_applications(account):
@@ -110,18 +112,14 @@ def _make_export_response(logs, log_type, fmt, app_name, account_id):
 @login_required
 def index():
     """Launcher page: account → application → log-type selector."""
-    accounts = WaasAccount.query.filter_by(
-        user_id=current_user.id, is_active=True
-    ).all()
+    accounts = get_user_accounts(current_user)
 
     account_id = request.args.get('account_id', type=int)
     selected_account = None
     applications = []
 
     if account_id:
-        selected_account = WaasAccount.query.filter_by(
-            id=account_id, user_id=current_user.id, is_active=True
-        ).first()
+        selected_account, perm = get_account_for_user(account_id, current_user)
         if selected_account:
             applications = _get_applications(selected_account)
 

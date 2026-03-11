@@ -3,8 +3,8 @@ from flask_login import login_required, current_user
 from flask_babel import gettext as _
 from datetime import datetime
 from app import db
-from app.models import WaasAccount, AuditLog
-from app.forms import WaasAccountForm, RotateApiKeyForm
+from app.models import WaasAccount, AuditLog, AccountShare, User, get_user_accounts, get_account_for_user, can_write, can_admin
+from app.forms import WaasAccountForm, RotateApiKeyForm, ShareAccountForm
 from app.waas_client import WaasClient, WaasApiError
 from app import limiter
 
@@ -14,9 +14,11 @@ bp = Blueprint('accounts', __name__, url_prefix='/accounts')
 @bp.route('/')
 @login_required
 def list_accounts():
-    """List user's WaaS accounts"""
-    accounts = WaasAccount.query.filter_by(user_id=current_user.id).all()
-    return render_template('accounts/list.html', accounts=accounts)
+    """List user's WaaS accounts (owned + shared)"""
+    accounts = get_user_accounts(current_user)
+    owned = [a for a in accounts if a._permission == 'owner']
+    shared = [a for a in accounts if a._permission != 'owner']
+    return render_template('accounts/list.html', accounts=owned, shared_accounts=shared)
 
 
 @bp.route('/add', methods=['GET', 'POST'])
@@ -80,15 +82,27 @@ def add_account():
 @login_required
 def view_account(account_id):
     """View WaaS account details"""
-    account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id).first_or_404()
-    return render_template('accounts/view.html', account=account)
+    account, perm = get_account_for_user(account_id, current_user)
+    if not account:
+        flash(_('Account not found or access denied.'), 'danger')
+        return redirect(url_for('accounts.list_accounts'))
+
+    # Get shares for display
+    shares = AccountShare.query.filter_by(account_id=account_id).all() if can_admin(perm) else []
+    share_form = ShareAccountForm() if can_admin(perm) else None
+
+    return render_template('accounts/view.html', account=account, permission=perm,
+                           shares=shares, share_form=share_form)
 
 
 @bp.route('/<int:account_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_account(account_id):
     """Edit a WaaS account"""
-    account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id).first_or_404()
+    account, perm = get_account_for_user(account_id, current_user, min_permission='admin')
+    if not account:
+        flash(_('Account not found or insufficient permissions.'), 'danger')
+        return redirect(url_for('accounts.list_accounts'))
 
     # Pre-populate form; don't expose secrets in the form value
     form = WaasAccountForm(obj=account)
@@ -137,7 +151,10 @@ def edit_account(account_id):
 @limiter.limit("10 per minute")
 def verify_account(account_id):
     """Re-verify a WaaS account using v2 credentials"""
-    account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id).first_or_404()
+    account, perm = get_account_for_user(account_id, current_user, min_permission='write')
+    if not account:
+        flash(_('Account not found or insufficient permissions.'), 'danger')
+        return redirect(url_for('accounts.list_accounts'))
 
     if not account.has_v2_credentials:
         flash(
@@ -167,8 +184,12 @@ def verify_account(account_id):
 @bp.route('/<int:account_id>/delete', methods=['POST'])
 @login_required
 def delete_account(account_id):
-    """Delete a WaaS account"""
-    account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id).first_or_404()
+    """Delete a WaaS account (owner only)"""
+    account, perm = get_account_for_user(account_id, current_user, min_permission='admin')
+    if not account or perm != 'owner':
+        flash(_('Only the account owner can delete an account.'), 'danger')
+        return redirect(url_for('accounts.list_accounts'))
+
     account_name = account.account_name
 
     AuditLog.log(
@@ -192,7 +213,11 @@ def delete_account(account_id):
 @limiter.limit("10 per minute")
 def rotate_key(account_id):
     """Rotate the API key for a WaaS account."""
-    account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id).first_or_404()
+    account, perm = get_account_for_user(account_id, current_user, min_permission='admin')
+    if not account:
+        flash(_('Account not found or insufficient permissions.'), 'danger')
+        return redirect(url_for('accounts.list_accounts'))
+
     form = RotateApiKeyForm()
 
     if form.validate_on_submit():
@@ -227,3 +252,108 @@ def rotate_key(account_id):
         return redirect(url_for('accounts.view_account', account_id=account.id))
 
     return render_template('accounts/rotate_key.html', form=form, account=account)
+
+
+# ---- Sharing routes ----
+
+@bp.route('/<int:account_id>/sharing')
+@login_required
+def sharing(account_id):
+    """Manage account sharing (owner/admin only)"""
+    account, perm = get_account_for_user(account_id, current_user, min_permission='admin')
+    if not account:
+        flash(_('Account not found or insufficient permissions.'), 'danger')
+        return redirect(url_for('accounts.list_accounts'))
+
+    shares = AccountShare.query.filter_by(account_id=account_id).all()
+    form = ShareAccountForm()
+    return render_template('accounts/sharing.html', account=account, shares=shares,
+                           form=form, permission=perm)
+
+
+@bp.route('/<int:account_id>/sharing/add', methods=['POST'])
+@login_required
+def add_share(account_id):
+    """Share account with another user"""
+    account, perm = get_account_for_user(account_id, current_user, min_permission='admin')
+    if not account:
+        flash(_('Account not found or insufficient permissions.'), 'danger')
+        return redirect(url_for('accounts.list_accounts'))
+
+    form = ShareAccountForm()
+    if form.validate_on_submit():
+        target_user = User.query.filter(
+            (User.username == form.username.data) | (User.email == form.username.data)
+        ).first()
+
+        if target_user.id == account.user_id:
+            flash(_('Cannot share an account with its owner.'), 'warning')
+            return redirect(url_for('accounts.sharing', account_id=account_id))
+
+        if target_user.id == current_user.id:
+            flash(_('Cannot share an account with yourself.'), 'warning')
+            return redirect(url_for('accounts.sharing', account_id=account_id))
+
+        existing = AccountShare.query.filter_by(account_id=account_id, user_id=target_user.id).first()
+        if existing:
+            existing.permission = form.permission.data
+            existing.granted_by = current_user.id
+            existing.granted_at = datetime.utcnow()
+            db.session.commit()
+            flash(_('Updated sharing permissions for %(user)s.', user=target_user.display_name), 'success')
+        else:
+            share = AccountShare(
+                account_id=account_id,
+                user_id=target_user.id,
+                permission=form.permission.data,
+                granted_by=current_user.id
+            )
+            db.session.add(share)
+            db.session.commit()
+            flash(_('Account shared with %(user)s.', user=target_user.display_name), 'success')
+
+        AuditLog.log(
+            user_id=current_user.id,
+            action='account_share',
+            resource_type='waas_account',
+            resource_id=account.id,
+            details=f'Shared account "{account.account_name}" with {target_user.username} ({form.permission.data})',
+            ip_address=request.remote_addr
+        )
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(error, 'danger')
+
+    return redirect(url_for('accounts.sharing', account_id=account_id))
+
+
+@bp.route('/<int:account_id>/sharing/<int:share_id>/revoke', methods=['POST'])
+@login_required
+def revoke_share(account_id, share_id):
+    """Remove a share"""
+    account, perm = get_account_for_user(account_id, current_user, min_permission='admin')
+    if not account:
+        flash(_('Account not found or insufficient permissions.'), 'danger')
+        return redirect(url_for('accounts.list_accounts'))
+
+    share = AccountShare.query.filter_by(id=share_id, account_id=account_id).first()
+    if not share:
+        flash(_('Share not found.'), 'danger')
+        return redirect(url_for('accounts.sharing', account_id=account_id))
+
+    username = share.user.username
+    db.session.delete(share)
+    db.session.commit()
+
+    AuditLog.log(
+        user_id=current_user.id,
+        action='account_share_revoke',
+        resource_type='waas_account',
+        resource_id=account.id,
+        details=f'Revoked share for {username} on account "{account.account_name}"',
+        ip_address=request.remote_addr
+    )
+
+    flash(_('Share revoked for %(user)s.', user=username), 'success')
+    return redirect(url_for('accounts.sharing', account_id=account_id))

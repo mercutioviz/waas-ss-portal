@@ -1,6 +1,6 @@
 # WaaS Self-Service Portal — Implementation Plan
 
-*Last updated: 2026-03-11 (Phase 7 medium items)*
+*Last updated: 2026-03-11 (Phase 7 complete — all 11 items)*
 
 ---
 
@@ -169,9 +169,9 @@ pybabel compile -d app/translations
 
 ---
 
-### Phase 7: Advanced Features ✅ DONE (9 of 11)
+### Phase 7: Advanced Features ✅ DONE (11 of 11)
 
-**Goal:** Add power-user and operational features. Small-complexity items completed first, then medium items.
+**Goal:** Add power-user and operational features. Small-complexity items completed first, then medium items, then large items.
 
 **What was built (small items):**
 
@@ -187,7 +187,12 @@ pybabel compile -d app/translations
 - **Template Diff/Preview (7.3)** — JSON API endpoint (`/applications/api/<account_id>/<app_id>/config`) returns current security config. "Preview Changes" button on template quick-apply fetches current config and renders side-by-side diff modal with color-coded differences (green=added, yellow=modified, red=removed) and summary counts.
 - **Comparison Views (7.5)** — Checkbox column in v4 app list with "Compare Selected (N)" button (enabled at exactly 2). `compare_applications` route fetches security configs for both apps. `compare.html` template shows side-by-side tables per section (protection mode, request limits, clickjacking, data theft) with `table-success`/`table-warning` row highlighting for matching/differing values.
 - **Responsive Improvements (7.10)** — Mobile breakpoints at 575.98px (compact card padding, smaller stat numbers, compact tables, 44px touch targets) and 576–768px (intermediate sizing). Dashboard stat cards `col-6 col-md-4`. App list hides Group/Servers/Health on mobile with `d-none d-md-table-cell`. Security cards use `col-lg-6` for tablet stacking. App view header stacks on mobile (`flex-column flex-sm-row`). WAF/access log filter inputs use responsive CSS classes instead of inline widths; low-priority columns hidden on mobile. Template quick-apply uses `col-12 col-md-4`.
-- **i18n** — All new strings translated to Spanish (655 total, 0 untranslated, 0 fuzzy).
+- **i18n** — All new strings translated to Spanish (655+ total, 0 untranslated, 0 fuzzy).
+
+**What was built (large items):**
+
+- **Multi-User Account Sharing (7.6)** — `AccountShare` model with `(account_id, user_id)` unique constraint and `permission` levels (`read`/`write`/`admin`). Central access helpers: `get_user_accounts()` returns owned + shared accounts with `_permission` annotation; `get_account_for_user()` returns `(account, permission)` tuple checking ownership then shares; `can_write()` / `can_admin()` for permission gating. `ShareAccountForm` with username/email lookup and permission dropdown. Sharing management page (`/accounts/<id>/sharing`) with collaborator table and add/revoke forms. All 7 route files updated to use `get_account_for_user()` instead of `filter_by(user_id=)` — applications, certificates, logs, proxy, main dashboard, templates all support shared accounts. Account list shows "Shared with You" section with permission badges. Account view shows sharing card with collaborator list. Owner-only restriction on delete; admin+ for edit/rotate/share; write+ for mutations; read for viewing.
+- **Scheduled Reports (7.11)** — `ScheduledReport` model (name, account, report_type, frequency, day_of_week, hour, recipients JSON, is_active, next_run_at) and `ReportRun` model (status, recipient_count, error_message, summary JSON). Flask-Mail + Flask-APScheduler integrated. `report_service.py` with 3 generators: `generate_waf_summary()` (top attacks, IPs, severity), `generate_access_summary()` (top URLs, status codes, methods), `generate_security_overview()` (protection modes per app). Email rendering via 4 HTML templates with inline CSS. 15-minute interval scheduler job. `reports` blueprint with full CRUD, toggle active, run-now, run history. 5 page templates (list, add, edit, view, run_detail). `flask run-reports` CLI command. "Reports" nav link in navbar.
 
 | # | Task | Description | Complexity | Status |
 |---|------|-------------|------------|--------|
@@ -196,12 +201,12 @@ pybabel compile -d app/translations
 | 7.3 | Template diff/preview | Show before/after diff when applying a template to an app | Medium | ✅ Complete |
 | 7.4 | Template import/export | Download templates as JSON files, upload to import | Small | ✅ Complete |
 | 7.5 | Comparison views | Compare security configs between apps side-by-side | Medium | ✅ Complete |
-| 7.6 | Multi-user account sharing | Allow WaaS accounts to be shared between portal users | Large | Pending |
+| 7.6 | Multi-user account sharing | Allow WaaS accounts to be shared between portal users with read/write/admin permissions | Large | ✅ Complete |
 | 7.7 | API key rotation | Rotate WaaS API keys from the portal | Small | ✅ Complete |
 | 7.8 | Loading indicators | Spinners/overlays while API calls are in progress | Small | ✅ Complete |
 | 7.9 | Toast notifications | Replace flash messages with auto-dismissing toasts | Small | ✅ Complete |
 | 7.10 | Responsive improvements | Test and fix mobile layout issues | Medium | ✅ Complete |
-| 7.11 | Scheduled reports | Email summaries of WAF activity | Large | Pending |
+| 7.11 | Scheduled reports | Email summaries of WAF activity via Flask-Mail + Flask-APScheduler | Large | ✅ Complete |
 
 ---
 

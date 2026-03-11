@@ -38,8 +38,8 @@ def index():
 @login_required
 def dashboard():
     """Main dashboard view"""
-    from app.models import WaasAccount, AuditLog
-    accounts = WaasAccount.query.filter_by(user_id=current_user.id, is_active=True).all()
+    from app.models import WaasAccount, AuditLog, get_user_accounts
+    accounts = get_user_accounts(current_user)
     recent_activity = AuditLog.query.filter_by(user_id=current_user.id)\
         .order_by(AuditLog.timestamp.desc()).limit(10).all()
     return render_template('dashboard.html', accounts=accounts, recent_activity=recent_activity)
@@ -49,10 +49,10 @@ def dashboard():
 @login_required
 def dashboard_counts():
     """AJAX endpoint returning per-account application/certificate counts and cert expiry warnings."""
-    from app.models import WaasAccount
+    from app.models import WaasAccount, get_user_accounts
     from app.waas_client import WaasClient, WaasApiError
 
-    accounts = WaasAccount.query.filter_by(user_id=current_user.id, is_active=True).all()
+    accounts = get_user_accounts(current_user)
 
     total_apps = 0
     total_certs = 0

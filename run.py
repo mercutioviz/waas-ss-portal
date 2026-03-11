@@ -37,6 +37,14 @@ def create_admin():
         print('*** Change the default password immediately! ***')
 
 
+@app.cli.command('run-reports')
+def run_reports():
+    """Run all due scheduled reports immediately."""
+    from app.report_service import run_scheduled_reports
+    run_scheduled_reports(app)
+    print('Scheduled reports processed.')
+
+
 @app.cli.command('seed')
 def seed():
     """Initialize DB and create admin user (convenience command)."""

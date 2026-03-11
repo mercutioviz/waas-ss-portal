@@ -2,7 +2,7 @@ import logging
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
-from app.models import WaasAccount, AuditLog
+from app.models import WaasAccount, AuditLog, get_user_accounts, get_account_for_user, can_write
 from app.waas_client import WaasClient, WaasApiError
 from app.forms import ApplicationCreateForm
 
@@ -11,12 +11,12 @@ logger = logging.getLogger(__name__)
 bp = Blueprint('applications', __name__, url_prefix='/applications')
 
 
-def get_client_for_account(account_id):
-    """Helper to get WaasClient for a user's account"""
-    account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id, is_active=True).first()
+def get_client_for_account(account_id, min_permission='read'):
+    """Helper to get WaasClient for an account the user can access."""
+    account, perm = get_account_for_user(account_id, current_user, min_permission=min_permission)
     if not account:
-        return None, None
-    return WaasClient.from_account(account), account
+        return None, None, None
+    return WaasClient.from_account(account), account, perm
 
 
 def _parse_app_list(result):
@@ -32,21 +32,17 @@ def _parse_app_list(result):
 @bp.route('/')
 @login_required
 def list_applications():
-    """List applications — user selects which WaaS account to view.
-
-    Supports ``?api_version=v2`` query param to switch between v4 (default)
-    and v2 API for the listing.  The template shows which API is in use.
-    """
-    accounts = WaasAccount.query.filter_by(user_id=current_user.id, is_active=True).all()
+    """List applications — user selects which WaaS account to view."""
+    accounts = get_user_accounts(current_user)
     selected_account_id = request.args.get('account_id', type=int)
-    api_version = request.args.get('api_version', 'v4')  # default to v4
+    api_version = request.args.get('api_version', 'v4')
 
     applications = []
     selected_account = None
     error = None
 
     if selected_account_id:
-        client, selected_account = get_client_for_account(selected_account_id)
+        client, selected_account, perm = get_client_for_account(selected_account_id)
         if client:
             try:
                 if api_version == 'v2' and selected_account.has_v2_credentials:
@@ -54,7 +50,6 @@ def list_applications():
                     applications = _parse_app_list(result)
                     logger.info(f'Listed {len(applications)} apps via v2 API')
                 else:
-                    # Fall back to v4 if v2 requested but no v2 creds
                     if api_version == 'v2' and not selected_account.has_v2_credentials:
                         api_version = 'v4'
                         flash(_('v2 credentials not available — using v4 API.'), 'warning')
@@ -91,7 +86,7 @@ def api_list_applications():
     if not account_id:
         return jsonify({'applications': [], 'error': 'account_id required'}), 400
 
-    client, account = get_client_for_account(account_id)
+    client, account, perm = get_client_for_account(account_id)
     if not client:
         return jsonify({'applications': [], 'error': 'Account not found or inactive'}), 404
 
@@ -114,7 +109,7 @@ def api_list_applications():
 @login_required
 def view_application(account_id, app_id):
     """View application details (v4 export API)."""
-    client, account = get_client_for_account(account_id)
+    client, account, perm = get_client_for_account(account_id)
     if not client:
         flash(_('Account not found or inactive.'), 'danger')
         return redirect(url_for('applications.list_applications'))
@@ -137,14 +132,18 @@ def view_application(account_id, app_id):
 @login_required
 def create_application(account_id):
     """Create a new WaaS application via v2 API."""
+    client, account, perm = get_client_for_account(account_id, min_permission='write')
+    if not client:
+        flash(_('Account not found or insufficient permissions.'), 'danger')
+        return redirect(url_for('applications.list_applications'))
+
     if current_user.role == 'viewer':
         flash(_('You do not have permission to create applications.'), 'danger')
         return redirect(url_for('applications.list_applications', account_id=account_id))
 
-    client, account = get_client_for_account(account_id)
-    if not client:
-        flash(_('Account not found or inactive.'), 'danger')
-        return redirect(url_for('applications.list_applications'))
+    if not can_write(perm):
+        flash(_('You do not have write permission on this account.'), 'danger')
+        return redirect(url_for('applications.list_applications', account_id=account_id))
 
     if not account.has_v2_credentials:
         flash(_('Application creation requires v2 API credentials (email + password) on this account.'), 'warning')
@@ -199,18 +198,15 @@ def create_application(account_id):
 @bp.route('/<int:account_id>/<int:app_id>/delete', methods=['POST'])
 @login_required
 def delete_application(account_id, app_id):
-    """Delete a WaaS application via v2 API.
+    """Delete a WaaS application via v2 API."""
+    client, account, perm = get_client_for_account(account_id, min_permission='write')
+    if not client or not can_write(perm):
+        flash(_('Account not found or insufficient permissions.'), 'danger')
+        return redirect(url_for('applications.list_applications'))
 
-    ``app_id`` is the v2 integer application ID.
-    """
     if current_user.role == 'viewer':
         flash(_('You do not have permission to delete applications.'), 'danger')
         return redirect(url_for('applications.list_applications', account_id=account_id))
-
-    client, account = get_client_for_account(account_id)
-    if not client:
-        flash(_('Account not found or inactive.'), 'danger')
-        return redirect(url_for('applications.list_applications'))
 
     if not account.has_v2_credentials:
         flash(_('Application deletion requires v2 API credentials on this account.'), 'warning')
@@ -241,7 +237,7 @@ def delete_application(account_id, app_id):
 @login_required
 def security_config(account_id, app_id):
     """View/edit security configuration for an application (v4 API)."""
-    client, account = get_client_for_account(account_id)
+    client, account, perm = get_client_for_account(account_id)
     if not client:
         flash(_('Account not found or inactive.'), 'danger')
         return redirect(url_for('applications.list_applications'))
@@ -266,21 +262,20 @@ def security_config(account_id, app_id):
 @login_required
 def update_security_config(account_id, app_id):
     """Update security configuration (v4 API)."""
+    client, account, perm = get_client_for_account(account_id, min_permission='write')
+    if not client or not can_write(perm):
+        flash(_('Account not found or insufficient permissions.'), 'danger')
+        return redirect(url_for('applications.list_applications'))
+
     if current_user.role == 'viewer':
         flash(_('You do not have permission to modify configurations.'), 'danger')
         return redirect(url_for('applications.security_config', account_id=account_id, app_id=app_id))
-
-    client, account = get_client_for_account(account_id)
-    if not client:
-        flash(_('Account not found or inactive.'), 'danger')
-        return redirect(url_for('applications.list_applications'))
 
     try:
         data = request.get_json() if request.is_json else request.form.to_dict()
         section = data.pop('section', 'basic_security')
 
         if section == 'request_limits':
-            # Convert string values to integers for request limits
             int_data = {}
             for k, v in data.items():
                 if k == 'csrf_token':
@@ -328,7 +323,7 @@ def update_security_config(account_id, app_id):
 @login_required
 def api_get_application_config(account_id, app_id):
     """JSON endpoint returning security config for an application."""
-    client, account = get_client_for_account(account_id)
+    client, account, perm = get_client_for_account(account_id)
     if not client:
         return jsonify({'success': False, 'error': 'Account not found or inactive'}), 404
 
@@ -343,7 +338,7 @@ def api_get_application_config(account_id, app_id):
 @login_required
 def compare_applications(account_id):
     """Compare security configs of two applications side-by-side."""
-    client, account = get_client_for_account(account_id)
+    client, account, perm = get_client_for_account(account_id)
     if not client:
         flash(_('Account not found or inactive.'), 'danger')
         return redirect(url_for('applications.list_applications'))
@@ -377,7 +372,7 @@ def compare_applications(account_id):
 @login_required
 def dns_info(account_id, app_id):
     """View DNS/CNAME information for an application (v4 API)."""
-    client, account = get_client_for_account(account_id)
+    client, account, perm = get_client_for_account(account_id)
     if not client:
         flash(_('Account not found or inactive.'), 'danger')
         return redirect(url_for('applications.list_applications'))

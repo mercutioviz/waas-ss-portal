@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import or_
 from app import db
 
 
@@ -425,3 +426,161 @@ class ConfigTemplate(db.Model):
     def config_dict(self, value):
         """Serialize dict to JSON string for storage"""
         self.config_data = json.dumps(value, indent=2)
+
+
+class AccountShare(db.Model):
+    """Model for sharing WaaS accounts between portal users"""
+    __tablename__ = 'account_shares'
+    __table_args__ = (
+        db.UniqueConstraint('account_id', 'user_id', name='uq_account_share'),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    account_id = db.Column(db.Integer, db.ForeignKey('waas_accounts.id', ondelete='CASCADE'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    permission = db.Column(db.String(20), nullable=False, default='read')  # read, write, admin
+    granted_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    granted_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    account = db.relationship('WaasAccount', backref=db.backref('shares', lazy='dynamic', cascade='all, delete-orphan'))
+    user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('shared_accounts', lazy='dynamic'))
+    grantor = db.relationship('User', foreign_keys=[granted_by])
+
+    def __repr__(self):
+        return f'<AccountShare account={self.account_id} user={self.user_id} perm={self.permission}>'
+
+
+class ScheduledReport(db.Model):
+    """Model for scheduled email reports"""
+    __tablename__ = 'scheduled_reports'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    name = db.Column(db.String(200), nullable=False)
+    account_id = db.Column(db.Integer, db.ForeignKey('waas_accounts.id'), nullable=False, index=True)
+    report_type = db.Column(db.String(50), nullable=False)  # waf_summary, access_summary, security_overview
+    frequency = db.Column(db.String(20), nullable=False, default='weekly')  # daily, weekly, monthly
+    day_of_week = db.Column(db.Integer, nullable=True)  # 0=Mon..6=Sun (for weekly)
+    hour = db.Column(db.Integer, default=8)  # Hour of day (0-23)
+    recipients = db.Column(db.Text, nullable=False, default='[]')  # JSON list of email addresses
+    is_active = db.Column(db.Boolean, default=True)
+    last_run_at = db.Column(db.DateTime, nullable=True)
+    next_run_at = db.Column(db.DateTime, nullable=True)
+    last_status = db.Column(db.String(20), nullable=True)  # success, failed
+    last_error = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = db.relationship('User', backref=db.backref('scheduled_reports', lazy='dynamic'))
+    account = db.relationship('WaasAccount', backref=db.backref('scheduled_reports', lazy='dynamic'))
+
+    def __repr__(self):
+        return f'<ScheduledReport {self.id}: {self.name}>'
+
+    @property
+    def recipients_list(self):
+        try:
+            return json.loads(self.recipients) if self.recipients else []
+        except (json.JSONDecodeError, TypeError):
+            return []
+
+    @recipients_list.setter
+    def recipients_list(self, value):
+        self.recipients = json.dumps(value)
+
+
+class ReportRun(db.Model):
+    """Model for report execution history"""
+    __tablename__ = 'report_runs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    report_id = db.Column(db.Integer, db.ForeignKey('scheduled_reports.id', ondelete='CASCADE'), nullable=False, index=True)
+    run_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), nullable=False)  # success, failed
+    recipient_count = db.Column(db.Integer, default=0)
+    error_message = db.Column(db.Text, nullable=True)
+    summary = db.Column(db.Text, nullable=True)  # JSON summary data
+
+    # Relationship
+    report = db.relationship('ScheduledReport', backref=db.backref('runs', lazy='dynamic', cascade='all, delete-orphan'))
+
+    def __repr__(self):
+        return f'<ReportRun {self.id}: {self.status}>'
+
+    @property
+    def summary_dict(self):
+        try:
+            return json.loads(self.summary) if self.summary else {}
+        except (json.JSONDecodeError, TypeError):
+            return {}
+
+
+# ---- Access helper functions ----
+
+PERMISSION_HIERARCHY = {'read': 0, 'write': 1, 'admin': 2, 'owner': 3}
+
+
+def can_write(permission):
+    """True if permission allows write operations."""
+    return permission in ('owner', 'admin', 'write')
+
+
+def can_admin(permission):
+    """True if permission allows admin operations (sharing, account management)."""
+    return permission in ('owner', 'admin')
+
+
+def get_user_accounts(user, active_only=True):
+    """Return all accounts user owns or has shares for, with _permission annotation."""
+    # Owned accounts
+    query = WaasAccount.query.filter_by(user_id=user.id)
+    if active_only:
+        query = query.filter_by(is_active=True)
+    owned = query.all()
+    for acct in owned:
+        acct._permission = 'owner'
+
+    # Shared accounts
+    share_query = db.session.query(WaasAccount, AccountShare.permission).join(
+        AccountShare, AccountShare.account_id == WaasAccount.id
+    ).filter(AccountShare.user_id == user.id)
+    if active_only:
+        share_query = share_query.filter(WaasAccount.is_active == True)
+    shared = share_query.all()
+
+    owned_ids = {a.id for a in owned}
+    for acct, perm in shared:
+        if acct.id not in owned_ids:
+            acct._permission = perm
+            owned.append(acct)
+
+    return owned
+
+
+def get_account_for_user(account_id, user, require_active=True, min_permission='read'):
+    """Return (account, permission) tuple or (None, None).
+
+    Checks ownership first, then shares. Enforces min_permission level.
+    """
+    query = WaasAccount.query.filter_by(id=account_id)
+    if require_active:
+        query = query.filter_by(is_active=True)
+    account = query.first()
+    if not account:
+        return None, None
+
+    # Owner check
+    if account.user_id == user.id:
+        return account, 'owner'
+
+    # Share check
+    share = AccountShare.query.filter_by(account_id=account_id, user_id=user.id).first()
+    if share:
+        perm_level = PERMISSION_HIERARCHY.get(share.permission, 0)
+        min_level = PERMISSION_HIERARCHY.get(min_permission, 0)
+        if perm_level >= min_level:
+            return account, share.permission
+
+    return None, None

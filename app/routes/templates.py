@@ -6,7 +6,7 @@ from flask_login import login_required, current_user
 from flask_babel import gettext as _
 from werkzeug.utils import secure_filename
 from app import db
-from app.models import WaasAccount, AuditLog, ConfigTemplate
+from app.models import WaasAccount, AuditLog, ConfigTemplate, get_user_accounts, get_account_for_user, can_write
 from app.forms import ConfigTemplateForm, TemplateFromAppForm
 from app.waas_client import WaasClient, WaasApiError
 
@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 bp = Blueprint('templates', __name__, url_prefix='/templates')
 
 
-def get_client_for_account(account_id):
-    """Helper to get WaasClient for a user's account"""
-    account = WaasAccount.query.filter_by(id=account_id, user_id=current_user.id, is_active=True).first()
+def get_client_for_account(account_id, min_permission='read'):
+    """Helper to get WaasClient for an account the user can access."""
+    account, perm = get_account_for_user(account_id, current_user, min_permission=min_permission)
     if not account:
         return None, None
     return WaasClient.from_account(account), account
@@ -99,7 +99,7 @@ def view_template(template_id):
         flash(_('Template not found or access denied.'), 'danger')
         return redirect(url_for('templates.list_templates'))
 
-    accounts = WaasAccount.query.filter_by(user_id=current_user.id, is_active=True).all()
+    accounts = get_user_accounts(current_user)
     return render_template('templates/view.html', template=template, accounts=accounts)
 
 
@@ -309,9 +309,9 @@ def apply_template(template_id, account_id, app_id):
         flash(_('Template not found or access denied.'), 'danger')
         return redirect(url_for('templates.list_templates'))
 
-    client, account = get_client_for_account(account_id)
+    client, account = get_client_for_account(account_id, min_permission='write')
     if not client:
-        flash(_('Account not found or inactive.'), 'danger')
+        flash(_('Account not found or insufficient permissions.'), 'danger')
         return redirect(url_for('templates.view_template', template_id=template_id))
 
     include_servers = request.form.get('include_servers') == 'on'
@@ -354,7 +354,7 @@ def bulk_apply(template_id):
         flash(_('Template not found or access denied.'), 'danger')
         return redirect(url_for('templates.list_templates'))
 
-    accounts = WaasAccount.query.filter_by(user_id=current_user.id, is_active=True).all()
+    accounts = get_user_accounts(current_user, active_only=True)
 
     if request.method == 'POST':
         selected_apps = request.form.getlist('selected_apps')

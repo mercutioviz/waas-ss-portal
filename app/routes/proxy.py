@@ -9,7 +9,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
 
-from app.models import WaasAccount, AuditLog, ProxySession
+from app.models import WaasAccount, AuditLog, ProxySession, get_account_for_user, can_write
 from app.waas_client import WaasClient, WaasApiError
 from app.proxy_manager import (
     start_session,
@@ -27,11 +27,10 @@ def _get_account_and_app(account_id, app_id):
 
     Returns (account, app_data, client) or aborts with 404.
     """
-    account = WaasAccount.query.filter_by(
-        id=account_id,
-        user_id=current_user.id,
-        is_active=True,
-    ).first_or_404()
+    from flask import abort
+    account, perm = get_account_for_user(account_id, current_user)
+    if not account:
+        abort(404)
 
     client = WaasClient.from_account(account)
     try:
@@ -84,11 +83,10 @@ def start(account_id, app_id):
         flash(_('You do not have permission to start proxy sessions.'), 'danger')
         return redirect(url_for('proxy.launch', account_id=account_id, app_id=app_id))
 
-    account = WaasAccount.query.filter_by(
-        id=account_id,
-        user_id=current_user.id,
-        is_active=True,
-    ).first_or_404()
+    account, perm = get_account_for_user(account_id, current_user, min_permission='write')
+    if not account or not can_write(perm):
+        flash(_('Account not found or insufficient permissions.'), 'danger')
+        return redirect(url_for('proxy.launch', account_id=account_id, app_id=app_id))
 
     domain = request.form.get('domain', '').strip()
     cname = request.form.get('cname', '').strip()
@@ -131,11 +129,10 @@ def start(account_id, app_id):
 @login_required
 def stop(account_id, app_id):
     """Stop the active proxy session."""
-    account = WaasAccount.query.filter_by(
-        id=account_id,
-        user_id=current_user.id,
-        is_active=True,
-    ).first_or_404()
+    account, perm = get_account_for_user(account_id, current_user)
+    if not account:
+        flash(_('Account not found or access denied.'), 'danger')
+        return redirect(url_for('proxy.launch', account_id=account_id, app_id=app_id))
 
     active_session = get_active_session(current_user.id, account_id, app_id)
     if not active_session:
@@ -165,11 +162,10 @@ def stop(account_id, app_id):
 @login_required
 def session_view(account_id, app_id):
     """Session view — embedded noVNC iframe + WAF log panel."""
-    account = WaasAccount.query.filter_by(
-        id=account_id,
-        user_id=current_user.id,
-        is_active=True,
-    ).first_or_404()
+    account, perm = get_account_for_user(account_id, current_user)
+    if not account:
+        flash(_('Account not found or access denied.'), 'danger')
+        return redirect(url_for('applications.list_applications'))
 
     active_session = get_active_session(current_user.id, account_id, app_id)
     if not active_session:
@@ -198,11 +194,9 @@ def waf_logs(account_id, app_id):
     the session start time, and optionally filters by this server's public IP
     so only traffic from the proxy session is shown.
     """
-    account = WaasAccount.query.filter_by(
-        id=account_id,
-        user_id=current_user.id,
-        is_active=True,
-    ).first_or_404()
+    account, perm = get_account_for_user(account_id, current_user)
+    if not account:
+        return jsonify({'logs': [], 'count': 0, 'error': 'Account not found'})
 
     active_session = get_active_session(current_user.id, account_id, app_id)
     if not active_session:

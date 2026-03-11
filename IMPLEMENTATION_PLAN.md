@@ -1,6 +1,6 @@
 # WaaS Self-Service Portal — Implementation Plan
 
-*Last updated: 2026-03-10*
+*Last updated: 2026-03-11*
 
 ---
 
@@ -12,13 +12,13 @@
 |------|--------|-----------|-------|
 | **Auth** | login, logout, profile, change_password, keepalive | login.html, profile.html, change_password.html | Password hashing, Flask-Login sessions, session timeout |
 | **Main** | index (redirect), dashboard, counts | dashboard.html | `/` redirects to `/dashboard`; AJAX cert/app counts |
-| **Accounts** | list, add, edit, view, verify, delete | list.html, add.html, edit.html, view.html | Full CRUD, API key encryption, account verification |
+| **Accounts** | list, add, edit, view, verify, delete, rotate_key | list.html, add.html, edit.html, view.html, rotate_key.html | Full CRUD, API key encryption, account verification, key rotation |
 | **Admin** | index, users, user_create, user_edit, toggle_active, audit_log | index.html, users.html, user_create.html, user_edit.html, audit_log.html, panel.html | Role-based access, audit logging |
 | **Applications** | list, view, create, delete, security, dns | list.html, view.html, create.html, security.html, dns.html | v4/v2 toggle, create/delete via v2, security/DNS via v4 |
 | **Certificates** | list, view, upload, delete | list.html, view.html, upload.html | Per-application SNI certificates (v4), aggregated list view |
-| **Logs** | index, waf, access, fp_analysis | index.html, waf.html, access.html, fp_analysis.html | Account/app selector, WAF/access log viewers |
+| **Logs** | index, waf, access, fp_analysis | index.html, waf.html, access.html, fp_analysis.html | Account/app selector, WAF/access log viewers, CSV/JSON export |
 | **Proxy** | launch, start, stop, session, waf-logs | launch.html, session.html | noVNC browser proxy sessions |
-| **Templates** | list, add, view, edit, edit_config, delete, save_as_template, apply, bulk_apply | list.html, view.html, add.html, edit.html, edit_config.html, save_as.html, bulk_apply.html, bulk_results.html | Config templates with CRUD, save-from-app, quick apply via AJAX, bulk apply across accounts |
+| **Templates** | list, add, view, edit, edit_config, delete, save_as_template, apply, bulk_apply, export, import | list.html, view.html, add.html, edit.html, edit_config.html, save_as.html, bulk_apply.html, bulk_results.html, import.html | Config templates with CRUD, save-from-app, quick apply via AJAX, bulk apply across accounts, JSON import/export |
 
 ### API Version Mapping
 
@@ -43,8 +43,8 @@ All WaaS API calls now use the correct endpoints. Users see API version badges i
 - **Encryption** (`app/encryption.py`): Fernet encrypt/decrypt for API keys at rest
 - **AuditLog**: Logging wired into account, application, certificate, security, and proxy operations
 - **Config Templates** (`app/routes/templates.py`): Save, reuse, and bulk-apply WaaS app security configs; per-user or global templates
-- **Forms**: `ApplicationCreateForm`, `CertificateUploadForm`, `WaasAccountForm`, `ConfigTemplateForm`, `TemplateFromAppForm`, auth forms
-- **Base template**: Navbar, flash messages, Bootstrap 5.3, Bootstrap Icons, confirmation modal, session timeout modal, breadcrumb block
+- **Forms**: `ApplicationCreateForm`, `CertificateUploadForm`, `WaasAccountForm`, `ConfigTemplateForm`, `TemplateFromAppForm`, `RotateApiKeyForm`, auth forms
+- **Base template**: Navbar, toast notifications, loading overlay, Bootstrap 5.3, Bootstrap Icons, confirmation modal, session timeout modal, breadcrumb block
 - **Rate limiting**: Flask-Limiter on login (5/min) and verify (10/min)
 - **Account lockout**: 5 failed attempts → 15-minute lockout
 
@@ -148,7 +148,7 @@ All WaaS API calls now use the correct endpoints. Users see API version badges i
 **What was built:**
 
 - **Flask-Babel 4.0.0** integrated with locale selector chain: `User.locale` → `session['locale']` → `Accept-Language` header → `'en'` default
-- **606 translatable strings** extracted and fully translated to Spanish (es)
+- **630 translatable strings** extracted and fully translated to Spanish (es)
 - **All 40 HTML templates** wrapped with `{{ _('...') }}`
 - **All 83 flash messages** across 9 route files wrapped with `_()`
 - **All 61 form fields** (labels, placeholders, validators, choices) wrapped with `_l()`
@@ -169,23 +169,32 @@ pybabel compile -d app/translations
 
 ---
 
-### Phase 7: Advanced Features (Future)
+### Phase 7: Advanced Features (Small Items) ✅ DONE (5 of 11)
 
-**Goal:** Add power-user and operational features.
+**Goal:** Add power-user and operational features. Small-complexity items completed first.
 
-| # | Task | Description | Complexity |
-|---|------|-------------|------------|
-| 7.1 | Expand security config editing | Edit request limits, clickjacking, data theft (not just protection mode) via individual PATCH endpoints | Medium |
-| 7.2 | Log export | Download WAF/access logs as CSV or JSON | Small |
-| 7.3 | Template diff/preview | Show before/after diff when applying a template to an app | Medium |
-| 7.4 | Template import/export | Download templates as JSON files, upload to import | Small |
-| 7.5 | Comparison views | Compare security configs between apps side-by-side | Medium |
-| 7.6 | Multi-user account sharing | Allow WaaS accounts to be shared between portal users | Large |
-| 7.7 | API key rotation | Rotate WaaS API keys from the portal | Small |
-| 7.8 | Loading indicators | Spinners/overlays while API calls are in progress | Small |
-| 7.9 | Toast notifications | Replace flash messages with auto-dismissing toasts | Small |
-| 7.10 | Responsive improvements | Test and fix mobile layout issues | Medium |
-| 7.11 | Scheduled reports | Email summaries of WAF activity | Large |
+**What was built (small items):**
+
+- **Toast Notifications (7.9)** — Replaced flash message alerts with Bootstrap 5 toasts: fixed top-right, auto-dismiss (5s default, 8s for danger), stacking, category-specific colors (success/danger/warning/info). Global `window.showToast(message, category)` JS function for programmatic use.
+- **Loading Indicators (7.8)** — Full-screen semi-transparent overlay with centered spinner. `window.showLoading(message)` / `window.hideLoading()` JS functions. Auto-wired to forms via `data-loading` attribute on account add/edit, app create, cert upload, bulk apply forms.
+- **Log Export (7.2)** — `?format=csv` and `?format=json` query params on WAF and access log routes. CSV uses `DictWriter` with correct field lists per log type. JSON with `json.dumps`. File download with `Content-Disposition: attachment`. Audit log entries on export. Export dropdown buttons in log page headers.
+- **API Key Rotation (7.7)** — `RotateApiKeyForm` with new key input and verify checkbox. `/accounts/<id>/rotate-key` route. Optional verification via lightweight API call before saving. Invalidates cached v2 tokens. Audit log with `action='account_key_rotation'`. "Rotate API Key" button on account view page.
+- **Template Import/Export (7.4)** — Export route returns JSON with name, description, config_data, is_global, exported_at, version. Import route validates JSON structure (name + config_data required), creates `ConfigTemplate`. `is_global` only honored for admins. "Import Template" button in list header, export icon per row and on view page.
+- **i18n** — All 25 new strings translated to Spanish (630 total, 0 untranslated, 0 fuzzy).
+
+| # | Task | Description | Complexity | Status |
+|---|------|-------------|------------|--------|
+| 7.1 | Expand security config editing | Edit request limits, clickjacking, data theft (not just protection mode) via individual PATCH endpoints | Medium | Pending |
+| 7.2 | Log export | Download WAF/access logs as CSV or JSON | Small | ✅ Complete |
+| 7.3 | Template diff/preview | Show before/after diff when applying a template to an app | Medium | Pending |
+| 7.4 | Template import/export | Download templates as JSON files, upload to import | Small | ✅ Complete |
+| 7.5 | Comparison views | Compare security configs between apps side-by-side | Medium | Pending |
+| 7.6 | Multi-user account sharing | Allow WaaS accounts to be shared between portal users | Large | Pending |
+| 7.7 | API key rotation | Rotate WaaS API keys from the portal | Small | ✅ Complete |
+| 7.8 | Loading indicators | Spinners/overlays while API calls are in progress | Small | ✅ Complete |
+| 7.9 | Toast notifications | Replace flash messages with auto-dismissing toasts | Small | ✅ Complete |
+| 7.10 | Responsive improvements | Test and fix mobile layout issues | Medium | Pending |
+| 7.11 | Scheduled reports | Email summaries of WAF activity | Large | Pending |
 
 ---
 

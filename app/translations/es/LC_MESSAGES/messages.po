@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-03-11 20:08+0000\n"
+"POT-Creation-Date: 2026-03-13 17:49+0000\n"
 "PO-Revision-Date: 2026-03-10 01:11+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -104,7 +104,7 @@ msgstr "Confirmar contraseña"
 
 #: app/forms.py:60 app/forms.py:209 app/forms.py:243
 #: app/templates/admin/panel.html:62 app/templates/admin/users.html:15
-#: app/templates/auth/profile.html:14 app/templates/base.html:110
+#: app/templates/auth/profile.html:14 app/templates/base.html:111
 msgid "Role"
 msgstr "Rol"
 
@@ -163,7 +163,7 @@ msgstr "Confirmar nueva contraseña"
 
 #: app/forms.py:103 app/templates/auth/change_password.html:2
 #: app/templates/auth/change_password.html:8 app/templates/auth/profile.html:21
-#: app/templates/base.html:113
+#: app/templates/base.html:114
 msgid "Change Password"
 msgstr "Cambiar contraseña"
 
@@ -235,7 +235,7 @@ msgstr "Usuario"
 #: app/forms.py:210 app/forms.py:244 app/templates/accounts/list.html:82
 #: app/templates/accounts/sharing.html:36
 #: app/templates/accounts/sharing.html:87 app/templates/accounts/view.html:99
-#: app/templates/base.html:71
+#: app/templates/base.html:72
 msgid "Admin"
 msgstr "Administración"
 
@@ -297,7 +297,7 @@ msgid "Upload Certificate"
 msgstr "Subir certificado"
 
 #: app/forms.py:291 app/templates/applications/create.html:25
-#: app/templates/applications/list.html:108
+#: app/templates/applications/list.html:113
 msgid "Application Name"
 msgstr "Nombre de la aplicación"
 
@@ -313,7 +313,7 @@ msgstr "Nombre de host / Dominio"
 msgid "e.g., www.example.com"
 msgstr "ej., www.ejemplo.com"
 
-#: app/forms.py:301 app/templates/applications/create.html:42
+#: app/forms.py:301 app/forms.py:473 app/templates/applications/create.html:42
 msgid "Backend Server IP / Hostname"
 msgstr "IP / Nombre de host del servidor backend"
 
@@ -321,19 +321,19 @@ msgstr "IP / Nombre de host del servidor backend"
 msgid "e.g., 10.0.0.1 or origin.example.com"
 msgstr "ej., 10.0.0.1 u origin.ejemplo.com"
 
-#: app/forms.py:306 app/templates/applications/create.html:50
+#: app/forms.py:306 app/forms.py:478 app/templates/applications/create.html:50
 msgid "Backend Port"
 msgstr "Puerto del backend"
 
-#: app/forms.py:312 app/templates/applications/create.html:55
+#: app/forms.py:312 app/forms.py:484 app/templates/applications/create.html:55
 msgid "Backend Protocol"
 msgstr "Protocolo del backend"
 
 #: app/forms.py:319 app/templates/applications/compare.html:49
 #: app/templates/applications/compare.html:63
 #: app/templates/applications/create.html:65
-#: app/templates/applications/security.html:30
-#: app/templates/applications/security.html:142
+#: app/templates/applications/security.html:32
+#: app/templates/applications/security.html:173
 msgid "Protection Mode"
 msgstr "Modo de protección"
 
@@ -359,8 +359,8 @@ msgstr "Redirigir HTTP a HTTPS"
 
 #: app/forms.py:331 app/templates/applications/create.html:2
 #: app/templates/applications/create.html:8
-#: app/templates/applications/list.html:49
-#: app/templates/applications/list.html:195
+#: app/templates/applications/list.html:54
+#: app/templates/applications/list.html:200
 msgid "Create Application"
 msgstr "Crear aplicación"
 
@@ -383,24 +383,24 @@ msgstr "Verificar nueva clave antes de guardar"
 msgid "Rotate API Key"
 msgstr "Rotar clave API"
 
-#: app/forms.py:348 app/forms.py:463
+#: app/forms.py:348 app/forms.py:499
 msgid "Template Name"
 msgstr "Nombre de la plantilla"
 
-#: app/forms.py:350 app/forms.py:465
+#: app/forms.py:350 app/forms.py:501
 msgid "e.g., Hardened Security Profile"
 msgstr "ej., Perfil de seguridad reforzado"
 
-#: app/forms.py:353 app/forms.py:468 app/templates/templates/list.html:45
+#: app/forms.py:353 app/forms.py:504 app/templates/templates/list.html:45
 #: app/templates/templates/list.html:99 app/templates/templates/view.html:57
 msgid "Description"
 msgstr "Descripción"
 
-#: app/forms.py:355 app/forms.py:470
+#: app/forms.py:355 app/forms.py:506
 msgid "Describe what this template configures..."
 msgstr "Describa lo que configura esta plantilla..."
 
-#: app/forms.py:358 app/forms.py:473
+#: app/forms.py:358 app/forms.py:509
 msgid "Global Template (visible to all users)"
 msgstr "Plantilla global (visible para todos los usuarios)"
 
@@ -541,34 +541,68 @@ msgstr "usuario@ejemplo.com, admin@ejemplo.com"
 msgid "Save Report"
 msgstr "Guardar reporte"
 
-#: app/forms.py:477
+#: app/forms.py:463
+msgid "New Application Name"
+msgstr "Nombre de la nueva aplicación"
+
+#: app/forms.py:465
+msgid "e.g., My Web App (Clone)"
+msgstr "ej., Mi aplicación web (Clon)"
+
+#: app/forms.py:468
+msgid "New Hostname / Domain"
+msgstr "Nuevo nombre de host / Dominio"
+
+#: app/forms.py:470
+msgid "e.g., www2.example.com"
+msgstr "ej., www2.ejemplo.com"
+
+#: app/forms.py:490
+msgid "Clone Security Configuration"
+msgstr "Clonar configuración de seguridad"
+
+#: app/forms.py:491
+msgid "Clone Backend Servers"
+msgstr "Clonar servidores backend"
+
+#: app/forms.py:492
+msgid "Clone Endpoint Configuration"
+msgstr "Clonar configuración de endpoints"
+
+#: app/forms.py:493 app/templates/applications/clone.html:2
+#: app/templates/applications/clone.html:8
+#: app/templates/applications/view.html:89
+msgid "Clone Application"
+msgstr "Clonar aplicación"
+
+#: app/forms.py:513
 msgid "Basic Security (protection mode)"
 msgstr "Seguridad básica (modo de protección)"
 
-#: app/forms.py:478 app/templates/applications/compare.html:77
-#: app/templates/applications/security.html:85
+#: app/forms.py:514 app/templates/applications/compare.html:77
+#: app/templates/applications/security.html:117
 msgid "Request Limits"
 msgstr "Límites de solicitudes"
 
-#: app/forms.py:479 app/templates/applications/compare.html:108
-#: app/templates/applications/security.html:48
+#: app/forms.py:515 app/templates/applications/compare.html:108
+#: app/templates/applications/security.html:56
 msgid "Clickjacking Protection"
 msgstr "Protección contra clickjacking"
 
-#: app/forms.py:480 app/templates/applications/compare.html:140
-#: app/templates/applications/security.html:63
+#: app/forms.py:516 app/templates/applications/compare.html:140
+#: app/templates/applications/security.html:83
 msgid "Data Theft Protection"
 msgstr "Protección contra robo de datos"
 
-#: app/forms.py:481 app/templates/applications/view.html:110
+#: app/forms.py:517 app/templates/applications/view.html:116
 msgid "Backend Servers"
 msgstr "Servidores backend"
 
-#: app/forms.py:482
+#: app/forms.py:518
 msgid "Endpoints Configuration"
 msgstr "Configuración de endpoints"
 
-#: app/forms.py:483 app/templates/templates/list.html:81
+#: app/forms.py:519 app/templates/templates/list.html:81
 msgid "Create Template"
 msgstr "Crear plantilla"
 
@@ -606,9 +640,9 @@ msgstr "Cuenta no encontrada o acceso denegado."
 #: app/routes/accounts.py:218 app/routes/accounts.py:265
 #: app/routes/accounts.py:280 app/routes/accounts.py:337
 #: app/routes/applications.py:137 app/routes/applications.py:204
-#: app/routes/applications.py:267 app/routes/certificates.py:62
-#: app/routes/certificates.py:162 app/routes/proxy.py:88
-#: app/routes/templates.py:314
+#: app/routes/applications.py:267 app/routes/applications.py:558
+#: app/routes/certificates.py:62 app/routes/certificates.py:162
+#: app/routes/proxy.py:88 app/routes/templates.py:314
 msgid "Account not found or insufficient permissions."
 msgstr "Cuenta no encontrada o permisos insuficientes."
 
@@ -780,7 +814,7 @@ msgstr "Error al eliminar la aplicación: %(error)s"
 msgid "Failed to load security config: %(error)s"
 msgstr "Error al cargar la configuración de seguridad: %(error)s"
 
-#: app/routes/applications.py:271
+#: app/routes/applications.py:271 app/routes/applications.py:680
 msgid "You do not have permission to modify configurations."
 msgstr "No tiene permiso para modificar configuraciones."
 
@@ -806,6 +840,68 @@ msgstr "Error al cargar la configuración de %(name)s: %(error)s"
 #, python-format
 msgid "Failed to load DNS info: %(error)s"
 msgstr "Error al cargar la información DNS: %(error)s"
+
+#: app/routes/applications.py:562
+msgid "Application cloning requires v2 API credentials (email + password)."
+msgstr "La clonación de aplicaciones requiere credenciales API v2 (correo + contraseña)."
+
+#: app/routes/applications.py:568
+#, python-format
+msgid "Failed to load source application: %(error)s"
+msgstr "Error al cargar la aplicación de origen: %(error)s"
+
+#: app/routes/applications.py:617
+#, python-format
+msgid "Application created but some config import failed: %(error)s"
+msgstr "Aplicación creada pero falló la importación de alguna configuración: %(error)s"
+
+#: app/routes/applications.py:641
+#, python-format
+msgid "Security config partially cloned: %(error)s"
+msgstr "Configuración de seguridad clonada parcialmente: %(error)s"
+
+#: app/routes/applications.py:652
+#, python-format
+msgid "Application \"%(name)s\" cloned successfully."
+msgstr "Aplicación \"%(name)s\" clonada exitosamente."
+
+#: app/routes/applications.py:656
+#, python-format
+msgid "Failed to clone application: %(error)s"
+msgstr "Error al clonar la aplicación: %(error)s"
+
+#: app/routes/applications.py:687
+msgid "Please select an action and at least one application."
+msgstr "Por favor, seleccione una acción y al menos una aplicación."
+
+#: app/routes/applications.py:693
+#: app/templates/applications/bulk_security.html:23
+msgid "Protection Mode -> Active"
+msgstr "Modo de protección -> Activo"
+
+#: app/routes/applications.py:698
+#: app/templates/applications/bulk_security.html:24
+msgid "Protection Mode -> Passive"
+msgstr "Modo de protección -> Pasivo"
+
+#: app/routes/applications.py:703
+#: app/templates/applications/bulk_security.html:25
+msgid "Enable TLS 1.3 (Frontend)"
+msgstr "Habilitar TLS 1.3 (Frontend)"
+
+#: app/routes/applications.py:708
+#: app/templates/applications/bulk_security.html:26
+msgid "Disable TLS 1.0 (Frontend)"
+msgstr "Deshabilitar TLS 1.0 (Frontend)"
+
+#: app/routes/applications.py:713
+#: app/templates/applications/bulk_security.html:27
+msgid "Enable PFS"
+msgstr "Habilitar PFS"
+
+#: app/routes/applications.py:720
+msgid "Unknown action."
+msgstr "Acción desconocida."
 
 #: app/routes/auth.py:30
 #, python-format
@@ -1088,7 +1184,7 @@ msgstr "Plantilla \"%(name)s\" importada exitosamente."
 #: app/templates/accounts/rotate_key.html:7
 #: app/templates/applications/compare.html:7
 #: app/templates/applications/list.html:7
-#: app/templates/applications/view.html:7 app/templates/base.html:28
+#: app/templates/applications/view.html:7 app/templates/base.html:29
 #: app/templates/certificates/list.html:7
 #: app/templates/certificates/view.html:7 app/templates/dashboard.html:2
 #: app/templates/dashboard.html:6 app/templates/logs/access.html:7
@@ -1104,7 +1200,7 @@ msgstr "Plantilla \"%(name)s\" importada exitosamente."
 msgid "Dashboard"
 msgstr "Panel de control"
 
-#: app/templates/accounts/rotate_key.html:8 app/templates/base.html:34
+#: app/templates/accounts/rotate_key.html:8 app/templates/base.html:35
 msgid "Accounts"
 msgstr "Cuentas"
 
@@ -1113,7 +1209,7 @@ msgstr "Cuentas"
 #: app/templates/applications/list.html:9
 #: app/templates/applications/list.html:12
 #: app/templates/applications/list.html:20
-#: app/templates/applications/view.html:8 app/templates/base.html:40
+#: app/templates/applications/view.html:8 app/templates/base.html:41
 #: app/templates/dashboard.html:32 app/templates/dashboard.html:96
 #: app/templates/proxy/launch.html:8 app/templates/proxy/session.html:8
 #: app/templates/reports/run_detail.html:45
@@ -1123,7 +1219,7 @@ msgstr "Cuentas"
 msgid "Applications"
 msgstr "Aplicaciones"
 
-#: app/templates/base.html:46 app/templates/certificates/list.html:2
+#: app/templates/base.html:47 app/templates/certificates/list.html:2
 #: app/templates/certificates/list.html:9
 #: app/templates/certificates/list.html:12
 #: app/templates/certificates/list.html:20
@@ -1132,7 +1228,7 @@ msgstr "Aplicaciones"
 msgid "Certificates"
 msgstr "Certificados"
 
-#: app/templates/applications/view.html:88 app/templates/base.html:52
+#: app/templates/applications/view.html:94 app/templates/base.html:53
 #: app/templates/dashboard.html:102 app/templates/dashboard.html:103
 #: app/templates/logs/access.html:8 app/templates/logs/fp_analysis.html:8
 #: app/templates/logs/index.html:2 app/templates/logs/index.html:9
@@ -1140,47 +1236,47 @@ msgstr "Certificados"
 msgid "Logs"
 msgstr "Registros"
 
-#: app/templates/base.html:58
+#: app/templates/base.html:59
 msgid "Templates"
 msgstr "Plantillas"
 
-#: app/templates/base.html:64
+#: app/templates/base.html:65
 msgid "Reports"
 msgstr "Reportes"
 
 #: app/templates/admin/index.html:2 app/templates/admin/index.html:6
-#: app/templates/base.html:74
+#: app/templates/base.html:75
 msgid "Admin Dashboard"
 msgstr "Panel de administración"
 
 #: app/templates/admin/panel.html:52 app/templates/admin/users.html:6
-#: app/templates/base.html:75
+#: app/templates/base.html:76
 msgid "Users"
 msgstr "Usuarios"
 
 #: app/templates/admin/audit_log.html:2 app/templates/admin/audit_log.html:6
-#: app/templates/admin/index.html:33 app/templates/base.html:76
+#: app/templates/admin/index.html:33 app/templates/base.html:77
 msgid "Audit Log"
 msgstr "Registro de auditoría"
 
-#: app/templates/auth/profile.html:2 app/templates/base.html:112
+#: app/templates/auth/profile.html:2 app/templates/base.html:113
 msgid "Profile"
 msgstr "Perfil"
 
-#: app/templates/base.html:115
+#: app/templates/base.html:116
 msgid "Logout"
 msgstr "Cerrar sesión"
 
-#: app/templates/base.html:168 app/templates/base.html:220
+#: app/templates/base.html:169 app/templates/base.html:221
 #: app/templates/templates/view.html:158
 msgid "Close"
 msgstr "Cerrar"
 
-#: app/templates/base.html:200
+#: app/templates/base.html:201
 msgid "Session Expiring"
 msgstr "Sesión expirando"
 
-#: app/templates/base.html:203
+#: app/templates/base.html:204
 msgid ""
 "Your session is about to expire due to inactivity. You will be logged out"
 " in 2 minutes."
@@ -1188,19 +1284,19 @@ msgstr ""
 "Su sesión está a punto de expirar por inactividad. Se cerrará su sesión "
 "en 2 minutos."
 
-#: app/templates/base.html:206
+#: app/templates/base.html:207
 msgid "Logout Now"
 msgstr "Cerrar sesión ahora"
 
-#: app/templates/base.html:207
+#: app/templates/base.html:208
 msgid "Continue Session"
 msgstr "Continuar sesión"
 
-#: app/templates/base.html:219
+#: app/templates/base.html:220
 msgid "Confirm Action"
 msgstr "Confirmar acción"
 
-#: app/templates/admin/users.html:29 app/templates/base.html:222
+#: app/templates/admin/users.html:29 app/templates/base.html:223
 msgid "Are you sure?"
 msgstr "¿Está seguro?"
 
@@ -1208,8 +1304,11 @@ msgstr "¿Está seguro?"
 #: app/templates/accounts/rotate_key.html:58
 #: app/templates/admin/user_create.html:43
 #: app/templates/admin/user_edit.html:41
+#: app/templates/applications/clone.html:77
 #: app/templates/applications/create.html:94
-#: app/templates/auth/change_password.html:28 app/templates/base.html:224
+#: app/templates/applications/view.html:382
+#: app/templates/applications/view.html:562
+#: app/templates/auth/change_password.html:28 app/templates/base.html:225
 #: app/templates/certificates/upload.html:81
 #: app/templates/templates/add.html:50
 #: app/templates/templates/bulk_apply.html:85
@@ -1220,16 +1319,16 @@ msgstr "¿Está seguro?"
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: app/templates/base.html:225
+#: app/templates/base.html:226
 msgid "Confirm"
 msgstr "Confirmar"
 
-#: app/templates/base.html:235 app/templates/base.html:237
+#: app/templates/base.html:236 app/templates/base.html:238
 #: app/templates/templates/view.html:179 app/templates/templates/view.html:225
 msgid "Loading..."
 msgstr "Cargando..."
 
-#: app/templates/base.html:243
+#: app/templates/base.html:244
 #, python-format
 msgid "Showing %(visible)s of %(total)s"
 msgstr "Mostrando %(visible)s de %(total)s"
@@ -1304,7 +1403,7 @@ msgstr ""
 msgid "Add WaaS Account"
 msgstr "Agregar cuenta WaaS"
 
-#: app/templates/applications/view.html:70 app/templates/dashboard.html:129
+#: app/templates/applications/view.html:71 app/templates/dashboard.html:129
 msgid "Quick Actions"
 msgstr "Acciones rápidas"
 
@@ -1345,7 +1444,7 @@ msgid "Resource"
 msgstr "Recurso"
 
 #: app/templates/admin/audit_log.html:43 app/templates/admin/index.html:46
-#: app/templates/applications/view.html:174
+#: app/templates/applications/view.html:190
 #: app/templates/certificates/view.html:10 app/templates/dashboard.html:161
 #: app/templates/logs/fp_analysis.html:158 app/templates/proxy/session.html:102
 #: app/templates/reports/view.html:78
@@ -1368,7 +1467,7 @@ msgstr "Expirado"
 msgid "days"
 msgstr "días"
 
-#: app/templates/applications/list.html:165
+#: app/templates/applications/list.html:170
 #: app/templates/certificates/list.html:92 app/templates/dashboard.html:233
 #: app/templates/templates/list.html:113
 msgid "View"
@@ -1446,9 +1545,12 @@ msgstr ""
 " de cuenta y funciones de API v2."
 
 #: app/templates/accounts/edit.html:2 app/templates/accounts/view.html:26
-#: app/templates/reports/view.html:20 app/templates/templates/edit.html:2
-#: app/templates/templates/edit.html:10 app/templates/templates/list.html:65
-#: app/templates/templates/view.html:20
+#: app/templates/applications/view.html:166
+#: app/templates/applications/view.html:431
+#: app/templates/applications/view.html:511
+#: app/templates/applications/view.html:512 app/templates/reports/view.html:20
+#: app/templates/templates/edit.html:2 app/templates/templates/edit.html:10
+#: app/templates/templates/list.html:65 app/templates/templates/view.html:20
 msgid "Edit"
 msgstr "Editar"
 
@@ -1510,10 +1612,11 @@ msgstr "ID de cuenta WaaS"
 
 #: app/templates/accounts/list.html:19 app/templates/accounts/list.html:68
 #: app/templates/accounts/view.html:41 app/templates/admin/panel.html:100
-#: app/templates/admin/users.html:15 app/templates/logs/access.html:113
-#: app/templates/proxy/launch.html:97 app/templates/reports/list.html:21
-#: app/templates/reports/run_detail.html:17 app/templates/reports/view.html:49
-#: app/templates/reports/view.html:76
+#: app/templates/admin/users.html:15
+#: app/templates/applications/bulk_security_results.html:51
+#: app/templates/logs/access.html:113 app/templates/proxy/launch.html:97
+#: app/templates/reports/list.html:21 app/templates/reports/run_detail.html:17
+#: app/templates/reports/view.html:49 app/templates/reports/view.html:76
 #: app/templates/templates/bulk_results.html:58
 msgid "Status"
 msgstr "Estado"
@@ -1525,7 +1628,9 @@ msgstr "Última verificación"
 
 #: app/templates/accounts/list.html:21 app/templates/accounts/list.html:69
 #: app/templates/accounts/sharing.html:24 app/templates/admin/users.html:15
-#: app/templates/applications/list.html:116
+#: app/templates/applications/list.html:121
+#: app/templates/applications/view.html:132
+#: app/templates/applications/view.html:418
 #: app/templates/certificates/list.html:64 app/templates/reports/list.html:24
 #: app/templates/templates/list.html:48 app/templates/templates/list.html:102
 msgid "Actions"
@@ -1571,7 +1676,7 @@ msgstr "Lectura"
 #: app/templates/accounts/rotate_key.html:24
 #: app/templates/applications/compare.html:23
 #: app/templates/applications/dns.html:13
-#: app/templates/applications/list.html:43
+#: app/templates/applications/list.html:48
 #: app/templates/applications/security.html:20
 #: app/templates/certificates/list.html:40
 #: app/templates/certificates/upload.html:13 app/templates/logs/access.html:43
@@ -1602,6 +1707,9 @@ msgid "Sharing"
 msgstr "Compartir"
 
 #: app/templates/accounts/sharing.html:7 app/templates/accounts/view.html:29
+#: app/templates/applications/bulk_security.html:7
+#: app/templates/applications/bulk_security_results.html:7
+#: app/templates/applications/clone.html:9
 #: app/templates/applications/create.html:9
 #: app/templates/applications/view.html:23
 #: app/templates/certificates/view.html:18 app/templates/proxy/session.html:20
@@ -1828,6 +1936,165 @@ msgstr "Deshabilitado"
 msgid "No users found."
 msgstr "No se encontraron usuarios."
 
+#: app/templates/applications/bulk_security.html:2
+#: app/templates/applications/bulk_security.html:6
+msgid "Bulk Security Operations"
+msgstr "Operaciones de seguridad masivas"
+
+#: app/templates/applications/bulk_security.html:11
+msgid ""
+"Apply a security change across multiple applications at once. Select an "
+"action and the target applications, then execute."
+msgstr ""
+"Aplique un cambio de seguridad en múltiples aplicaciones a la vez. "
+"Seleccione una acción y las aplicaciones objetivo, luego ejecute."
+
+#: app/templates/applications/bulk_security.html:14
+msgid "Apply the selected security change to all chosen applications?"
+msgstr "¿Aplicar el cambio de seguridad seleccionado a todas las aplicaciones elegidas?"
+
+#: app/templates/applications/bulk_security.html:14
+msgid "Applying security changes..."
+msgstr "Aplicando cambios de seguridad..."
+
+#: app/templates/applications/bulk_security.html:19
+msgid "Security Action"
+msgstr "Acción de seguridad"
+
+#: app/templates/applications/bulk_security.html:22
+msgid "— Select Action —"
+msgstr "— Seleccionar acción —"
+
+#: app/templates/applications/bulk_security.html:35
+msgid "Select Applications"
+msgstr "Seleccionar aplicaciones"
+
+#: app/templates/applications/bulk_security.html:36
+msgid "selected"
+msgstr "seleccionado(s)"
+
+#: app/templates/applications/bulk_security.html:46
+#: app/templates/templates/bulk_apply.html:52
+msgid "Select All"
+msgstr "Seleccionar todo"
+
+#: app/templates/applications/bulk_security.html:47
+#: app/templates/templates/bulk_apply.html:53
+msgid "None"
+msgstr "Ninguno"
+
+#: app/templates/applications/bulk_security.html:51
+msgid "Loading applications..."
+msgstr "Cargando aplicaciones..."
+
+#: app/templates/applications/bulk_security.html:57
+msgid "No accounts available."
+msgstr "No hay cuentas disponibles."
+
+#: app/templates/applications/bulk_security.html:63
+msgid "Execute Bulk Action"
+msgstr "Ejecutar acción masiva"
+
+#: app/templates/applications/bulk_security.html:85
+msgid "No applications found."
+msgstr "No se encontraron aplicaciones."
+
+#: app/templates/applications/bulk_security.html:106
+msgid "Failed to load applications."
+msgstr "Error al cargar las aplicaciones."
+
+#: app/templates/applications/bulk_security_results.html:2
+#: app/templates/applications/bulk_security_results.html:6
+msgid "Bulk Security Results"
+msgstr "Resultados de seguridad masiva"
+
+#: app/templates/applications/bulk_security_results.html:11
+msgid "Action:"
+msgstr "Acción:"
+
+#: app/templates/applications/bulk_security_results.html:20
+#: app/templates/templates/bulk_results.html:27
+msgid "Total"
+msgstr "Total"
+
+#: app/templates/applications/bulk_security_results.html:28
+#: app/templates/templates/bulk_results.html:35
+msgid "Succeeded"
+msgstr "Exitoso"
+
+#: app/templates/applications/bulk_security_results.html:36
+#: app/templates/applications/bulk_security_results.html:64
+#: app/templates/reports/run_detail.html:19 app/templates/reports/view.html:53
+#: app/templates/reports/view.html:89
+#: app/templates/templates/bulk_results.html:43
+#: app/templates/templates/bulk_results.html:71
+msgid "Failed"
+msgstr "Fallido"
+
+#: app/templates/applications/bulk_security_results.html:49
+#: app/templates/certificates/list.html:61
+#: app/templates/certificates/upload.html:28
+#: app/templates/certificates/view.html:33 app/templates/logs/index.html:67
+#: app/templates/templates/bulk_results.html:56
+#: app/templates/templates/view.html:106
+msgid "Application"
+msgstr "Aplicación"
+
+#: app/templates/applications/bulk_security_results.html:50
+#: app/templates/applications/view.html:48
+#: app/templates/certificates/view.html:34 app/templates/reports/list.html:20
+#: app/templates/reports/view.html:43
+#: app/templates/templates/bulk_results.html:57
+#: app/templates/templates/view.html:97
+msgid "Account"
+msgstr "Cuenta"
+
+#: app/templates/applications/bulk_security_results.html:52
+msgid "Error"
+msgstr "Error"
+
+#: app/templates/applications/bulk_security_results.html:62
+#: app/templates/reports/run_detail.html:18 app/templates/reports/view.html:52
+#: app/templates/reports/view.html:87
+#: app/templates/templates/bulk_results.html:69
+msgid "Success"
+msgstr "Éxito"
+
+#: app/templates/applications/clone.html:14
+#, python-format
+msgid ""
+"This will create a new application based on <strong>%(name)s</strong>. "
+"The new app will be created via the v2 API, then source configuration "
+"will be imported."
+msgstr ""
+"Esto creará una nueva aplicación basada en <strong>%(name)s</strong>. "
+"La nueva aplicación se creará a través de la API v2, luego se importará "
+"la configuración de origen."
+
+#: app/templates/applications/clone.html:18
+msgid "New Application Settings"
+msgstr "Configuración de la nueva aplicación"
+
+#: app/templates/applications/clone.html:20
+msgid "Cloning application..."
+msgstr "Clonando aplicación..."
+
+#: app/templates/applications/clone.html:55
+msgid "What to Clone"
+msgstr "Qué clonar"
+
+#: app/templates/applications/clone.html:60
+msgid "Protection mode, request limits, clickjacking, data theft settings"
+msgstr "Modo de protección, límites de solicitudes, configuración de clickjacking y robo de datos"
+
+#: app/templates/applications/clone.html:66
+msgid "Backend server definitions (host, port, SSL, health checks)"
+msgstr "Definiciones de servidores backend (host, puerto, SSL, verificaciones de salud)"
+
+#: app/templates/applications/clone.html:72
+msgid "Frontend ports, TLS versions, cipher suites"
+msgstr "Puertos frontend, versiones TLS, suites de cifrado"
+
 #: app/templates/applications/compare.html:2
 #: app/templates/applications/compare.html:16
 msgid "Compare Applications"
@@ -1857,7 +2124,7 @@ msgid "via"
 msgstr "vía"
 
 #: app/templates/applications/create.html:19
-#: app/templates/applications/view.html:36
+#: app/templates/applications/view.html:37
 msgid "Application Details"
 msgstr "Detalles de la aplicación"
 
@@ -1922,7 +2189,7 @@ msgstr "Volver a la aplicación"
 
 #: app/templates/applications/dns.html:14
 #: app/templates/applications/security.html:21
-#: app/templates/applications/view.html:239 app/templates/logs/access.html:44
+#: app/templates/applications/view.html:255 app/templates/logs/access.html:44
 #: app/templates/logs/fp_analysis.html:31 app/templates/logs/waf.html:44
 #: app/templates/proxy/launch.html:25
 msgid "Application:"
@@ -1986,8 +2253,8 @@ msgstr ""
 "permita tiempo para la propagación DNS."
 
 #: app/templates/applications/dns.html:127
-#: app/templates/applications/security.html:295
-#: app/templates/applications/view.html:369
+#: app/templates/applications/security.html:327
+#: app/templates/applications/view.html:578
 msgid "Raw API Data"
 msgstr "Datos sin procesar de la API"
 
@@ -1999,101 +2266,105 @@ msgstr "Sin información DNS"
 msgid "Could not retrieve DNS/CNAME information for this application."
 msgstr "No se pudo obtener la información DNS/CNAME para esta aplicación."
 
-#: app/templates/applications/list.html:24
+#: app/templates/applications/list.html:23
+msgid "Bulk Security"
+msgstr "Seguridad masiva"
+
+#: app/templates/applications/list.html:29
 #: app/templates/certificates/list.html:24 app/templates/logs/index.html:25
 msgid "No WaaS accounts configured."
 msgstr "No hay cuentas WaaS configuradas."
 
-#: app/templates/applications/list.html:24
+#: app/templates/applications/list.html:29
 #: app/templates/certificates/list.html:24 app/templates/logs/index.html:26
 #: app/templates/templates/view.html:129
 msgid "Add an account"
 msgstr "Agregar una cuenta"
 
-#: app/templates/applications/list.html:24
+#: app/templates/applications/list.html:29
 #: app/templates/certificates/list.html:24 app/templates/logs/index.html:26
 #: app/templates/templates/view.html:129
 msgid "first."
 msgstr "primero."
 
-#: app/templates/applications/list.html:29
+#: app/templates/applications/list.html:34
 #: app/templates/certificates/list.html:28 app/templates/logs/index.html:32
 msgid "Select Account"
 msgstr "Seleccionar cuenta"
 
-#: app/templates/applications/list.html:34
+#: app/templates/applications/list.html:39
 msgid "View Apps"
 msgstr "Ver aplicaciones"
 
-#: app/templates/applications/list.html:44
+#: app/templates/applications/list.html:49
 #: app/templates/certificates/list.html:41
 msgid "All Accounts"
 msgstr "Todas las cuentas"
 
-#: app/templates/applications/list.html:63
+#: app/templates/applications/list.html:68
 msgid "Detailed view with server health"
 msgstr "Vista detallada con estado del servidor"
 
-#: app/templates/applications/list.html:65
+#: app/templates/applications/list.html:70
 msgid "Shows v2 app IDs — required for create/delete"
 msgstr "Muestra IDs de aplicaciones v2 — requerido para crear/eliminar"
 
-#: app/templates/applications/list.html:69
+#: app/templates/applications/list.html:74
 msgid "API version"
 msgstr "Versión de API"
 
-#: app/templates/applications/list.html:86
+#: app/templates/applications/list.html:91
 msgid "Filter applications..."
 msgstr "Filtrar aplicaciones..."
 
-#: app/templates/applications/list.html:92
+#: app/templates/applications/list.html:97
 msgid "Compare Selected"
 msgstr "Comparar seleccionados"
 
-#: app/templates/applications/list.html:106
+#: app/templates/applications/list.html:111
 msgid "ID"
 msgstr "ID"
 
-#: app/templates/applications/list.html:109
-#: app/templates/applications/view.html:40 app/templates/logs/index.html:69
+#: app/templates/applications/list.html:114
+#: app/templates/applications/view.html:41 app/templates/logs/index.html:69
 msgid "Group"
 msgstr "Grupo"
 
-#: app/templates/applications/list.html:111
-#: app/templates/applications/list.html:114
+#: app/templates/applications/list.html:116
+#: app/templates/applications/list.html:119
 msgid "Servers"
 msgstr "Servidores"
 
-#: app/templates/applications/list.html:112
-#: app/templates/applications/view.html:49
+#: app/templates/applications/list.html:117
+#: app/templates/applications/view.html:50
 msgid "Server Health"
 msgstr "Estado del servidor"
 
-#: app/templates/applications/list.html:127
+#: app/templates/applications/list.html:132
 msgid "Select for comparison"
 msgstr "Seleccionar para comparar"
 
-#: app/templates/applications/list.html:148
-#: app/templates/applications/view.html:52
+#: app/templates/applications/list.html:153
+#: app/templates/applications/view.html:53
 msgid "All Up"
 msgstr "Todos activos"
 
-#: app/templates/applications/list.html:150
-#: app/templates/applications/view.html:54
-#: app/templates/applications/view.html:147
+#: app/templates/applications/list.html:155
+#: app/templates/applications/view.html:55
+#: app/templates/applications/view.html:156
 msgid "Up"
 msgstr "Activo"
 
-#: app/templates/applications/list.html:152
-#: app/templates/applications/view.html:56
+#: app/templates/applications/list.html:157
+#: app/templates/applications/view.html:57
 msgid "All Down"
 msgstr "Todos caídos"
 
-#: app/templates/applications/list.html:164
+#: app/templates/applications/list.html:169
 msgid "View (v4 API)"
 msgstr "Ver (API v4)"
 
-#: app/templates/applications/list.html:170
+#: app/templates/applications/list.html:175
 #, python-format
 msgid ""
 "Are you sure you want to delete application &quot;%(name)s&quot;? This "
@@ -2102,16 +2373,16 @@ msgstr ""
 "¿Está seguro de que desea eliminar la aplicación &quot;%(name)s&quot;? "
 "Esta acción no se puede deshacer."
 
-#: app/templates/applications/list.html:173
+#: app/templates/applications/list.html:178
 msgid "Delete (v2 API)"
 msgstr "Eliminar (API v2)"
 
-#: app/templates/applications/list.html:191
+#: app/templates/applications/list.html:196
 #: app/templates/templates/bulk_apply.html:91
 msgid "No Applications Found"
 msgstr "No se encontraron aplicaciones"
 
-#: app/templates/applications/list.html:192
+#: app/templates/applications/list.html:197
 msgid "This account has no applications configured in WaaS."
 msgstr "Esta cuenta no tiene aplicaciones configuradas en WaaS."
 
@@ -2120,114 +2391,116 @@ msgid "Security Config"
 msgstr "Configuración de seguridad"
 
 #: app/templates/applications/security.html:6
-#: app/templates/applications/view.html:74
+#: app/templates/applications/view.html:75
 msgid "Security Configuration"
 msgstr "Configuración de seguridad"
 
 #: app/templates/applications/security.html:10
-#: app/templates/applications/view.html:84
+#: app/templates/applications/view.html:85
 #: app/templates/templates/save_as.html:2
 #: app/templates/templates/save_as.html:10
 #: app/templates/templates/save_as.html:17
 msgid "Save as Template"
 msgstr "Guardar como plantilla"
 
-#: app/templates/applications/security.html:90
-#: app/templates/applications/security.html:179
-msgid "Max Request Length"
-msgstr "Longitud máxima de solicitud"
-
-#: app/templates/applications/security.html:94
-#: app/templates/applications/security.html:184
-msgid "Max Request Line Length"
-msgstr "Longitud máxima de línea de solicitud"
-
-#: app/templates/applications/security.html:98
-#: app/templates/applications/security.html:189
-msgid "Max URL Length"
-msgstr "Longitud máxima de URL"
-
-#: app/templates/applications/security.html:102
-#: app/templates/applications/security.html:194
-msgid "Max Number of Headers"
-msgstr "Número máximo de encabezados"
-
-#: app/templates/applications/security.html:106
-#: app/templates/applications/security.html:199
-msgid "Max Header Value Length"
-msgstr "Longitud máxima de valor de encabezado"
-
-#: app/templates/applications/security.html:110
-#: app/templates/applications/security.html:204
-msgid "Max Cookie Name Length"
-msgstr "Longitud máxima de nombre de cookie"
-
-#: app/templates/applications/security.html:114
-#: app/templates/applications/security.html:209
-msgid "Max Cookie Value Length"
-msgstr "Longitud máxima de valor de cookie"
-
-#: app/templates/applications/security.html:131
-msgid "Edit Protection Mode"
-msgstr "Editar modo de protección"
-
-#: app/templates/applications/security.html:144
+#: app/templates/applications/security.html:40
+#: app/templates/applications/security.html:176
 msgid "Active (block attacks)"
 msgstr "Activo (bloquear ataques)"
 
-#: app/templates/applications/security.html:145
+#: app/templates/applications/security.html:41
+#: app/templates/applications/security.html:177
 msgid "Passive (log only)"
 msgstr "Pasivo (solo registrar)"
 
-#: app/templates/applications/security.html:148
+#: app/templates/applications/security.html:122
+#: app/templates/applications/security.html:211
+msgid "Max Request Length"
+msgstr "Longitud máxima de solicitud"
+
+#: app/templates/applications/security.html:123
+#: app/templates/applications/security.html:216
+msgid "Max Request Line Length"
+msgstr "Longitud máxima de línea de solicitud"
+
+#: app/templates/applications/security.html:124
+#: app/templates/applications/security.html:221
+msgid "Max URL Length"
+msgstr "Longitud máxima de URL"
+
+#: app/templates/applications/security.html:125
+#: app/templates/applications/security.html:226
+msgid "Max Number of Headers"
+msgstr "Número máximo de encabezados"
+
+#: app/templates/applications/security.html:126
+#: app/templates/applications/security.html:231
+msgid "Max Header Value Length"
+msgstr "Longitud máxima de valor de encabezado"
+
+#: app/templates/applications/security.html:127
+#: app/templates/applications/security.html:236
+msgid "Max Cookie Name Length"
+msgstr "Longitud máxima de nombre de cookie"
+
+#: app/templates/applications/security.html:128
+#: app/templates/applications/security.html:241
+msgid "Max Cookie Value Length"
+msgstr "Longitud máxima de valor de cookie"
+
+#: app/templates/applications/security.html:162
+msgid "Edit Protection Mode"
+msgstr "Editar modo de protección"
+
+#: app/templates/applications/security.html:180
 msgid "Active:"
 msgstr "Activo:"
 
-#: app/templates/applications/security.html:148
+#: app/templates/applications/security.html:180
 msgid "Malicious requests are blocked."
 msgstr "Las solicitudes maliciosas son bloqueadas."
 
-#: app/templates/applications/security.html:149
+#: app/templates/applications/security.html:181
 msgid "Passive:"
 msgstr "Pasivo:"
 
-#: app/templates/applications/security.html:149
+#: app/templates/applications/security.html:181
 msgid "Attacks are logged but not blocked — useful for tuning."
 msgstr "Los ataques se registran pero no se bloquean — útil para ajustes."
 
-#: app/templates/applications/security.html:154
+#: app/templates/applications/security.html:186
 msgid "Update Protection Mode"
 msgstr "Actualizar modo de protección"
 
-#: app/templates/applications/security.html:167
+#: app/templates/applications/security.html:199
 msgid "Edit Request Limits"
 msgstr "Editar límites de solicitudes"
 
-#: app/templates/applications/security.html:216
+#: app/templates/applications/security.html:248
 msgid "Update Request Limits"
 msgstr "Actualizar límites de solicitudes"
 
-#: app/templates/applications/security.html:229
+#: app/templates/applications/security.html:261
 msgid "Edit Clickjacking Protection"
 msgstr "Editar protección contra clickjacking"
 
-#: app/templates/applications/security.html:249
+#: app/templates/applications/security.html:281
 msgid "Update Clickjacking Protection"
 msgstr "Actualizar protección contra clickjacking"
 
-#: app/templates/applications/security.html:262
+#: app/templates/applications/security.html:294
 msgid "Edit Data Theft Protection"
 msgstr "Editar protección contra robo de datos"
 
-#: app/templates/applications/security.html:282
+#: app/templates/applications/security.html:314
 msgid "Update Data Theft Protection"
 msgstr "Actualizar protección contra robo de datos"
 
-#: app/templates/applications/security.html:310
+#: app/templates/applications/security.html:342
 msgid "No Security Configuration"
 msgstr "Sin configuración de seguridad"
 
-#: app/templates/applications/security.html:311
+#: app/templates/applications/security.html:343
 msgid "Could not retrieve security configuration for this application."
 msgstr "No se pudo obtener la configuración de seguridad para esta aplicación."
 
@@ -2235,213 +2508,273 @@ msgstr "No se pudo obtener la configuración de seguridad para esta aplicación.
 msgid "Browse App"
 msgstr "Navegar aplicación"
 
-#: app/templates/applications/view.html:39
+#: app/templates/applications/view.html:40
 #: app/templates/certificates/view.html:29 app/templates/proxy/launch.html:48
 #: app/templates/reports/list.html:17 app/templates/templates/list.html:44
 #: app/templates/templates/list.html:98 app/templates/templates/view.html:38
 msgid "Name"
 msgstr "Nombre"
 
-#: app/templates/applications/view.html:47
-#: app/templates/certificates/view.html:34 app/templates/reports/list.html:20
-#: app/templates/reports/view.html:43
-#: app/templates/templates/bulk_results.html:57
-#: app/templates/templates/view.html:97
-msgid "Account"
-msgstr "Cuenta"
-
-#: app/templates/applications/view.html:48
+#: app/templates/applications/view.html:49
 msgid "Total Servers"
 msgstr "Total de servidores"
 
-#: app/templates/applications/view.html:59
+#: app/templates/applications/view.html:60
 msgid "No servers"
 msgstr "Sin servidores"
 
-#: app/templates/applications/view.html:77
+#: app/templates/applications/view.html:78
 msgid "DNS / CNAME Info"
 msgstr "Info DNS / CNAME"
 
-#: app/templates/applications/view.html:80
+#: app/templates/applications/view.html:81
 msgid "Browse Application via Proxy"
 msgstr "Navegar aplicación vía proxy"
 
-#: app/templates/applications/view.html:91
-#: app/templates/applications/view.html:275
+#: app/templates/applications/view.html:97
+#: app/templates/applications/view.html:415
+#: app/templates/applications/view.html:443
 msgid "WAF"
 msgstr "WAF"
 
-#: app/templates/applications/view.html:94 app/templates/logs/access.html:10
+#: app/templates/applications/view.html:100 app/templates/logs/access.html:10
 #: app/templates/logs/index.html:97
 msgid "Access"
 msgstr "Acceso"
 
-#: app/templates/applications/view.html:97
+#: app/templates/applications/view.html:103
 #: app/templates/logs/fp_analysis.html:2 app/templates/logs/fp_analysis.html:10
 #: app/templates/logs/index.html:101
 msgid "FP Analysis"
 msgstr "Análisis de FP"
 
-#: app/templates/applications/view.html:118
+#: app/templates/applications/view.html:124
 msgid "Server Name"
 msgstr "Nombre del servidor"
 
-#: app/templates/applications/view.html:119
+#: app/templates/applications/view.html:125
+#: app/templates/applications/view.html:279
 msgid "Host"
 msgstr "Host"
 
-#: app/templates/applications/view.html:120
-#: app/templates/applications/view.html:275
+#: app/templates/applications/view.html:126
+#: app/templates/applications/view.html:283
+#: app/templates/applications/view.html:413
 msgid "Port"
 msgstr "Puerto"
 
-#: app/templates/applications/view.html:121
-#: app/templates/applications/view.html:275 app/templates/logs/access.html:116
+#: app/templates/applications/view.html:127
+#: app/templates/applications/view.html:287
+#: app/templates/applications/view.html:414 app/templates/logs/access.html:116
 msgid "Protocol"
 msgstr "Protocolo"
 
-#: app/templates/applications/view.html:122 app/templates/logs/index.html:68
+#: app/templates/applications/view.html:128
+#: app/templates/applications/view.html:298 app/templates/logs/index.html:68
 msgid "Mode"
 msgstr "Modo"
 
-#: app/templates/applications/view.html:123
+#: app/templates/applications/view.html:129
 msgid "Health"
 msgstr "Estado"
 
-#: app/templates/applications/view.html:124
+#: app/templates/applications/view.html:130
+#: app/templates/applications/view.html:294
 msgid "Weight"
 msgstr "Peso"
 
-#: app/templates/applications/view.html:132
+#: app/templates/applications/view.html:141
 msgid "Backup"
 msgstr "Respaldo"
 
-#: app/templates/applications/view.html:149
+#: app/templates/applications/view.html:158
 msgid "Down"
 msgstr "Caído"
 
-#: app/templates/applications/view.html:163
+#: app/templates/applications/view.html:179
 msgid "No backend servers configured."
 msgstr "No hay servidores backend configurados."
 
-#: app/templates/applications/view.html:184
+#: app/templates/applications/view.html:200
 msgid "SSL/TLS"
 msgstr "SSL/TLS"
 
-#: app/templates/applications/view.html:190
+#: app/templates/applications/view.html:206
 msgid "Validate Cert"
 msgstr "Validar certificado"
 
-#: app/templates/applications/view.html:200
+#: app/templates/applications/view.html:216
 msgid "Health Checks"
 msgstr "Verificaciones de estado"
 
-#: app/templates/applications/view.html:202
+#: app/templates/applications/view.html:218
 msgid "OOB Enabled"
 msgstr "OOB habilitado"
 
-#: app/templates/applications/view.html:203
+#: app/templates/applications/view.html:219
 msgid "Interval"
 msgstr "Intervalo"
 
-#: app/templates/applications/view.html:204
+#: app/templates/applications/view.html:220
+#: app/templates/applications/view.html:340
 msgid "URL"
 msgstr "URL"
 
-#: app/templates/applications/view.html:205 app/templates/logs/access.html:111
+#: app/templates/applications/view.html:221
+#: app/templates/applications/view.html:344 app/templates/logs/access.html:111
 #: app/templates/logs/fp_analysis.html:156 app/templates/logs/waf.html:114
 msgid "Method"
 msgstr "Método"
 
-#: app/templates/applications/view.html:206
+#: app/templates/applications/view.html:222
+#: app/templates/applications/view.html:351
 msgid "Expected Status"
 msgstr "Estado esperado"
 
-#: app/templates/applications/view.html:214
+#: app/templates/applications/view.html:230
+#: app/templates/applications/view.html:358
 msgid "Connection Settings"
 msgstr "Configuración de conexión"
 
-#: app/templates/applications/view.html:216
+#: app/templates/applications/view.html:232
+#: app/templates/applications/view.html:360
 msgid "Max Connections"
 msgstr "Conexiones máximas"
 
-#: app/templates/applications/view.html:217
+#: app/templates/applications/view.html:233
+#: app/templates/applications/view.html:364
 msgid "Max Requests"
 msgstr "Solicitudes máximas"
 
-#: app/templates/applications/view.html:218
+#: app/templates/applications/view.html:234
+#: app/templates/applications/view.html:368
 msgid "Timeout (ms)"
 msgstr "Tiempo de espera (ms)"
 
-#: app/templates/applications/view.html:219
+#: app/templates/applications/view.html:235
+#: app/templates/applications/view.html:372
 msgid "Connection Pooling"
 msgstr "Agrupación de conexiones"
 
-#: app/templates/applications/view.html:230
+#: app/templates/applications/view.html:246
 msgid "Backend Connectivity Test"
 msgstr "Prueba de conectividad del backend"
 
-#: app/templates/applications/view.html:234
-#: app/templates/applications/view.html:241
+#: app/templates/applications/view.html:250
+#: app/templates/applications/view.html:257
 msgid "Pass"
 msgstr "Aprobado"
 
-#: app/templates/applications/view.html:236
-#: app/templates/applications/view.html:243
+#: app/templates/applications/view.html:252
+#: app/templates/applications/view.html:259
 msgid "Fail"
 msgstr "Fallido"
 
-#: app/templates/applications/view.html:247
+#: app/templates/applications/view.html:263
 msgid "Last tested:"
 msgstr "Última prueba:"
 
-#: app/templates/applications/view.html:269
+#: app/templates/applications/view.html:274
+msgid "Edit Server:"
+msgstr "Editar servidor:"
+
+#: app/templates/applications/view.html:300
+msgid "In Service"
+msgstr "En servicio"
+
+#: app/templates/applications/view.html:301
+msgid "Out of Service"
+msgstr "Fuera de servicio"
+
+#: app/templates/applications/view.html:307
+msgid "Backup Server"
+msgstr "Servidor de respaldo"
+
+#: app/templates/applications/view.html:313
+msgid "SSL/TLS Settings"
+msgstr "Configuración SSL/TLS"
+
+#: app/templates/applications/view.html:323
+msgid "Validate Certificate"
+msgstr "Validar certificado"
+
+#: app/templates/applications/view.html:331
+msgid "Health Check Settings"
+msgstr "Configuración de verificaciones de salud"
+
+#: app/templates/applications/view.html:333
+msgid "Enable OOB"
+msgstr "Habilitar OOB"
+
+#: app/templates/applications/view.html:336
+msgid "Interval (s)"
+msgstr "Intervalo (s)"
+
+#: app/templates/applications/view.html:379
+msgid "Save Server Changes"
+msgstr "Guardar cambios del servidor"
+
+#: app/templates/applications/view.html:406
 msgid "Ports"
 msgstr "Puertos"
 
-#: app/templates/applications/view.html:291
+#: app/templates/applications/view.html:449
+msgid "Save"
+msgstr "Guardar"
+
+#: app/templates/applications/view.html:461
 msgid "No ports configured."
 msgstr "No hay puertos configurados."
 
-#: app/templates/applications/view.html:299
+#: app/templates/applications/view.html:469
 msgid "Deployment & CNAME"
 msgstr "Implementación y CNAME"
 
-#: app/templates/applications/view.html:306
+#: app/templates/applications/view.html:476
 msgid "Primary Region"
 msgstr "Región primaria"
 
-#: app/templates/applications/view.html:307
+#: app/templates/applications/view.html:477
 msgid "Secondary Region"
 msgstr "Región secundaria"
 
-#: app/templates/applications/view.html:308
+#: app/templates/applications/view.html:478
 msgid "Auto Region"
 msgstr "Región automática"
 
-#: app/templates/applications/view.html:309
+#: app/templates/applications/view.html:479
 msgid "Dedicated IP"
 msgstr "IP dedicada"
 
-#: app/templates/applications/view.html:312
+#: app/templates/applications/view.html:482
 msgid "Auto Certificate"
 msgstr "Certificado automático"
 
-#: app/templates/applications/view.html:324 app/templates/proxy/launch.html:62
+#: app/templates/applications/view.html:494 app/templates/proxy/launch.html:62
 msgid "Domains"
 msgstr "Dominios"
 
-#: app/templates/applications/view.html:339
+#: app/templates/applications/view.html:509
 msgid "Frontend TLS Settings"
 msgstr "Configuración TLS del frontend"
 
-#: app/templates/applications/view.html:354
+#: app/templates/applications/view.html:529
+#: app/templates/applications/view.html:549
 msgid "PFS"
 msgstr "PFS"
 
-#: app/templates/applications/view.html:355
+#: app/templates/applications/view.html:530
+#: app/templates/applications/view.html:552
 msgid "Cipher Suite"
 msgstr "Suite de cifrado"
+
+#: app/templates/applications/view.html:538
+msgid "Edit Frontend TLS Settings"
+msgstr "Editar configuración TLS del frontend"
+
+#: app/templates/applications/view.html:561
+msgid "Save TLS Settings"
+msgstr "Guardar configuración TLS"
 
 #: app/templates/auth/change_password.html:27
 msgid "Update Password"
@@ -2482,14 +2815,6 @@ msgstr "Filtrar certificados..."
 #: app/templates/certificates/list.html:60
 msgid "Certificate Name"
 msgstr "Nombre del certificado"
-
-#: app/templates/certificates/list.html:61
-#: app/templates/certificates/upload.html:28
-#: app/templates/certificates/view.html:33 app/templates/logs/index.html:67
-#: app/templates/templates/bulk_results.html:56
-#: app/templates/templates/view.html:106
-msgid "Application"
-msgstr "Aplicación"
 
 #: app/templates/certificates/list.html:62
 #: app/templates/certificates/view.html:31
@@ -3086,7 +3411,9 @@ msgstr "Resumen WAF"
 
 #: app/templates/reports/add.html:62
 msgid "Top attacks, source IPs, severity breakdown from WAF logs."
-msgstr "Principales ataques, IPs de origen, desglose de severidad de registros WAF."
+msgstr ""
+"Principales ataques, IPs de origen, desglose de severidad de registros "
+"WAF."
 
 #: app/templates/reports/add.html:63 app/templates/reports/list.html:35
 #: app/templates/reports/view.html:39
@@ -3095,7 +3422,9 @@ msgstr "Resumen de acceso"
 
 #: app/templates/reports/add.html:63
 msgid "Request totals, top URLs, HTTP status code distribution."
-msgstr "Totales de solicitudes, URLs principales, distribución de códigos de estado HTTP."
+msgstr ""
+"Totales de solicitudes, URLs principales, distribución de códigos de "
+"estado HTTP."
 
 #: app/templates/reports/add.html:64 app/templates/reports/list.html:37
 #: app/templates/reports/view.html:40
@@ -3104,7 +3433,9 @@ msgstr "Resumen de seguridad"
 
 #: app/templates/reports/add.html:64
 msgid "Current protection mode and security settings for all apps."
-msgstr "Modo de protección actual y configuración de seguridad para todas las aplicaciones."
+msgstr ""
+"Modo de protección actual y configuración de seguridad para todas las "
+"aplicaciones."
 
 #: app/templates/reports/edit.html:2 app/templates/reports/edit.html:6
 msgid "Edit Report"
@@ -3138,7 +3469,9 @@ msgstr "Sin reportes programados"
 msgid ""
 "Create a scheduled report to receive periodic WAF and access summaries "
 "via email."
-msgstr "Cree un reporte programado para recibir resúmenes periódicos de WAF y acceso por correo electrónico."
+msgstr ""
+"Cree un reporte programado para recibir resúmenes periódicos de WAF y "
+"acceso por correo electrónico."
 
 #: app/templates/reports/run_detail.html:2
 #: app/templates/reports/run_detail.html:6
@@ -3152,19 +3485,6 @@ msgstr "Información de ejecución"
 #: app/templates/reports/run_detail.html:16
 msgid "Run Time"
 msgstr "Tiempo de ejecución"
-
-#: app/templates/reports/run_detail.html:18 app/templates/reports/view.html:52
-#: app/templates/reports/view.html:87
-#: app/templates/templates/bulk_results.html:69
-msgid "Success"
-msgstr "Éxito"
-
-#: app/templates/reports/run_detail.html:19 app/templates/reports/view.html:53
-#: app/templates/reports/view.html:89
-#: app/templates/templates/bulk_results.html:43
-#: app/templates/templates/bulk_results.html:71
-msgid "Failed"
-msgstr "Fallido"
 
 #: app/templates/reports/run_detail.html:21 app/templates/reports/view.html:50
 #: app/templates/reports/view.html:77
@@ -3310,14 +3630,6 @@ msgstr "Incluir endpoints"
 msgid "apps"
 msgstr "aplicaciones"
 
-#: app/templates/templates/bulk_apply.html:52
-msgid "Select All"
-msgstr "Seleccionar todo"
-
-#: app/templates/templates/bulk_apply.html:53
-msgid "None"
-msgstr "Ninguno"
-
 #: app/templates/templates/bulk_apply.html:83
 msgid "Apply to"
 msgstr "Aplicar a"
@@ -3335,14 +3647,6 @@ msgstr "No hay aplicaciones disponibles en sus cuentas activas."
 #: app/templates/templates/bulk_results.html:17
 msgid "Bulk Apply Results"
 msgstr "Resultados de aplicación en lote"
-
-#: app/templates/templates/bulk_results.html:27
-msgid "Total"
-msgstr "Total"
-
-#: app/templates/templates/bulk_results.html:35
-msgid "Succeeded"
-msgstr "Exitoso"
 
 #: app/templates/templates/bulk_results.html:59
 msgid "Detail"

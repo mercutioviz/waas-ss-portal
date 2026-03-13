@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 from flask_babel import gettext as _
 from app.models import WaasAccount, AuditLog, get_user_accounts, get_account_for_user, can_write
 from app.waas_client import WaasClient, WaasApiError
-from app.forms import ApplicationCreateForm
+from app.forms import ApplicationCreateForm, CloneApplicationForm
 
 logger = logging.getLogger(__name__)
 
@@ -390,4 +390,401 @@ def dns_info(account_id, app_id):
         application=application,
         dns=dns,
         app_id=app_id
+    )
+
+
+# ---- Phase 8: Configuration Editing & Bulk Operations ----
+
+@bp.route('/<int:account_id>/<app_id>/servers/update', methods=['POST'])
+@login_required
+def update_server(account_id, app_id):
+    """Update a backend server configuration via import_application (PATCH merge)."""
+    client, account, perm = get_client_for_account(account_id, min_permission='write')
+    if not client or not can_write(perm):
+        return jsonify({'success': False, 'error': 'Insufficient permissions'}), 403
+
+    data = request.get_json()
+    if not data or 'server_name' not in data or 'fields' not in data:
+        return jsonify({'success': False, 'error': 'server_name and fields required'}), 400
+
+    server_name = data['server_name']
+    fields = data['fields']
+
+    try:
+        application = client.get_application(app_id)
+        servers = application.get('servers', [])
+
+        found = False
+        for server in servers:
+            if server.get('name') == server_name:
+                # Merge fields into the server, handling nested ssl/health_checks/advanced
+                for key, value in fields.items():
+                    if key == 'ssl' and isinstance(value, dict) and isinstance(server.get('ssl'), dict):
+                        server['ssl'].update(value)
+                    elif key == 'health_checks' and isinstance(value, dict) and isinstance(server.get('health_checks'), dict):
+                        server['health_checks'].update(value)
+                    elif key == 'advanced' and isinstance(value, dict) and isinstance(server.get('advanced'), dict):
+                        server['advanced'].update(value)
+                    else:
+                        server[key] = value
+                found = True
+                break
+
+        if not found:
+            return jsonify({'success': False, 'error': f'Server "{server_name}" not found'}), 404
+
+        client.import_application(app_id, {'servers': servers}, include_servers=True)
+
+        AuditLog.log(
+            user_id=current_user.id,
+            action='server_update',
+            resource_type='application',
+            resource_id=app_id,
+            details=f'Updated server "{server_name}" for app {app_id} on account {account.account_name}',
+            ip_address=request.remote_addr
+        )
+
+        return jsonify({'success': True})
+    except WaasApiError as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/<int:account_id>/<app_id>/endpoints/update', methods=['POST'])
+@login_required
+def update_endpoints(account_id, app_id):
+    """Update endpoint / frontend TLS configuration via import_application."""
+    client, account, perm = get_client_for_account(account_id, min_permission='write')
+    if not client or not can_write(perm):
+        return jsonify({'success': False, 'error': 'Insufficient permissions'}), 403
+
+    data = request.get_json()
+    if not data or 'section' not in data or 'data' not in data:
+        return jsonify({'success': False, 'error': 'section and data required'}), 400
+
+    section = data['section']
+    payload = data['data']
+
+    try:
+        application = client.get_application(app_id)
+        endpoints = application.get('endpoints', {})
+
+        if section == 'tls':
+            https_cfg = endpoints.get('https', {})
+            https_cfg.update(payload)
+            endpoints['https'] = https_cfg
+        elif section == 'ports':
+            port_num = payload.pop('port', None)
+            ports = endpoints.get('ports', [])
+            for p in ports:
+                if p.get('port') == port_num:
+                    adv = p.get('advanced_configuration', {})
+                    adv.update(payload)
+                    p['advanced_configuration'] = adv
+                    break
+            endpoints['ports'] = ports
+        else:
+            return jsonify({'success': False, 'error': f'Unknown section: {section}'}), 400
+
+        client.import_application(app_id, {'endpoints': endpoints}, include_endpoints=True)
+
+        AuditLog.log(
+            user_id=current_user.id,
+            action='endpoint_update',
+            resource_type='application',
+            resource_id=app_id,
+            details=f'Updated {section} settings for app {app_id} on account {account.account_name}',
+            ip_address=request.remote_addr
+        )
+
+        return jsonify({'success': True})
+    except WaasApiError as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/<int:account_id>/<app_id>/security/ajax', methods=['POST'])
+@login_required
+def security_ajax_update(account_id, app_id):
+    """AJAX endpoint for inline security field updates."""
+    client, account, perm = get_client_for_account(account_id, min_permission='write')
+    if not client or not can_write(perm):
+        return jsonify({'success': False, 'error': 'Insufficient permissions'}), 403
+
+    data = request.get_json()
+    if not data or 'section' not in data or 'field' not in data:
+        return jsonify({'success': False, 'error': 'section, field, and value required'}), 400
+
+    section = data['section']
+    field = data['field']
+    value = data.get('value')
+
+    try:
+        if section == 'basic_security':
+            client.update_security_config(app_id, {field: value})
+        elif section == 'request_limits':
+            try:
+                value = int(value)
+            except (ValueError, TypeError):
+                pass
+            client.update_request_limits(app_id, {field: value})
+        elif section == 'clickjacking_protection':
+            value = value if isinstance(value, bool) else (str(value).lower() == 'true')
+            client.update_clickjacking_protection(app_id, {field: value})
+        elif section == 'data_theft_protection':
+            value = value if isinstance(value, bool) else (str(value).lower() == 'true')
+            client.update_data_theft_protection(app_id, {field: value})
+        else:
+            return jsonify({'success': False, 'error': f'Unknown section: {section}'}), 400
+
+        AuditLog.log(
+            user_id=current_user.id,
+            action='security_config_update',
+            resource_type='application',
+            resource_id=app_id,
+            details=f'Updated {section}.{field}={value} for app {app_id} on account {account.account_name}',
+            ip_address=request.remote_addr
+        )
+
+        return jsonify({'success': True, 'field': field, 'value': value})
+    except WaasApiError as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/<int:account_id>/<app_id>/clone', methods=['GET', 'POST'])
+@login_required
+def clone_application(account_id, app_id):
+    """Clone an existing application."""
+    client, account, perm = get_client_for_account(account_id, min_permission='write')
+    if not client or not can_write(perm):
+        flash(_('Account not found or insufficient permissions.'), 'danger')
+        return redirect(url_for('applications.list_applications'))
+
+    if not account.has_v2_credentials:
+        flash(_('Application cloning requires v2 API credentials (email + password).'), 'warning')
+        return redirect(url_for('applications.view_application', account_id=account_id, app_id=app_id))
+
+    try:
+        source_app = client.get_application(app_id)
+    except WaasApiError as e:
+        flash(_('Failed to load source application: %(error)s', error=str(e)), 'danger')
+        return redirect(url_for('applications.view_application', account_id=account_id, app_id=app_id))
+
+    # Extract defaults from source
+    source_servers = source_app.get('servers', [])
+    default_backend_ip = source_servers[0].get('host', '') if source_servers else ''
+    default_backend_port = source_servers[0].get('port', 443) if source_servers else 443
+    default_backend_type = source_servers[0].get('protocol', 'HTTPS') if source_servers else 'HTTPS'
+
+    form = CloneApplicationForm(
+        backend_ip=default_backend_ip,
+        backend_port=default_backend_port,
+        backend_type=default_backend_type,
+    )
+
+    if form.validate_on_submit():
+        create_data = {
+            'applicationName': form.new_name.data.strip(),
+            'hostnames': [{'hostname': form.new_hostname.data.strip()}],
+            'backendIp': form.backend_ip.data.strip(),
+            'backendPort': form.backend_port.data,
+            'backendType': form.backend_type.data,
+            'useExistingIp': False,
+            'maliciousTraffic': 'Passive',
+            'useHttps': True,
+            'useHttp': True,
+        }
+
+        try:
+            # Step 1: Create the new app shell via v2
+            result = client.create_application_v2(create_data)
+            new_app_name = form.new_name.data.strip()
+
+            # Step 2: Import source config sections into new app
+            import_data = {}
+            if form.clone_servers.data:
+                import_data['servers'] = source_app.get('servers', [])
+            if form.clone_endpoints.data:
+                import_data['endpoints'] = source_app.get('endpoints', {})
+
+            if import_data:
+                try:
+                    client.import_application(
+                        new_app_name, import_data,
+                        include_servers=form.clone_servers.data,
+                        include_endpoints=form.clone_endpoints.data
+                    )
+                except WaasApiError as e:
+                    logger.warning(f'Clone import partial failure: {e}')
+                    flash(_('Application created but some config import failed: %(error)s', error=str(e)), 'warning')
+
+            # Step 3: Clone security config if requested
+            if form.clone_security.data:
+                try:
+                    security = client.get_security_config(app_id)
+                    # Apply basic security
+                    mode = security.get('protection_mode')
+                    if mode:
+                        client.update_security_config(new_app_name, {'protection_mode': mode})
+                    # Apply request limits
+                    rl = security.get('request_limits', {})
+                    if rl:
+                        client.update_request_limits(new_app_name, rl)
+                    # Apply clickjacking
+                    cj = security.get('clickjacking_protection', {})
+                    if cj:
+                        client.update_clickjacking_protection(new_app_name, cj)
+                    # Apply data theft
+                    dtp = security.get('data_theft_protection', {})
+                    if dtp:
+                        client.update_data_theft_protection(new_app_name, dtp)
+                except WaasApiError as e:
+                    logger.warning(f'Clone security config partial failure: {e}')
+                    flash(_('Security config partially cloned: %(error)s', error=str(e)), 'warning')
+
+            AuditLog.log(
+                user_id=current_user.id,
+                action='application_clone',
+                resource_type='application',
+                resource_id=new_app_name,
+                details=f'Cloned app "{app_id}" to "{new_app_name}" on account {account.account_name}',
+                ip_address=request.remote_addr
+            )
+
+            flash(_('Application "%(name)s" cloned successfully.', name=new_app_name), 'success')
+            return redirect(url_for('applications.view_application', account_id=account_id, app_id=new_app_name))
+
+        except WaasApiError as e:
+            flash(_('Failed to clone application: %(error)s', error=str(e)), 'danger')
+
+    return render_template(
+        'applications/clone.html',
+        form=form,
+        account=account,
+        source_app=source_app,
+        app_id=app_id
+    )
+
+
+@bp.route('/bulk-security', methods=['GET'])
+@login_required
+def bulk_security(account_id=None):
+    """Bulk security operations page."""
+    accounts = get_user_accounts(current_user)
+    return render_template('applications/bulk_security.html', accounts=accounts)
+
+
+@bp.route('/bulk-security', methods=['POST'])
+@login_required
+def bulk_security_execute():
+    """Execute a bulk security operation on selected applications."""
+    if current_user.role == 'viewer':
+        flash(_('You do not have permission to modify configurations.'), 'danger')
+        return redirect(url_for('applications.bulk_security'))
+
+    action = request.form.get('action')
+    app_selections = request.form.getlist('apps')  # format: "account_id:app_name"
+
+    if not action or not app_selections:
+        flash(_('Please select an action and at least one application.'), 'warning')
+        return redirect(url_for('applications.bulk_security'))
+
+    # Define bulk actions
+    actions = {
+        'protection_mode_active': {
+            'label': _('Protection Mode -> Active'),
+            'method': 'security',
+            'data': {'protection_mode': 'Active'},
+        },
+        'protection_mode_passive': {
+            'label': _('Protection Mode -> Passive'),
+            'method': 'security',
+            'data': {'protection_mode': 'Passive'},
+        },
+        'enable_tls_1_3': {
+            'label': _('Enable TLS 1.3 (Frontend)'),
+            'method': 'endpoints',
+            'data': {'https': {'enable_tls_1_3': True}},
+        },
+        'disable_tls_1': {
+            'label': _('Disable TLS 1.0 (Frontend)'),
+            'method': 'endpoints',
+            'data': {'https': {'enable_tls_1': False}},
+        },
+        'enable_pfs': {
+            'label': _('Enable PFS'),
+            'method': 'endpoints',
+            'data': {'https': {'enable_pfs': True}},
+        },
+    }
+
+    if action not in actions:
+        flash(_('Unknown action.'), 'danger')
+        return redirect(url_for('applications.bulk_security'))
+
+    action_info = actions[action]
+    results = []
+
+    for selection in app_selections:
+        parts = selection.split(':', 1)
+        if len(parts) != 2:
+            continue
+        acct_id, app_name = int(parts[0]), parts[1]
+
+        client, account, perm = get_client_for_account(acct_id, min_permission='write')
+        if not client or not can_write(perm):
+            results.append({
+                'app_name': app_name,
+                'account_name': f'Account #{acct_id}',
+                'status': 'error',
+                'error': 'Insufficient permissions',
+            })
+            continue
+
+        try:
+            if action_info['method'] == 'security':
+                client.update_security_config(app_name, action_info['data'])
+            elif action_info['method'] == 'endpoints':
+                app_export = client.get_application(app_name)
+                endpoints = app_export.get('endpoints', {})
+                # Deep merge the https settings
+                for key, value in action_info['data'].items():
+                    if isinstance(value, dict) and isinstance(endpoints.get(key), dict):
+                        endpoints[key].update(value)
+                    else:
+                        endpoints[key] = value
+                client.import_application(app_name, {'endpoints': endpoints}, include_endpoints=True)
+
+            results.append({
+                'app_name': app_name,
+                'account_name': account.account_name,
+                'status': 'success',
+                'error': None,
+            })
+        except WaasApiError as e:
+            results.append({
+                'app_name': app_name,
+                'account_name': account.account_name,
+                'status': 'error',
+                'error': str(e),
+            })
+
+    total = len(results)
+    succeeded = sum(1 for r in results if r['status'] == 'success')
+    failed = total - succeeded
+
+    AuditLog.log(
+        user_id=current_user.id,
+        action='bulk_security_update',
+        resource_type='application',
+        resource_id=None,
+        details=f'Bulk security: {action} on {total} apps ({succeeded} ok, {failed} failed)',
+        ip_address=request.remote_addr
+    )
+
+    return render_template(
+        'applications/bulk_security_results.html',
+        action_label=action_info['label'],
+        results=results,
+        total=total,
+        succeeded=succeeded,
+        failed=failed,
     )

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Clone Application') }} - WaaS Portal{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8 col-lg-7">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2><i class="bi bi-copy"></i> {{ _('Clone Application') }}</h2>
+            <a href="{{ url_for('applications.view_application', account_id=account.id, app_id=app_id) }}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> {{ _('Back') }}</a>
+        </div>
+
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            {{ _('This will create a new application based on <strong>%(name)s</strong>. The new app will be created via the v2 API, then source configuration will be imported.', name=source_app.get('name', app_id)) }}
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">{{ _('New Application Settings') }}</h5></div>
+            <div class="card-body">
+                <form method="POST" data-loading="{{ _('Cloning application...') }}">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        {{ form.new_name.label(class="form-label") }}
+                        {{ form.new_name(class="form-control") }}
+                        {% for error in form.new_name.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.new_hostname.label(class="form-label") }}
+                        {{ form.new_hostname(class="form-control") }}
+                        {% for error in form.new_hostname.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.backend_ip.label(class="form-label") }}
+                            {{ form.backend_ip(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ form.backend_port.label(class="form-label") }}
+                            {{ form.backend_port(class="form-control") }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ form.backend_type.label(class="form-label") }}
+                            {{ form.backend_type(class="form-select") }}
+                        </div>
+                    </div>
+
+                    <hr>
+                    <h6>{{ _('What to Clone') }}</h6>
+
+                    <div class="form-check form-switch mb-2">
+                        {{ form.clone_security(class="form-check-input") }}
+                        {{ form.clone_security.label(class="form-check-label") }}
+                        <div class="form-text">{{ _('Protection mode, request limits, clickjacking, data theft settings') }}</div>
+                    </div>
+
+                    <div class="form-check form-switch mb-2">
+                        {{ form.clone_servers(class="form-check-input") }}
+                        {{ form.clone_servers.label(class="form-check-label") }}
+                        <div class="form-text">{{ _('Backend server definitions (host, port, SSL, health checks)') }}</div>
+                    </div>
+
+                    <div class="form-check form-switch mb-2">
+                        {{ form.clone_endpoints(class="form-check-input") }}
+                        {{ form.clone_endpoints.label(class="form-check-label") }}
+                        <div class="form-text">{{ _('Frontend ports, TLS versions, cipher suites') }}</div>
+                    </div>
+
+                    <div class="mt-4">
+                        {{ form.submit(class="btn btn-primary") }}
+                        <a href="{{ url_for('applications.view_application', account_id=account.id, app_id=app_id) }}" class="btn btn-outline-secondary ms-2">{{ _('Cancel') }}</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

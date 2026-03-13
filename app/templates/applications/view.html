@@ -28,6 +28,7 @@
 {% set servers = application.get('servers', []) %}
 {% set up_count = servers | selectattr('health', 'equalto', 'Up') | list | length %}
 {% set total_count = servers | length %}
+{% set user_can_write = current_user.role != 'viewer' %}
 
 <div class="row g-4">
     <!-- Application Details -->
@@ -79,10 +80,15 @@
                     <a href="{{ url_for('proxy.launch', account_id=account.id, app_id=app_id) }}" class="btn btn-outline-primary">
                         <i class="bi bi-display"></i> {{ _('Browse Application via Proxy') }}
                     </a>
-                    {% if current_user.role != 'viewer' %}
+                    {% if user_can_write %}
                     <a href="{{ url_for('templates.save_as_template', account_id=account.id, app_id=app_id) }}" class="btn btn-outline-secondary">
                         <i class="bi bi-file-earmark-plus"></i> {{ _('Save as Template') }}
                     </a>
+                    {% if account.has_v2_credentials %}
+                    <a href="{{ url_for('applications.clone_application', account_id=account.id, app_id=app_id) }}" class="btn btn-outline-warning">
+                        <i class="bi bi-copy"></i> {{ _('Clone Application') }}
+                    </a>
+                    {% endif %}
                     {% endif %}
                     <div class="border rounded p-2 mt-1">
                         <small class="text-muted d-block mb-2"><i class="bi bi-journal-text"></i> {{ _('Logs') }}</small>
@@ -122,6 +128,9 @@
                         <th>{{ _('Mode') }}</th>
                         <th>{{ _('Health') }}</th>
                         <th>{{ _('Weight') }}</th>
+                        {% if user_can_write %}
+                        <th>{{ _('Actions') }}</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -152,6 +161,13 @@
                             {% endif %}
                         </td>
                         <td>{{ server.get('weight', 1) }}</td>
+                        {% if user_can_write %}
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#editServer-{{ loop.index }}" title="{{ _('Edit') }}">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        </td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -168,7 +184,7 @@
 <!-- Server Details (expandable per server) -->
 {% for server in servers %}
 <div class="card mt-3">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <h6 class="mb-0">
             <a class="text-decoration-none" data-bs-toggle="collapse" href="#server-{{ loop.index }}" role="button">
                 <i class="bi bi-chevron-down"></i> {{ server.get('name', 'Server') }} — {{ _('Details') }}
@@ -250,6 +266,127 @@
             {% endif %}
         </div>
     </div>
+
+    <!-- Server Edit Form (write users only) -->
+    {% if user_can_write %}
+    <div class="collapse" id="editServer-{{ loop.index }}">
+        <div class="card-body border-top bg-light">
+            <h6><i class="bi bi-pencil-square"></i> {{ _('Edit Server:') }} {{ server.get('name', 'Server') }}</h6>
+            <form class="server-edit-form" data-account-id="{{ account.id }}" data-app-id="{{ app_id }}" data-server-name="{{ server.get('name', '') }}">
+                <div class="row g-3">
+                    <!-- Basic Settings -->
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label">{{ _('Host') }}</label>
+                        <input type="text" class="form-control form-control-sm" name="host" value="{{ server.get('host', '') }}">
+                    </div>
+                    <div class="col-md-6 col-lg-2">
+                        <label class="form-label">{{ _('Port') }}</label>
+                        <input type="number" class="form-control form-control-sm" name="port" value="{{ server.get('port', 443) }}">
+                    </div>
+                    <div class="col-md-6 col-lg-2">
+                        <label class="form-label">{{ _('Protocol') }}</label>
+                        <select class="form-select form-select-sm" name="protocol">
+                            <option value="HTTPS" {{ 'selected' if server.get('protocol') == 'HTTPS' }}>HTTPS</option>
+                            <option value="HTTP" {{ 'selected' if server.get('protocol') == 'HTTP' }}>HTTP</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 col-lg-2">
+                        <label class="form-label">{{ _('Weight') }}</label>
+                        <input type="number" class="form-control form-control-sm" name="weight" value="{{ server.get('weight', 1) }}" min="1" max="100">
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label">{{ _('Mode') }}</label>
+                        <select class="form-select form-select-sm" name="mode">
+                            <option value="In Service" {{ 'selected' if server.get('mode') == 'In Service' }}>{{ _('In Service') }}</option>
+                            <option value="Out of Service" {{ 'selected' if server.get('mode') == 'Out of Service' }}>{{ _('Out of Service') }}</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" name="is_backup" {{ 'checked' if server.get('is_backup') }}>
+                            <label class="form-check-label">{{ _('Backup Server') }}</label>
+                        </div>
+                    </div>
+
+                    <!-- SSL/TLS Settings -->
+                    {% if server.get('ssl') %}
+                    <div class="col-12"><hr><h6 class="text-muted">{{ _('SSL/TLS Settings') }}</h6></div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="ssl.protocol_tls_1_0_enabled" {{ 'checked' if server.ssl.get('protocol_tls_1_0_enabled') }}><label class="form-check-label">TLS 1.0</label></div>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="ssl.protocol_tls_1_1_enabled" {{ 'checked' if server.ssl.get('protocol_tls_1_1_enabled') }}><label class="form-check-label">TLS 1.1</label></div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="ssl.protocol_tls_1_2_enabled" {{ 'checked' if server.ssl.get('protocol_tls_1_2_enabled') }}><label class="form-check-label">TLS 1.2</label></div>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="ssl.protocol_tls_1_3_enabled" {{ 'checked' if server.ssl.get('protocol_tls_1_3_enabled') }}><label class="form-check-label">TLS 1.3</label></div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="ssl.validate_ssl_certificate" {{ 'checked' if server.ssl.get('validate_ssl_certificate') }}><label class="form-check-label">{{ _('Validate Certificate') }}</label></div>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="ssl.enable_http2" {{ 'checked' if server.ssl.get('enable_http2') }}><label class="form-check-label">HTTP/2</label></div>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="ssl.enable_sni" {{ 'checked' if server.ssl.get('enable_sni') }}><label class="form-check-label">SNI</label></div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Health Check Settings -->
+                    {% if server.get('health_checks') %}
+                    <div class="col-12"><hr><h6 class="text-muted">{{ _('Health Check Settings') }}</h6></div>
+                    <div class="col-md-6 col-lg-3">
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="health_checks.enable_oob_health_checks" {{ 'checked' if server.health_checks.get('enable_oob_health_checks') }}><label class="form-check-label">{{ _('Enable OOB') }}</label></div>
+                    </div>
+                    <div class="col-md-6 col-lg-2">
+                        <label class="form-label">{{ _('Interval (s)') }}</label>
+                        <input type="number" class="form-control form-control-sm" name="health_checks.oob_health_check_interval" value="{{ server.health_checks.get('oob_health_check_interval', 10) }}">
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label">{{ _('URL') }}</label>
+                        <input type="text" class="form-control form-control-sm" name="health_checks.healthcheck_http_request_url" value="{{ server.health_checks.get('healthcheck_http_request_url', '/') }}">
+                    </div>
+                    <div class="col-md-6 col-lg-2">
+                        <label class="form-label">{{ _('Method') }}</label>
+                        <select class="form-select form-select-sm" name="health_checks.healthcheck_method">
+                            <option value="GET" {{ 'selected' if server.health_checks.get('healthcheck_method') == 'GET' }}>GET</option>
+                            <option value="HEAD" {{ 'selected' if server.health_checks.get('healthcheck_method') == 'HEAD' }}>HEAD</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 col-lg-2">
+                        <label class="form-label">{{ _('Expected Status') }}</label>
+                        <input type="number" class="form-control form-control-sm" name="health_checks.healthcheck_status_code" value="{{ server.health_checks.get('healthcheck_status_code', 200) }}">
+                    </div>
+                    {% endif %}
+
+                    <!-- Connection Settings -->
+                    {% if server.get('advanced') %}
+                    <div class="col-12"><hr><h6 class="text-muted">{{ _('Connection Settings') }}</h6></div>
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label">{{ _('Max Connections') }}</label>
+                        <input type="number" class="form-control form-control-sm" name="advanced.advanced_timing_max_connections" value="{{ server.advanced.get('advanced_timing_max_connections', '') }}">
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label">{{ _('Max Requests') }}</label>
+                        <input type="number" class="form-control form-control-sm" name="advanced.advanced_timing_max_requests" value="{{ server.advanced.get('advanced_timing_max_requests', '') }}">
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label">{{ _('Timeout (ms)') }}</label>
+                        <input type="number" class="form-control form-control-sm" name="advanced.advanced_timing_timeout" value="{{ server.advanced.get('advanced_timing_timeout', '') }}">
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <div class="form-check form-switch mt-4"><input class="form-check-input" type="checkbox" name="advanced.connection_pooling" {{ 'checked' if server.advanced.get('connection_pooling') }}><label class="form-check-label">{{ _('Connection Pooling') }}</label></div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-check-circle"></i> {{ _('Save Server Changes') }}
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#editServer-{{ loop.index }}">
+                        {{ _('Cancel') }}
+                    </button>
+                    <span class="field-status ms-2"></span>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endfor %}
 
@@ -272,7 +409,15 @@
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
-                            <tr><th>{{ _('Port') }}</th><th>{{ _('Protocol') }}</th><th>{{ _('WAF') }}</th><th>HTTP/2</th></tr>
+                            <tr>
+                                <th>{{ _('Port') }}</th>
+                                <th>{{ _('Protocol') }}</th>
+                                <th>{{ _('WAF') }}</th>
+                                <th>HTTP/2</th>
+                                {% if user_can_write %}
+                                <th>{{ _('Actions') }}</th>
+                                {% endif %}
+                            </tr>
                         </thead>
                         <tbody>
                             {% for p in ports %}
@@ -281,7 +426,32 @@
                                 <td>{{ p.get('protocol', 'N/A') }}</td>
                                 <td>{{ '✅' if p.get('advanced_configuration', {}).get('enable_web_application_firewall') else '❌' }}</td>
                                 <td>{{ '✅' if p.get('advanced_configuration', {}).get('enable_http2') else '❌' }}</td>
+                                {% if user_can_write %}
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#editPort-{{ loop.index }}" title="{{ _('Edit') }}">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </td>
+                                {% endif %}
                             </tr>
+                            {% if user_can_write %}
+                            <tr class="collapse" id="editPort-{{ loop.index }}">
+                                <td colspan="5" class="bg-light">
+                                    <form class="port-edit-form d-flex gap-3 align-items-center flex-wrap" data-account-id="{{ account.id }}" data-app-id="{{ app_id }}" data-port="{{ p.get('port', '') }}">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" name="enable_web_application_firewall" {{ 'checked' if p.get('advanced_configuration', {}).get('enable_web_application_firewall') }}>
+                                            <label class="form-check-label">{{ _('WAF') }}</label>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" name="enable_http2" {{ 'checked' if p.get('advanced_configuration', {}).get('enable_http2') }}>
+                                            <label class="form-check-label">HTTP/2</label>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check-circle"></i> {{ _('Save') }}</button>
+                                        <span class="field-status"></span>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>
@@ -335,8 +505,13 @@
 {% set https_cfg = ep.get('https', {}) %}
 {% if https_cfg %}
 <div class="card mt-4">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="bi bi-shield-lock"></i> {{ _('Frontend TLS Settings') }}</h5>
+        {% if user_can_write %}
+        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#editTls" title="{{ _('Edit') }}">
+            <i class="bi bi-pencil"></i> {{ _('Edit') }}
+        </button>
+        {% endif %}
     </div>
     <div class="card-body">
         <div class="row">
@@ -357,6 +532,40 @@
             </div>
         </div>
     </div>
+    {% if user_can_write %}
+    <div class="collapse" id="editTls">
+        <div class="card-body border-top bg-light">
+            <h6><i class="bi bi-pencil-square"></i> {{ _('Edit Frontend TLS Settings') }}</h6>
+            <form class="tls-edit-form" data-account-id="{{ account.id }}" data-app-id="{{ app_id }}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="enable_ssl_3" {{ 'checked' if https_cfg.get('enable_ssl_3') }}><label class="form-check-label">SSL 3.0</label></div>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="enable_tls_1" {{ 'checked' if https_cfg.get('enable_tls_1') }}><label class="form-check-label">TLS 1.0</label></div>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="enable_tls_1_1" {{ 'checked' if https_cfg.get('enable_tls_1_1') }}><label class="form-check-label">TLS 1.1</label></div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="enable_tls_1_2" {{ 'checked' if https_cfg.get('enable_tls_1_2') }}><label class="form-check-label">TLS 1.2</label></div>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="enable_tls_1_3" {{ 'checked' if https_cfg.get('enable_tls_1_3') }}><label class="form-check-label">TLS 1.3</label></div>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="enable_pfs" {{ 'checked' if https_cfg.get('enable_pfs') }}><label class="form-check-label">{{ _('PFS') }}</label></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ _('Cipher Suite') }}</label>
+                        <select class="form-select form-select-sm" name="cipher_suite_name">
+                            {% for cs in ['Default', 'ECDHE', 'DHE', 'Custom'] %}
+                            <option value="{{ cs }}" {{ 'selected' if https_cfg.get('cipher_suite_name') == cs }}>{{ cs }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check-circle"></i> {{ _('Save TLS Settings') }}</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#editTls">{{ _('Cancel') }}</button>
+                    <span class="field-status ms-2"></span>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 {% endif %}
@@ -377,4 +586,117 @@
     </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var csrfToken = document.querySelector('meta[name="csrf-token"]');
+    var csrf = csrfToken ? csrfToken.getAttribute('content') : '';
+
+    function ajaxPost(url, data, statusEl) {
+        if (statusEl) statusEl.innerHTML = '<span class="spinner-border spinner-border-sm text-primary"></span>';
+        return fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrf,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (resp.success) {
+                if (statusEl) statusEl.innerHTML = '<i class="bi bi-check-circle text-success"></i>';
+                if (window.showToast) window.showToast('Saved successfully.', 'success');
+                setTimeout(function() { location.reload(); }, 1200);
+            } else {
+                if (statusEl) statusEl.innerHTML = '<i class="bi bi-x-circle text-danger"></i>';
+                if (window.showToast) window.showToast(resp.error || 'Save failed.', 'danger');
+            }
+        })
+        .catch(function(err) {
+            if (statusEl) statusEl.innerHTML = '<i class="bi bi-x-circle text-danger"></i>';
+            if (window.showToast) window.showToast('Network error: ' + err.message, 'danger');
+        });
+    }
+
+    // Server edit forms
+    document.querySelectorAll('.server-edit-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var accountId = form.dataset.accountId;
+            var appId = form.dataset.appId;
+            var serverName = form.dataset.serverName;
+            var statusEl = form.querySelector('.field-status');
+            var fields = {};
+
+            form.querySelectorAll('input, select').forEach(function(el) {
+                var name = el.name;
+                if (!name) return;
+                var value;
+                if (el.type === 'checkbox') {
+                    value = el.checked;
+                } else if (el.type === 'number') {
+                    value = el.value !== '' ? parseInt(el.value, 10) : null;
+                } else {
+                    value = el.value;
+                }
+                // Handle nested fields like "ssl.enable_http2"
+                var parts = name.split('.');
+                if (parts.length === 2) {
+                    if (!fields[parts[0]]) fields[parts[0]] = {};
+                    fields[parts[0]][parts[1]] = value;
+                } else {
+                    fields[name] = value;
+                }
+            });
+
+            ajaxPost('/applications/' + accountId + '/' + appId + '/servers/update',
+                { server_name: serverName, fields: fields }, statusEl);
+        });
+    });
+
+    // Port edit forms
+    document.querySelectorAll('.port-edit-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var accountId = form.dataset.accountId;
+            var appId = form.dataset.appId;
+            var port = parseInt(form.dataset.port, 10);
+            var statusEl = form.querySelector('.field-status');
+            var data = { port: port };
+
+            form.querySelectorAll('input[type="checkbox"]').forEach(function(el) {
+                data[el.name] = el.checked;
+            });
+
+            ajaxPost('/applications/' + accountId + '/' + appId + '/endpoints/update',
+                { section: 'ports', data: data }, statusEl);
+        });
+    });
+
+    // TLS edit form
+    document.querySelectorAll('.tls-edit-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var accountId = form.dataset.accountId;
+            var appId = form.dataset.appId;
+            var statusEl = form.querySelector('.field-status');
+            var data = {};
+
+            form.querySelectorAll('input[type="checkbox"]').forEach(function(el) {
+                data[el.name] = el.checked;
+            });
+            form.querySelectorAll('select').forEach(function(el) {
+                data[el.name] = el.value;
+            });
+
+            ajaxPost('/applications/' + accountId + '/' + appId + '/endpoints/update',
+                { section: 'tls', data: data }, statusEl);
+        });
+    });
+})();
+</script>
 {% endblock %}

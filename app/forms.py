@@ -457,6 +457,42 @@ class ScheduledReportForm(FlaskForm):
     submit = SubmitField(_l('Save Report'), render_kw={'class': 'btn btn-primary'})
 
 
+class CloneApplicationForm(FlaskForm):
+    """Form for cloning an existing WaaS application."""
+    new_name = StringField(
+        _l('New Application Name'),
+        validators=[DataRequired(), Length(min=1, max=200)],
+        render_kw={'placeholder': _l('e.g., My Web App (Clone)'), 'class': 'form-control'}
+    )
+    new_hostname = StringField(
+        _l('New Hostname / Domain'),
+        validators=[DataRequired(), Length(min=1, max=255)],
+        render_kw={'placeholder': _l('e.g., www2.example.com'), 'class': 'form-control'}
+    )
+    backend_ip = StringField(
+        _l('Backend Server IP / Hostname'),
+        validators=[DataRequired(), Length(min=1, max=255)],
+        render_kw={'class': 'form-control'}
+    )
+    backend_port = IntegerField(
+        _l('Backend Port'),
+        validators=[DataRequired()],
+        default=443,
+        render_kw={'class': 'form-control'}
+    )
+    backend_type = SelectField(
+        _l('Backend Protocol'),
+        choices=[('HTTPS', 'HTTPS'), ('HTTP', 'HTTP')],
+        default='HTTPS',
+        validators=[DataRequired()],
+        render_kw={'class': 'form-select'}
+    )
+    clone_security = BooleanField(_l('Clone Security Configuration'), default=True, render_kw={'class': 'form-check-input'})
+    clone_servers = BooleanField(_l('Clone Backend Servers'), default=True, render_kw={'class': 'form-check-input'})
+    clone_endpoints = BooleanField(_l('Clone Endpoint Configuration'), default=False, render_kw={'class': 'form-check-input'})
+    submit = SubmitField(_l('Clone Application'), render_kw={'class': 'btn btn-primary'})
+
+
 class TemplateFromAppForm(FlaskForm):
     """Form for creating a template from a live application export"""
     name = StringField(

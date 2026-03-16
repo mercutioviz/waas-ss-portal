@@ -146,7 +146,7 @@ def waf_logs(account_id, app_name):
     page = request.args.get('page', 1, type=int)
     items_per_page = request.args.get('per_page', 50, type=int)
 
-    filter_fields = {}
+    filter_fields = {'LogType': [{'condition': 'is', 'value': 'WF'}]}
     if client_ip:
         filter_fields['ClientIP'] = [{'condition': 'is', 'value': client_ip}]
 
@@ -163,12 +163,10 @@ def waf_logs(account_id, app_name):
             quick_range=quick_range,
             page=page,
             items_per_page=items_per_page,
-            filter_fields=filter_fields or None,
+            filter_fields=filter_fields,
         )
-        all_entries = result.get('results', [])
-        # Filter to WAF entries only
-        logs = [e for e in all_entries if e.get('LogType') == 'WF']
-        total = result.get('count', len(all_entries))
+        logs = result.get('results', [])
+        total = result.get('count', len(logs))
     except WaasApiError as e:
         error = str(e)
 
@@ -205,7 +203,7 @@ def access_logs(account_id, app_name):
     items_per_page = request.args.get('per_page', 50, type=int)
     export_fmt = request.args.get('format', '').lower()
 
-    filter_fields = {}
+    filter_fields = {'LogType': [{'condition': 'is', 'value': 'TR'}]}
     if client_ip:
         filter_fields['ClientIP'] = [{'condition': 'is', 'value': client_ip}]
 
@@ -220,12 +218,10 @@ def access_logs(account_id, app_name):
             quick_range=quick_range,
             page=page,
             items_per_page=items_per_page,
-            filter_fields=filter_fields or None,
+            filter_fields=filter_fields,
         )
-        all_entries = result.get('results', [])
-        # Filter to traffic/access entries only
-        logs = [e for e in all_entries if e.get('LogType') == 'TR']
-        total = result.get('count', len(all_entries))
+        logs = result.get('results', [])
+        total = result.get('count', len(logs))
     except WaasApiError as e:
         error = str(e)
 
@@ -263,18 +259,18 @@ def fp_analysis(account_id, app_name):
 
     try:
         client = WaasClient.from_account(account)
+        filter_fields = {
+            'LogType': [{'condition': 'is', 'value': 'WF'}],
+            'Action': [{'condition': 'is', 'value': 'DENY'}],
+        }
         result = client.get_logs(
             app_name,
             quick_range=quick_range,
             page=1,
             items_per_page=1000,  # fetch a large batch for analysis
+            filter_fields=filter_fields,
         )
-        all_entries = result.get('results', [])
-        # Only WAF entries with DENY action
-        logs = [
-            e for e in all_entries
-            if e.get('LogType') == 'WF' and e.get('Action') == 'DENY'
-        ]
+        logs = result.get('results', [])
     except WaasApiError as e:
         error = str(e)
 

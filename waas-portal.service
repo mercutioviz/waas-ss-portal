@@ -1,0 +1,19 @@
+[Unit]
+Description=WaaS Self-Service Portal
+After=network.target
+
+[Service]
+Type=notify
+User=admin
+Group=admin
+WorkingDirectory=/home/admin/waas-ss-portal
+Environment="FLASK_ENV=production"
+Environment="SECRET_KEY=dev-secret-key-change-in-production"
+ExecStart=/home/admin/waas-ss-portal/venv/bin/gunicorn --config gunicorn.conf.py wsgi:app
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:/home/admin/waas-ss-portal/logs/gunicorn-stdout.log
+StandardError=append:/home/admin/waas-ss-portal/logs/gunicorn-stderr.log
+
+[Install]
+WantedBy=multi-user.target

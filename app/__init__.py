@@ -65,7 +65,7 @@ def create_app(config_name='default'):
     babel.init_app(app, locale_selector=get_locale)
     limiter.init_app(app)
     mail.init_app(app)
-    socketio.init_app(app, async_mode='threading', cors_allowed_origins='*')
+    socketio.init_app(app, async_mode='gevent', cors_allowed_origins='*')
 
     # Configure Flask-Login
     from flask_babel import lazy_gettext as _l

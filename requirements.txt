@@ -14,3 +14,5 @@ Flask-Babel==4.0.0
 Flask-Mail==0.10.0
 Flask-APScheduler==1.13.1
 flask-socketio==5.3.6
+gevent==24.11.1
+gevent-websocket==0.10.1

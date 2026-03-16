@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/help_modal.html" import help_button, help_modal %}
 {% block title %}{{ application.get('name', 'Application') }} - WaaS Portal{% endblock %}
 
 {% block breadcrumbs %}
@@ -17,6 +18,7 @@
     <div>
         <h2 class="d-inline"><i class="bi bi-globe"></i> {{ application.get('name', 'Application') }}</h2>
         <span class="badge bg-primary ms-2">v4 API</span>
+        {{ help_button('appViewHelpModal') }}
     </div>
     <div class="d-flex gap-2">
         <a href="{{ url_for('proxy.launch', account_id=account.id, app_id=app_id) }}" class="btn btn-outline-primary"><i class="bi bi-display"></i> {{ _('Browse App') }}</a>
@@ -586,6 +588,22 @@
     </div>
 </div>
 {% endif %}
+
+{{ help_modal('appViewHelpModal', _('Application Details Help'), '
+<h6>' ~ _('Server Configuration') ~ '</h6>
+<p>' ~ _('Expand a server to edit its host, port, protocol, SSL settings, health checks, and advanced options. Changes are saved via the import API.') ~ '</p>
+<h6>' ~ _('Endpoint / TLS Configuration') ~ '</h6>
+<p>' ~ _('Edit frontend TLS versions, cipher suites, and port settings. TLS 1.0 should be disabled for security; TLS 1.3 and PFS are recommended.') ~ '</p>
+<h6>' ~ _('Additional Actions') ~ '</h6>
+<ul>
+    <li><strong>' ~ _('Security') ~ '</strong> — ' ~ _('View and edit WAF protection mode, request limits, and other security settings') ~ '</li>
+    <li><strong>' ~ _('Clone') ~ '</strong> — ' ~ _('Create a copy of this application with the same configuration') ~ '</li>
+    <li><strong>' ~ _('DNS') ~ '</strong> — ' ~ _('View CNAME and DNS info for this application') ~ '</li>
+    <li><strong>' ~ _('Browse') ~ '</strong> — ' ~ _('Open the application through the WaaS proxy') ~ '</li>
+</ul>
+<p><a href="' ~ url_for('help.applications') ~ '">' ~ _('Full application documentation') ~ ' &rarr;</a></p>
+') }}
+
 {% endblock %}
 
 {% block extra_js %}

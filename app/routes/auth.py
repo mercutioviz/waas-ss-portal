@@ -93,6 +93,7 @@ def logout():
 
 @bp.route('/change-password', methods=['GET', 'POST'])
 @login_required
+@limiter.limit("5 per minute", methods=["POST"])
 def change_password():
     """Change current user's password"""
     form = ChangePasswordForm()
@@ -119,6 +120,7 @@ def change_password():
 
 @bp.route('/keepalive', methods=['POST'])
 @login_required
+@limiter.limit("100 per minute")
 def keepalive():
     """Touch session to keep it alive"""
     session.modified = True

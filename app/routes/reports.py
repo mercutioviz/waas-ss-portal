@@ -10,6 +10,7 @@ from app import db
 from app.models import ScheduledReport, ReportRun, AuditLog, get_user_accounts, get_account_for_user, can_write
 from app.forms import ScheduledReportForm
 from app.report_service import compute_next_run
+from app import limiter
 
 bp = Blueprint('reports', __name__, url_prefix='/reports')
 
@@ -31,6 +32,7 @@ def list_reports():
 
 @bp.route('/add', methods=['GET', 'POST'])
 @login_required
+@limiter.limit("10 per minute", methods=["POST"])
 def add_report():
     """Create a new scheduled report."""
     if current_user.role == 'viewer':
@@ -92,6 +94,7 @@ def view_report(report_id):
 
 @bp.route('/<int:report_id>/edit', methods=['GET', 'POST'])
 @login_required
+@limiter.limit("20 per minute", methods=["POST"])
 def edit_report(report_id):
     """Edit a scheduled report."""
     report = ScheduledReport.query.filter_by(id=report_id, user_id=current_user.id).first_or_404()
@@ -134,6 +137,7 @@ def edit_report(report_id):
 
 @bp.route('/<int:report_id>/delete', methods=['POST'])
 @login_required
+@limiter.limit("10 per minute")
 def delete_report(report_id):
     """Delete a scheduled report."""
     report = ScheduledReport.query.filter_by(id=report_id, user_id=current_user.id).first_or_404()
@@ -157,6 +161,7 @@ def delete_report(report_id):
 
 @bp.route('/<int:report_id>/toggle', methods=['POST'])
 @login_required
+@limiter.limit("20 per minute")
 def toggle_report(report_id):
     """Toggle report active/inactive."""
     report = ScheduledReport.query.filter_by(id=report_id, user_id=current_user.id).first_or_404()
@@ -172,6 +177,7 @@ def toggle_report(report_id):
 
 @bp.route('/<int:report_id>/run-now', methods=['POST'])
 @login_required
+@limiter.limit("5 per minute")
 def run_now(report_id):
     """Trigger an immediate report run."""
     from flask import current_app

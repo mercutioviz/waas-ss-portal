@@ -8,6 +8,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_mail import Mail
 from flask_apscheduler import APScheduler
+from flask_socketio import SocketIO
 from werkzeug.middleware.proxy_fix import ProxyFix
 from config import config
 from datetime import datetime
@@ -16,9 +17,10 @@ from datetime import datetime
 db = SQLAlchemy()
 login_manager = LoginManager()
 babel = Babel()
-limiter = Limiter(key_func=get_remote_address, default_limits=[], storage_uri="memory://")
+limiter = Limiter(key_func=get_remote_address, default_limits=["60 per minute"], storage_uri="memory://")
 mail = Mail()
 scheduler = APScheduler()
+socketio = SocketIO()
 
 
 def get_locale():
@@ -63,6 +65,7 @@ def create_app(config_name='default'):
     babel.init_app(app, locale_selector=get_locale)
     limiter.init_app(app)
     mail.init_app(app)
+    socketio.init_app(app, async_mode='threading', cors_allowed_origins='*')
 
     # Configure Flask-Login
     from flask_babel import lazy_gettext as _l
@@ -153,6 +156,7 @@ def create_app(config_name='default'):
 
     # Register blueprints
     from app.routes import main, auth, admin, accounts, applications, certificates, logs, proxy, templates, reports
+    from app.routes import help as help_bp
     app.register_blueprint(main.bp)
     app.register_blueprint(auth.bp)
     app.register_blueprint(admin.bp)
@@ -163,6 +167,10 @@ def create_app(config_name='default'):
     app.register_blueprint(proxy.bp)
     app.register_blueprint(templates.bp)
     app.register_blueprint(reports.bp)
+    app.register_blueprint(help_bp.bp)
+
+    # Register SocketIO event handlers
+    from app import socketio_events  # noqa: F401
 
     # Register error handlers
     @app.errorhandler(404)

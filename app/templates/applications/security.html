@@ -1,9 +1,10 @@
 {% extends "base.html" %}
+{% from "macros/help_modal.html" import help_button, help_modal %}
 {% block title %}{{ _('Security Config') }} — {{ application.get('name', 'Application') }} — WaaS Portal{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
-    <h2><i class="bi bi-shield-lock"></i> {{ _('Security Configuration') }}</h2>
+    <h2><i class="bi bi-shield-lock"></i> {{ _('Security Configuration') }} {{ help_button('securityHelpModal') }}</h2>
     <div class="d-flex gap-2">
         {% if current_user.role != 'viewer' %}
         <a href="{{ url_for('templates.save_as_template', account_id=account.id, app_id=app_id) }}" class="btn btn-outline-secondary btn-sm">
@@ -344,6 +345,19 @@
     </div>
 </div>
 {% endif %}
+{{ help_modal('securityHelpModal', _('Security Configuration Help'), '
+<h6>' ~ _('Protection Modes') ~ '</h6>
+<ul>
+    <li><strong>' ~ _('Active') ~ '</strong> — ' ~ _('Malicious requests are blocked and logged. Use in production.') ~ '</li>
+    <li><strong>' ~ _('Passive') ~ '</strong> — ' ~ _('Attacks are logged but not blocked. Use for initial tuning.') ~ '</li>
+</ul>
+<h6>' ~ _('Request Limits') ~ '</h6>
+<p>' ~ _('Control max sizes for HTTP request components. Edit values inline — they save on blur or Enter. Values are in bytes.') ~ '</p>
+<h6>' ~ _('Inline Editing') ~ '</h6>
+<p>' ~ _('Toggles and dropdowns save automatically. Number fields save when you press Enter or click away. Look for the green checkmark or red X.') ~ '</p>
+<p><a href="' ~ url_for('help.security') ~ '">' ~ _('Full security documentation') ~ ' &rarr;</a></p>
+') }}
+
 {% endblock %}
 
 {% block extra_js %}

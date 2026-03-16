@@ -5,6 +5,7 @@ from functools import wraps
 from app import db
 from app.models import User, WaasAccount, AuditLog
 from app.forms import UserCreateForm, UserEditForm
+from app import limiter
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -51,6 +52,7 @@ def list_users():
 @bp.route('/users/create', methods=['GET', 'POST'])
 @login_required
 @admin_required
+@limiter.limit("10 per minute", methods=["POST"])
 def create_user():
     """Create a new user"""
     form = UserCreateForm()
@@ -84,6 +86,7 @@ def create_user():
 @bp.route('/users/<int:user_id>/edit', methods=['GET', 'POST'])
 @login_required
 @admin_required
+@limiter.limit("20 per minute", methods=["POST"])
 def edit_user(user_id):
     """Edit a user"""
     user = User.query.get_or_404(user_id)
@@ -118,6 +121,7 @@ def edit_user(user_id):
 @bp.route('/users/<int:user_id>/toggle', methods=['POST'])
 @login_required
 @admin_required
+@limiter.limit("20 per minute")
 def toggle_user(user_id):
     """Enable/disable a user"""
     user = User.query.get_or_404(user_id)

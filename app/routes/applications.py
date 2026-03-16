@@ -1,10 +1,18 @@
 import logging
+import uuid
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
 from app.models import WaasAccount, AuditLog, get_user_accounts, get_account_for_user, can_write
 from app.waas_client import WaasClient, WaasApiError
 from app.forms import ApplicationCreateForm, CloneApplicationForm
+from app import limiter, socketio
+from app.validators import validate_data, ValidationError
+from app.validation_schemas import (
+    SERVER_FIELDS, SERVER_SSL_FIELDS, SERVER_HEALTH_FIELDS, SERVER_ADVANCED_FIELDS,
+    ENDPOINT_TLS_FIELDS, ENDPOINT_PORT_FIELDS, SECURITY_SECTION_SCHEMAS,
+    BULK_SECURITY_ACTIONS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +88,7 @@ def list_applications():
 
 @bp.route('/api/list')
 @login_required
+@limiter.limit("60 per minute")
 def api_list_applications():
     """JSON endpoint returning app names for a given account_id."""
     account_id = request.args.get('account_id', type=int)
@@ -130,6 +139,7 @@ def view_application(account_id, app_id):
 
 @bp.route('/<int:account_id>/create', methods=['GET', 'POST'])
 @login_required
+@limiter.limit("10 per minute", methods=["POST"])
 def create_application(account_id):
     """Create a new WaaS application via v2 API."""
     client, account, perm = get_client_for_account(account_id, min_permission='write')
@@ -197,6 +207,7 @@ def create_application(account_id):
 
 @bp.route('/<int:account_id>/<int:app_id>/delete', methods=['POST'])
 @login_required
+@limiter.limit("10 per minute")
 def delete_application(account_id, app_id):
     """Delete a WaaS application via v2 API."""
     client, account, perm = get_client_for_account(account_id, min_permission='write')
@@ -321,6 +332,7 @@ def update_security_config(account_id, app_id):
 
 @bp.route('/api/<int:account_id>/<app_id>/config')
 @login_required
+@limiter.limit("60 per minute")
 def api_get_application_config(account_id, app_id):
     """JSON endpoint returning security config for an application."""
     client, account, perm = get_client_for_account(account_id)
@@ -397,6 +409,7 @@ def dns_info(account_id, app_id):
 
 @bp.route('/<int:account_id>/<app_id>/servers/update', methods=['POST'])
 @login_required
+@limiter.limit("20 per minute")
 def update_server(account_id, app_id):
     """Update a backend server configuration via import_application (PATCH merge)."""
     client, account, perm = get_client_for_account(account_id, min_permission='write')
@@ -409,6 +422,25 @@ def update_server(account_id, app_id):
 
     server_name = data['server_name']
     fields = data['fields']
+
+    # Validate fields against schemas
+    try:
+        validated_fields = {}
+        for key, value in fields.items():
+            if key == 'ssl' and isinstance(value, dict):
+                validated_fields['ssl'] = validate_data(value, SERVER_SSL_FIELDS)
+            elif key == 'health_checks' and isinstance(value, dict):
+                validated_fields['health_checks'] = validate_data(value, SERVER_HEALTH_FIELDS)
+            elif key == 'advanced' and isinstance(value, dict):
+                validated_fields['advanced'] = validate_data(value, SERVER_ADVANCED_FIELDS)
+            elif key in SERVER_FIELDS:
+                validated_fields[key] = SERVER_FIELDS[key].validate(value, key)
+            # Unknown top-level fields are silently dropped
+        fields = validated_fields
+    except ValidationError as e:
+        return jsonify({'success': False, 'error': 'Validation failed', 'fields': e.errors}), 400
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
 
     try:
         application = client.get_application(app_id)
@@ -451,6 +483,7 @@ def update_server(account_id, app_id):
 
 @bp.route('/<int:account_id>/<app_id>/endpoints/update', methods=['POST'])
 @login_required
+@limiter.limit("20 per minute")
 def update_endpoints(account_id, app_id):
     """Update endpoint / frontend TLS configuration via import_application."""
     client, account, perm = get_client_for_account(account_id, min_permission='write')
@@ -463,6 +496,15 @@ def update_endpoints(account_id, app_id):
 
     section = data['section']
     payload = data['data']
+
+    # Validate payload against endpoint schemas
+    try:
+        if section == 'tls':
+            payload = validate_data(payload, ENDPOINT_TLS_FIELDS)
+        elif section == 'ports':
+            payload = validate_data(payload, ENDPOINT_PORT_FIELDS)
+    except ValidationError as e:
+        return jsonify({'success': False, 'error': 'Validation failed', 'fields': e.errors}), 400
 
     try:
         application = client.get_application(app_id)
@@ -503,6 +545,7 @@ def update_endpoints(account_id, app_id):
 
 @bp.route('/<int:account_id>/<app_id>/security/ajax', methods=['POST'])
 @login_required
+@limiter.limit("30 per minute")
 def security_ajax_update(account_id, app_id):
     """AJAX endpoint for inline security field updates."""
     client, account, perm = get_client_for_account(account_id, min_permission='write')
@@ -516,6 +559,16 @@ def security_ajax_update(account_id, app_id):
     section = data['section']
     field = data['field']
     value = data.get('value')
+
+    # Validate field against section schema
+    schema = SECURITY_SECTION_SCHEMAS.get(section)
+    if schema:
+        validator = schema.get(field)
+        if validator:
+            try:
+                value = validator.validate(value, field)
+            except ValueError as e:
+                return jsonify({'success': False, 'error': str(e)}), 400
 
     try:
         if section == 'basic_security':
@@ -551,6 +604,7 @@ def security_ajax_update(account_id, app_id):
 
 @bp.route('/<int:account_id>/<app_id>/clone', methods=['GET', 'POST'])
 @login_required
+@limiter.limit("5 per minute", methods=["POST"])
 def clone_application(account_id, app_id):
     """Clone an existing application."""
     client, account, perm = get_client_for_account(account_id, min_permission='write')
@@ -593,10 +647,84 @@ def clone_application(account_id, app_id):
             'useHttp': True,
         }
 
+        new_app_name = form.new_name.data.strip()
+        use_websocket = request.form.get('use_websocket') == '1'
+
+        if use_websocket:
+            session_id = str(uuid.uuid4())
+            clone_servers = form.clone_servers.data
+            clone_endpoints = form.clone_endpoints.data
+            clone_security = form.clone_security.data
+
+            step_names = [_('Create application')]
+            if clone_servers or clone_endpoints:
+                step_names.append(_('Import configuration'))
+            if clone_security:
+                step_names.append(_('Copy security settings'))
+
+            def _bg_clone():
+                from app.background_tasks import run_clone_operation
+
+                steps = []
+
+                # Step 1: Create
+                def _create():
+                    client.create_application_v2(create_data)
+                    return {'status': 'success'}
+                steps.append({'name': str(_('Create application')), 'func': _create})
+
+                # Step 2: Import
+                if clone_servers or clone_endpoints:
+                    def _import():
+                        import_data = {}
+                        if clone_servers:
+                            import_data['servers'] = source_app.get('servers', [])
+                        if clone_endpoints:
+                            import_data['endpoints'] = source_app.get('endpoints', {})
+                        client.import_application(
+                            new_app_name, import_data,
+                            include_servers=clone_servers,
+                            include_endpoints=clone_endpoints
+                        )
+                        return {'status': 'success'}
+                    steps.append({'name': str(_('Import configuration')), 'func': _import})
+
+                # Step 3: Security
+                if clone_security:
+                    def _security():
+                        security = client.get_security_config(app_id)
+                        mode = security.get('protection_mode')
+                        if mode:
+                            client.update_security_config(new_app_name, {'protection_mode': mode})
+                        rl = security.get('request_limits', {})
+                        if rl:
+                            client.update_request_limits(new_app_name, rl)
+                        cj = security.get('clickjacking_protection', {})
+                        if cj:
+                            client.update_clickjacking_protection(new_app_name, cj)
+                        dtp = security.get('data_theft_protection', {})
+                        if dtp:
+                            client.update_data_theft_protection(new_app_name, dtp)
+                        return {'status': 'success'}
+                    steps.append({'name': str(_('Copy security settings')), 'func': _security})
+
+                run_clone_operation(session_id, steps)
+
+            socketio.start_background_task(_bg_clone)
+
+            return render_template(
+                'applications/clone_progress.html',
+                session_id=session_id,
+                source_name=app_id,
+                new_name=new_app_name,
+                account_id=account_id,
+                step_names=step_names,
+            )
+
+        # Synchronous fallback
         try:
             # Step 1: Create the new app shell via v2
             result = client.create_application_v2(create_data)
-            new_app_name = form.new_name.data.strip()
 
             # Step 2: Import source config sections into new app
             import_data = {}
@@ -620,19 +748,15 @@ def clone_application(account_id, app_id):
             if form.clone_security.data:
                 try:
                     security = client.get_security_config(app_id)
-                    # Apply basic security
                     mode = security.get('protection_mode')
                     if mode:
                         client.update_security_config(new_app_name, {'protection_mode': mode})
-                    # Apply request limits
                     rl = security.get('request_limits', {})
                     if rl:
                         client.update_request_limits(new_app_name, rl)
-                    # Apply clickjacking
                     cj = security.get('clickjacking_protection', {})
                     if cj:
                         client.update_clickjacking_protection(new_app_name, cj)
-                    # Apply data theft
                     dtp = security.get('data_theft_protection', {})
                     if dtp:
                         client.update_data_theft_protection(new_app_name, dtp)
@@ -674,6 +798,7 @@ def bulk_security(account_id=None):
 
 @bp.route('/bulk-security', methods=['POST'])
 @login_required
+@limiter.limit("5 per minute")
 def bulk_security_execute():
     """Execute a bulk security operation on selected applications."""
     if current_user.role == 'viewer':
@@ -685,6 +810,10 @@ def bulk_security_execute():
 
     if not action or not app_selections:
         flash(_('Please select an action and at least one application.'), 'warning')
+        return redirect(url_for('applications.bulk_security'))
+
+    if action not in BULK_SECURITY_ACTIONS:
+        flash(_('Invalid action selected.'), 'danger')
         return redirect(url_for('applications.bulk_security'))
 
     # Define bulk actions
@@ -721,51 +850,107 @@ def bulk_security_execute():
         return redirect(url_for('applications.bulk_security'))
 
     action_info = actions[action]
-    results = []
+    use_websocket = request.form.get('use_websocket') == '1'
 
-    for selection in app_selections:
-        parts = selection.split(':', 1)
-        if len(parts) != 2:
-            continue
-        acct_id, app_name = int(parts[0]), parts[1]
+    def _execute_bulk(action_info, app_selections, user_id, remote_addr):
+        """Execute bulk operation (runs synchronously or in background)."""
+        results = []
+        for selection in app_selections:
+            parts = selection.split(':', 1)
+            if len(parts) != 2:
+                continue
+            acct_id, app_name = int(parts[0]), parts[1]
 
-        client, account, perm = get_client_for_account(acct_id, min_permission='write')
-        if not client or not can_write(perm):
-            results.append({
-                'app_name': app_name,
-                'account_name': f'Account #{acct_id}',
-                'status': 'error',
-                'error': 'Insufficient permissions',
-            })
-            continue
+            client, account, perm = get_client_for_account(acct_id, min_permission='write')
+            if not client or not can_write(perm):
+                results.append({
+                    'app_name': app_name,
+                    'account_name': f'Account #{acct_id}',
+                    'status': 'error',
+                    'error': 'Insufficient permissions',
+                })
+                continue
 
-        try:
-            if action_info['method'] == 'security':
-                client.update_security_config(app_name, action_info['data'])
-            elif action_info['method'] == 'endpoints':
-                app_export = client.get_application(app_name)
-                endpoints = app_export.get('endpoints', {})
-                # Deep merge the https settings
-                for key, value in action_info['data'].items():
-                    if isinstance(value, dict) and isinstance(endpoints.get(key), dict):
-                        endpoints[key].update(value)
-                    else:
-                        endpoints[key] = value
-                client.import_application(app_name, {'endpoints': endpoints}, include_endpoints=True)
+            try:
+                if action_info['method'] == 'security':
+                    client.update_security_config(app_name, action_info['data'])
+                elif action_info['method'] == 'endpoints':
+                    app_export = client.get_application(app_name)
+                    endpoints = app_export.get('endpoints', {})
+                    for key, value in action_info['data'].items():
+                        if isinstance(value, dict) and isinstance(endpoints.get(key), dict):
+                            endpoints[key].update(value)
+                        else:
+                            endpoints[key] = value
+                    client.import_application(app_name, {'endpoints': endpoints}, include_endpoints=True)
 
-            results.append({
-                'app_name': app_name,
-                'account_name': account.account_name,
-                'status': 'success',
-                'error': None,
-            })
-        except WaasApiError as e:
-            results.append({
-                'app_name': app_name,
-                'account_name': account.account_name,
-                'status': 'error',
-                'error': str(e),
-            })
+                results.append({
+                    'app_name': app_name,
+                    'account_name': account.account_name,
+                    'status': 'success',
+                    'error': None,
+                })
+            except WaasApiError as e:
+                results.append({
+                    'app_name': app_name,
+                    'account_name': account.account_name,
+                    'status': 'error',
+                    'error': str(e),
+                })
+        return results
+
+    if use_websocket:
+        session_id = str(uuid.uuid4())
+        total = len(app_selections)
+
+        def _bg_bulk():
+            from app.background_tasks import run_bulk_operation
+            items = []
+            for sel in app_selections:
+                parts = sel.split(':', 1)
+                label = parts[1] if len(parts) == 2 else sel
+                items.append({'selection': sel, 'label': label})
+
+            def _op(item):
+                sel = item['selection']
+                parts = sel.split(':', 1)
+                if len(parts) != 2:
+                    return {'status': 'error', 'error': 'Invalid format'}
+                acct_id, app_name = int(parts[0]), parts[1]
+
+                client, account, perm = get_client_for_account(acct_id, min_permission='write')
+                if not client or not can_write(perm):
+                    return {'status': 'error', 'error': 'Insufficient permissions'}
+
+                try:
+                    if action_info['method'] == 'security':
+                        client.update_security_config(app_name, action_info['data'])
+                    elif action_info['method'] == 'endpoints':
+                        app_export = client.get_application(app_name)
+                        endpoints = app_export.get('endpoints', {})
+                        for key, value in action_info['data'].items():
+                            if isinstance(value, dict) and isinstance(endpoints.get(key), dict):
+                                endpoints[key].update(value)
+                            else:
+                                endpoints[key] = value
+                        client.import_application(app_name, {'endpoints': endpoints}, include_endpoints=True)
+                    return {'status': 'success'}
+                except WaasApiError as e:
+                    return {'status': 'error', 'error': str(e)}
+
+            run_bulk_operation(session_id, items, _op, name=str(action_info['label']))
+
+        socketio.start_background_task(_bg_bulk)
+
+        return render_template(
+            'applications/bulk_security_progress.html',
+            session_id=session_id,
+            action_label=action_info['label'],
+            total=total,
+        )
+
+    # Synchronous fallback
+    results = _execute_bulk(action_info, app_selections, current_user.id, request.remote_addr)
 
     total = len(results)
     succeeded = sum(1 for r in results if r['status'] == 'success')

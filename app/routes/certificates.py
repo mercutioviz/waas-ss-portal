@@ -6,6 +6,7 @@ from app.models import WaasAccount, AuditLog, get_user_accounts, get_account_for
 from app.waas_client import WaasClient, WaasApiError
 from app.forms import CertificateUploadForm
 from app.routes.main import _parse_cert_expiry
+from app import limiter
 
 bp = Blueprint('certificates', __name__, url_prefix='/certificates')
 
@@ -51,6 +52,7 @@ def list_certificates():
 
 @bp.route('/<int:account_id>/upload', methods=['GET', 'POST'])
 @login_required
+@limiter.limit("10 per minute", methods=["POST"])
 def upload_certificate(account_id):
     """Upload a certificate to a WaaS application."""
     if current_user.role == 'viewer':
@@ -151,6 +153,7 @@ def view_certificate(account_id, app_name, cert_id):
 
 @bp.route('/<int:account_id>/<app_name>/<cert_id>/delete', methods=['POST'])
 @login_required
+@limiter.limit("10 per minute")
 def delete_certificate(account_id, app_name, cert_id):
     """Delete an SNI certificate (v4 per-application)."""
     if current_user.role == 'viewer':

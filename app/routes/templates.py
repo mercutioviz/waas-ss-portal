@@ -9,6 +9,7 @@ from app import db
 from app.models import WaasAccount, AuditLog, ConfigTemplate, get_user_accounts, get_account_for_user, can_write
 from app.forms import ConfigTemplateForm, TemplateFromAppForm
 from app.waas_client import WaasClient, WaasApiError
+from app import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,7 @@ def list_templates():
 
 @bp.route('/add', methods=['GET', 'POST'])
 @login_required
+@limiter.limit("10 per minute", methods=["POST"])
 def add_template():
     """Create a new template"""
     if current_user.role == 'viewer':
@@ -105,6 +107,7 @@ def view_template(template_id):
 
 @bp.route('/<int:template_id>/edit', methods=['GET', 'POST'])
 @login_required
+@limiter.limit("20 per minute", methods=["POST"])
 def edit_template(template_id):
     """Edit template metadata"""
     template = get_template_or_404(template_id, owner_only=True)
@@ -141,6 +144,7 @@ def edit_template(template_id):
 
 @bp.route('/<int:template_id>/edit-config', methods=['GET', 'POST'])
 @login_required
+@limiter.limit("20 per minute", methods=["POST"])
 def edit_config(template_id):
     """Edit raw JSON config data"""
     template = get_template_or_404(template_id, owner_only=True)
@@ -178,6 +182,7 @@ def edit_config(template_id):
 
 @bp.route('/<int:template_id>/delete', methods=['POST'])
 @login_required
+@limiter.limit("10 per minute")
 def delete_template(template_id):
     """Delete a template"""
     template = get_template_or_404(template_id, owner_only=True)
@@ -343,6 +348,7 @@ def apply_template(template_id, account_id, app_id):
 
 @bp.route('/<int:template_id>/bulk-apply', methods=['GET', 'POST'])
 @login_required
+@limiter.limit("5 per minute", methods=["POST"])
 def bulk_apply(template_id):
     """Apply a template to multiple applications"""
     if current_user.role == 'viewer':
@@ -468,6 +474,7 @@ def export_template(template_id):
 
 @bp.route('/import', methods=['GET', 'POST'])
 @login_required
+@limiter.limit("10 per minute", methods=["POST"])
 def import_template():
     """Import a template from a JSON file."""
     if current_user.role == 'viewer':

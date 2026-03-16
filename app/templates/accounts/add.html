@@ -23,7 +23,7 @@
                         </div>
                         <div class="card-body">
                             <div class="mb-0">
-                                {{ form.api_key(class="form-control font-monospace", placeholder=_("Enter WaaS API token")) }}
+                                {{ form.api_key(class="form-control font-monospace", placeholder=_("Enter WaaS API token"), **{'data-bs-toggle': 'tooltip', 'data-bs-placement': 'top', 'title': _('Found in WaaS Console > Account Settings > API Keys')}) }}
                                 <div class="form-text">{{ _('Your Barracuda WaaS v4 API token. This will be encrypted at rest.') }}</div>
                                 {% for error in form.api_key.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
@@ -37,12 +37,12 @@
                         </div>
                         <div class="card-body">
                             <div class="mb-3">
-                                {{ form.waas_email(class="form-control", placeholder="user@example.com") }}
+                                {{ form.waas_email(class="form-control", placeholder="user@example.com", **{'data-bs-toggle': 'tooltip', 'data-bs-placement': 'top', 'title': _('The email you use to sign into waas.barracudanetworks.com')}) }}
                                 <div class="form-text">{{ _('Email used to log into the Barracuda WaaS platform.') }}</div>
                                 {% for error in form.waas_email.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
                             <div class="mb-0">
-                                {{ form.waas_password(class="form-control", placeholder=_("Enter WaaS password")) }}
+                                {{ form.waas_password(class="form-control", placeholder=_("Enter WaaS password"), **{'data-bs-toggle': 'tooltip', 'data-bs-placement': 'top', 'title': _('Required for app creation, deletion, and account verification')}) }}
                                 <div class="form-text">{{ _('Password for WaaS platform login. Required for account verification. Encrypted at rest.') }}</div>
                                 {% for error in form.waas_password.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>

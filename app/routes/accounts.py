@@ -23,6 +23,7 @@ def list_accounts():
 
 @bp.route('/add', methods=['GET', 'POST'])
 @login_required
+@limiter.limit("10 per minute", methods=["POST"])
 def add_account():
     """Add a new WaaS API account"""
     form = WaasAccountForm()
@@ -97,6 +98,7 @@ def view_account(account_id):
 
 @bp.route('/<int:account_id>/edit', methods=['GET', 'POST'])
 @login_required
+@limiter.limit("20 per minute", methods=["POST"])
 def edit_account(account_id):
     """Edit a WaaS account"""
     account, perm = get_account_for_user(account_id, current_user, min_permission='admin')
@@ -183,6 +185,7 @@ def verify_account(account_id):
 
 @bp.route('/<int:account_id>/delete', methods=['POST'])
 @login_required
+@limiter.limit("10 per minute")
 def delete_account(account_id):
     """Delete a WaaS account (owner only)"""
     account, perm = get_account_for_user(account_id, current_user, min_permission='admin')
@@ -273,6 +276,7 @@ def sharing(account_id):
 
 @bp.route('/<int:account_id>/sharing/add', methods=['POST'])
 @login_required
+@limiter.limit("10 per minute")
 def add_share(account_id):
     """Share account with another user"""
     account, perm = get_account_for_user(account_id, current_user, min_permission='admin')
@@ -330,6 +334,7 @@ def add_share(account_id):
 
 @bp.route('/<int:account_id>/sharing/<int:share_id>/revoke', methods=['POST'])
 @login_required
+@limiter.limit("10 per minute")
 def revoke_share(account_id, share_id):
     """Remove a share"""
     account, perm = get_account_for_user(account_id, current_user, min_permission='admin')

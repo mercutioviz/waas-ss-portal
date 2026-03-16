@@ -45,6 +45,10 @@ class Config:
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'waas-portal@localhost')
 
+    # Rate limiting
+    RATELIMIT_STORAGE_URI = 'memory://'
+    RATELIMIT_STRATEGY = 'fixed-window'
+
     # Scheduler (Flask-APScheduler)
     SCHEDULER_API_ENABLED = False
 

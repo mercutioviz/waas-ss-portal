@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "macros/help_modal.html" import help_button, help_modal %}
+{% from "macros/api_curl_modal.html" import api_curl_button, api_curl_modal %}
 {% block title %}{{ _('Security Config') }} — {{ application.get('name', 'Application') }} — WaaS Portal{% endblock %}
 
 {% block content %}
@@ -322,12 +323,13 @@
 
 {# Raw Security Data #}
 <div class="card mt-4">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">
             <a class="text-decoration-none" data-bs-toggle="collapse" href="#rawSecurityData" role="button">
                 <i class="bi bi-code-slash"></i> {{ _('Raw API Data') }}
             </a>
         </h5>
+        {% if security_curl %}{{ api_curl_button('securityCurlModal') }}{% endif %}
     </div>
     <div class="collapse" id="rawSecurityData">
         <div class="card-body">
@@ -345,6 +347,7 @@
     </div>
 </div>
 {% endif %}
+{% if security_curl %}{{ api_curl_modal('securityCurlModal', security_curl) }}{% endif %}
 {{ help_modal('securityHelpModal', _('Security Configuration Help'), '
 <h6>' ~ _('Protection Modes') ~ '</h6>
 <ul>

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "macros/help_modal.html" import help_button, help_modal %}
+{% from "macros/api_curl_modal.html" import api_curl_button, api_curl_modal %}
 {% block title %}{{ application.get('name', 'Application') }} - WaaS Portal{% endblock %}
 
 {% block breadcrumbs %}
@@ -90,6 +91,16 @@
                     <a href="{{ url_for('applications.clone_application', account_id=account.id, app_id=app_id) }}" class="btn btn-outline-warning">
                         <i class="bi bi-copy"></i> {{ _('Clone Application') }}
                     </a>
+                    {% endif %}
+                    {% if v2_app_id and account.has_v2_credentials %}
+                    <form method="POST" action="{{ url_for('applications.delete_application', account_id=account.id, app_id=v2_app_id) }}" class="d-grid"
+                          data-confirm-message="{{ _('Are you sure you want to delete application &quot;%(name)s&quot;? This cannot be undone.', name=app_id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="app_name" value="{{ app_id }}">
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="bi bi-trash"></i> {{ _('Delete Application') }}
+                        </button>
+                    </form>
                     {% endif %}
                     {% endif %}
                     <div class="border rounded p-2 mt-1">
@@ -574,12 +585,13 @@
 
 <!-- Raw Application Data -->
 <div class="card mt-4">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">
             <a class="text-decoration-none" data-bs-toggle="collapse" href="#rawData" role="button">
                 <i class="bi bi-code-slash"></i> {{ _('Raw API Data') }}
             </a>
         </h5>
+        {% if view_curl %}{{ api_curl_button('viewCurlModal') }}{% endif %}
     </div>
     <div class="collapse" id="rawData">
         <div class="card-body">
@@ -588,6 +600,8 @@
     </div>
 </div>
 {% endif %}
+
+{% if view_curl %}{{ api_curl_modal('viewCurlModal', view_curl) }}{% endif %}
 
 {{ help_modal('appViewHelpModal', _('Application Details Help'), '
 <h6>' ~ _('Server Configuration') ~ '</h6>

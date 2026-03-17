@@ -283,3 +283,86 @@ a, .btn {
     text-overflow: ellipsis;
     display: inline-block;
 }
+
+/* ===== Dark Mode Overrides ===== */
+[data-bs-theme="dark"] body {
+    background-color: #1a1d21;
+}
+
+[data-bs-theme="dark"] .card-header {
+    background-color: #2b3035;
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-bs-theme="dark"] .table th {
+    color: #adb5bd;
+}
+
+[data-bs-theme="dark"] .table-light {
+    --bs-table-bg: #2b3035;
+    --bs-table-border-color: #373b3e;
+    color: #dee2e6;
+}
+
+[data-bs-theme="dark"] td code,
+[data-bs-theme="dark"] th code {
+    background-color: #2b3035;
+    color: #e9ecef;
+}
+
+[data-bs-theme="dark"] pre code {
+    color: #e9ecef;
+}
+
+[data-bs-theme="dark"] pre.bg-light {
+    background-color: #212529 !important;
+    color: #e9ecef;
+    border: 1px solid #373b3e;
+}
+
+[data-bs-theme="dark"] .bg-light {
+    background-color: #2b3035 !important;
+}
+
+[data-bs-theme="dark"] .diff-added {
+    background-color: #1e3a2f;
+    color: #a3d9a5;
+}
+
+[data-bs-theme="dark"] .diff-modified {
+    background-color: #3a351e;
+    color: #ffe08a;
+}
+
+[data-bs-theme="dark"] .diff-removed {
+    background-color: #3a1e1e;
+    color: #f5a5a5;
+}
+
+[data-bs-theme="dark"] .diff-preview {
+    border-color: #373b3e;
+}
+
+[data-bs-theme="dark"] .inline-edit-field {
+    background: #212529;
+    border-color: #495057;
+    color: #e9ecef;
+}
+
+[data-bs-theme="dark"] .footer,
+[data-bs-theme="dark"] footer.bg-light {
+    background-color: #212529 !important;
+    border-top-color: #373b3e !important;
+}
+
+[data-bs-theme="dark"] .card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.2);
+}
+
+[data-bs-theme="dark"] .card:hover {
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.3);
+}
+
+[data-bs-theme="dark"] .loading-overlay {
+    background: rgba(0, 0, 0, 0.7);
+}

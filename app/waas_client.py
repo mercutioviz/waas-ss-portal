@@ -373,6 +373,53 @@ class WaasClient:
             raise WaasApiError(f'WaaS API request failed: {e}',
                                request_method=method, request_url=url, request_data=data)
 
+    # === Curl Command Generation ===
+    def generate_curl_command(self, method, endpoint, data=None, params=None, api_version='v4'):
+        """Build a curl command string for display purposes (no API call made).
+
+        Tokens are redacted to first 10 characters + ...[REDACTED].
+        """
+        if not endpoint.startswith('/'):
+            endpoint = f'/{endpoint}'
+        if not endpoint.endswith('/'):
+            endpoint = f'{endpoint}/'
+
+        base = self.base_url_v2 if api_version == 'v2' else self.base_url
+        url = f'{base}{endpoint}'
+
+        if params:
+            qs = '&'.join(f'{k}={v}' for k, v in params.items())
+            url = f'{url}?{qs}'
+
+        # Build header flags
+        if api_version == 'v2':
+            token = self.api_key or ''
+            redacted = (token[:10] + '...[REDACTED]') if len(token) > 10 else token
+            headers = [
+                f"-H 'Accept: application/json'",
+                f"-H 'Content-Type: application/json'",
+                f"-H 'auth-api: {redacted}'",
+            ]
+        else:
+            token = self.api_key or ''
+            redacted = ('Bearer ' + token[:10] + '...[REDACTED]') if len(token) > 10 else f'Bearer {token}'
+            headers = [
+                f"-H 'Accept: application/json'",
+                f"-H 'Content-Type: application/json'",
+                f"-H 'Authorization: {redacted}'",
+            ]
+
+        parts = [f"curl -X {method}"]
+        parts.extend(headers)
+
+        if data:
+            json_str = json.dumps(data, indent=2)
+            parts.append(f"-d '{json_str}'")
+
+        parts.append(f"'{url}'")
+
+        return ' \\\n  '.join(parts)
+
     # === Account / Verify (v2 API) ===
     def verify_account(self):
         """Verify auth and get account info (uses v2 API).

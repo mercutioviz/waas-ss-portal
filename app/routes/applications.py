@@ -47,6 +47,7 @@ def list_applications():
 
     applications = []
     selected_account = None
+    client = None
     error = None
 
     if selected_account_id:
@@ -75,6 +76,17 @@ def list_applications():
         else:
             error = _('Account not found or inactive.')
 
+    # Generate curl command for the list API call
+    list_curl = None
+    if client and selected_account:
+        try:
+            if api_version == 'v2' and selected_account.has_v2_credentials:
+                list_curl = client.generate_curl_command('GET', '/applications/', api_version='v2')
+            else:
+                list_curl = client.generate_curl_command('GET', '/applications/')
+        except Exception:
+            pass
+
     return render_template(
         'applications/list.html',
         accounts=accounts,
@@ -82,7 +94,8 @@ def list_applications():
         selected_account=selected_account,
         selected_account_id=selected_account_id,
         api_version=api_version,
-        error=error
+        error=error,
+        list_curl=list_curl
     )
 
 
@@ -129,11 +142,36 @@ def view_application(account_id, app_id):
         flash(_('Failed to load application: %(error)s', error=str(e)), 'danger')
         return redirect(url_for('applications.list_applications', account_id=account_id))
 
+    # Look up v2 integer ID for the delete button
+    v2_app_id = None
+    if account.has_v2_credentials:
+        try:
+            v2_result = client.list_applications_v2()
+            v2_apps = _parse_app_list(v2_result)
+            for v2_app in v2_apps:
+                if isinstance(v2_app, dict) and v2_app.get('name') == app_id:
+                    v2_app_id = v2_app.get('id')
+                    break
+        except WaasApiError:
+            pass  # v2 lookup failed — just hide the delete button
+
+    # Generate curl command
+    view_curl = None
+    try:
+        view_curl = client.generate_curl_command(
+            'GET', f'/applications/{app_id}/export/',
+            params={'include_servers': 'true', 'include_endpoints': 'true'}
+        )
+    except Exception:
+        pass
+
     return render_template(
         'applications/view.html',
         account=account,
         application=application,
-        app_id=app_id
+        app_id=app_id,
+        v2_app_id=v2_app_id,
+        view_curl=view_curl
     )
 
 
@@ -200,10 +238,27 @@ def create_application(account_id):
         except WaasApiError as e:
             flash(_('Failed to create application: %(error)s', error=str(e)), 'danger')
 
+    # Generate curl command for create endpoint
+    create_curl = None
+    try:
+        placeholder = {
+            'applicationName': 'my-app',
+            'hostnames': [{'hostname': 'www.example.com'}],
+            'backendIp': '10.0.0.1',
+            'backendPort': '443',
+            'backendType': 'HTTPS',
+            'useExistingIp': True,
+            'maliciousTraffic': 'Passive',
+        }
+        create_curl = client.generate_curl_command('POST', '/applications/', data=placeholder, api_version='v2')
+    except Exception:
+        pass
+
     return render_template(
         'applications/create.html',
         form=form,
-        account=account
+        account=account,
+        create_curl=create_curl
     )
 
 
@@ -262,12 +317,20 @@ def security_config(account_id, app_id):
         flash(_('Failed to load security config: %(error)s', error=str(e)), 'danger')
         return redirect(url_for('applications.view_application', account_id=account_id, app_id=app_id))
 
+    # Generate curl command for security endpoints
+    security_curl = None
+    try:
+        security_curl = client.generate_curl_command('GET', f'/applications/{app_id}/basic_security/')
+    except Exception:
+        pass
+
     return render_template(
         'applications/security.html',
         account=account,
         application=application,
         security=security,
-        app_id=app_id
+        app_id=app_id,
+        security_curl=security_curl
     )
 
 

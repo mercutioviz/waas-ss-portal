@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/api_curl_modal.html" import api_curl_button, api_curl_modal %}
 {% block title %}{{ _('Create Application') }} - WaaS Portal{% endblock %}
 
 {% block content %}
@@ -89,13 +90,15 @@
                         </div>
                     </div>
 
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 align-items-center">
                         {{ form.submit }}
                         <a href="{{ url_for('applications.list_applications', account_id=account.id) }}" class="btn btn-secondary">{{ _('Cancel') }}</a>
+                        {% if create_curl %}{{ api_curl_button('createCurlModal') }}{% endif %}
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+{% if create_curl %}{{ api_curl_modal('createCurlModal', create_curl) }}{% endif %}
 {% endblock %}

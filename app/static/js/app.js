@@ -251,5 +251,74 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    // -------------------------------------------------------
+    // Theme Toggle (Dark/Light Mode)
+    // -------------------------------------------------------
+    function updateThemeIcons() {
+        var isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        document.querySelectorAll('#themeIconLight, .theme-icon-light').forEach(function(el) {
+            el.style.display = isDark ? 'none' : 'inline';
+        });
+        document.querySelectorAll('#themeIconDark, .theme-icon-dark').forEach(function(el) {
+            el.style.display = isDark ? 'inline' : 'none';
+        });
+    }
+
+    function toggleTheme() {
+        var html = document.documentElement;
+        var current = html.getAttribute('data-bs-theme');
+        var newTheme = current === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-bs-theme', newTheme);
+        localStorage.setItem('waas_theme', newTheme);
+        updateThemeIcons();
+
+        // Fire-and-forget POST to persist on server
+        var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        var csrfVal = csrfMeta ? csrfMeta.getAttribute('content') : '';
+        var formData = new FormData();
+        formData.append('theme', newTheme);
+        formData.append('csrf_token', csrfVal);
+        fetch('/auth/set-theme', {
+            method: 'POST',
+            body: formData
+        }).catch(function() {});
+    }
+
+    document.querySelectorAll('#themeToggle, #themeToggleAnon').forEach(function(btn) {
+        btn.addEventListener('click', toggleTheme);
+    });
+    updateThemeIcons();
+
+    // -------------------------------------------------------
+    // Copy to Clipboard (for curl display)
+    // -------------------------------------------------------
+    window.copyToClipboard = function(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                if (window.showToast) window.showToast('Copied to clipboard!', 'success');
+            }).catch(function() {
+                fallbackCopy(text);
+            });
+        } else {
+            fallbackCopy(text);
+        }
+    };
+
+    function fallbackCopy(text) {
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            if (window.showToast) window.showToast('Copied to clipboard!', 'success');
+        } catch (e) {
+            if (window.showToast) window.showToast('Failed to copy.', 'danger');
+        }
+        document.body.removeChild(textarea);
+    }
+
     console.log('WaaS Portal initialized.');
 });

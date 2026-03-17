@@ -150,3 +150,20 @@ def set_locale():
 
     next_url = request.form.get('next') or request.referrer or url_for('main.dashboard')
     return redirect(next_url)
+
+
+@bp.route('/set-theme', methods=['POST'])
+def set_theme():
+    """Set the user's preferred theme (light/dark)."""
+    theme = request.form.get('theme', 'light')
+    if theme not in ('light', 'dark'):
+        theme = 'light'
+
+    session['theme'] = theme
+
+    if current_user.is_authenticated:
+        current_user.theme = theme
+        db.session.commit()
+
+    next_url = request.form.get('next') or request.referrer or url_for('main.dashboard')
+    return redirect(next_url)

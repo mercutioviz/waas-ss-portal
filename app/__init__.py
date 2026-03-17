@@ -42,6 +42,18 @@ def get_locale():
     return request.accept_languages.best_match(supported, default='en')
 
 
+def get_theme():
+    """Select theme: user preference -> session -> default 'light'."""
+    if current_user and hasattr(current_user, 'theme') and getattr(current_user, 'is_authenticated', False):
+        user_theme = getattr(current_user, 'theme', None)
+        if user_theme in ('light', 'dark'):
+            return user_theme
+    sess_theme = session.get('theme')
+    if sess_theme in ('light', 'dark'):
+        return sess_theme
+    return 'light'
+
+
 def create_app(config_name='default'):
     """Application factory pattern"""
     app = Flask(__name__)
@@ -146,6 +158,12 @@ def create_app(config_name='default'):
     def inject_locale():
         """Make get_locale available to all templates"""
         return {'get_locale': get_locale}
+
+    # Context processor to inject theme into all templates
+    @app.context_processor
+    def inject_theme():
+        """Make get_theme available to all templates"""
+        return {'get_theme': get_theme}
 
     # Context processor to inject CSRF token function
     @app.context_processor

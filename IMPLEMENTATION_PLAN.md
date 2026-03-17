@@ -1,6 +1,6 @@
 # WaaS Self-Service Portal — Implementation Plan
 
-*Last updated: 2026-03-11 (Phase 7 complete — all 11 items)*
+*Last updated: 2026-03-17 (Phase 8 planned — 3 new features)*
 
 ---
 
@@ -207,6 +207,100 @@ pybabel compile -d app/translations
 | 7.9 | Toast notifications | Replace flash messages with auto-dismissing toasts | Small | ✅ Complete |
 | 7.10 | Responsive improvements | Test and fix mobile layout issues | Medium | ✅ Complete |
 | 7.11 | Scheduled reports | Email summaries of WAF activity via Flask-Mail + Flask-APScheduler | Large | ✅ Complete |
+
+---
+
+### Phase 8: Dark Mode, Delete App Button, Show API Call
+
+**Goal:** Three user-facing features — a dark/light theme toggle, a more accessible delete application button, and a "show me the API call" feature that displays curl equivalents.
+
+---
+
+#### 8.1 Dark Mode / Light Mode Toggle (Medium)
+
+**Current state:** Bootstrap 5.3.3 is in use and `data-bs-theme="light"` is already hardcoded on the `<html>` tag in `base.html`. Bootstrap 5.3's built-in dark mode support means most components (cards, tables, navbars, modals, forms) will adapt automatically when toggling `data-bs-theme` to `"dark"`.
+
+**Persistence chain:** `localStorage` (instant, no flash of wrong theme) → `User.theme` column (persists across devices) → `session['theme']` (unauthenticated users) → `'light'` default.
+
+**Tasks:**
+
+| # | Task | Files | Notes |
+|---|------|-------|-------|
+| 8.1.1 | Add `theme` column to User model | `app/models.py` | `db.Column(db.String(10), default='light')` after existing `locale` field. `db.create_all()` auto-adds column. |
+| 8.1.2 | Add `/auth/set-theme` POST endpoint | `app/routes/auth.py` | Follow `/auth/set-locale` pattern — accept `theme` param (`light`/`dark`), update `session['theme']` and `current_user.theme` if authenticated, redirect to referrer. |
+| 8.1.3 | Add `get_theme()` context processor | `app/__init__.py` | Chain: `User.theme` → `session['theme']` → `'light'`. Inject into templates as `current_theme`. |
+| 8.1.4 | Make `<html data-bs-theme>` dynamic | `app/templates/base.html` | Change to `data-bs-theme="{{ current_theme }}"`. |
+| 8.1.5 | Add theme toggle to navbar | `app/templates/base.html` | Sun/moon icon button between language dropdown and user dropdown. Present for both authenticated and unauthenticated users. On click: toggle `data-bs-theme`, save to `localStorage`, POST to `/auth/set-theme`. |
+| 8.1.6 | Add early theme-init script | `app/templates/base.html` | Inline `<script>` in `<head>` (before body renders) that reads `localStorage.getItem('theme')` and sets `data-bs-theme` immediately to prevent flash of wrong theme on page load. |
+| 8.1.7 | Add dark mode CSS overrides | `app/static/css/style.css` | Use `[data-bs-theme="dark"]` selector for: body background, card headers, navbar (`navbar-dark bg-primary` → theme-aware), footer (`bg-light` → theme-aware), toast colors, code blocks, custom stat card colors on dashboard. |
+| 8.1.8 | Add theme toggle JS function | `app/static/js/app.js` | `window.toggleTheme()`: flip `data-bs-theme`, update icon (sun ↔ moon), save to `localStorage`, POST to `/auth/set-theme` via fetch. |
+| 8.1.9 | i18n — translate new strings | `app/translations/es/` | Translate toggle tooltip/label ("Dark mode", "Light mode"). |
+
+---
+
+#### 8.2 Delete Application Button on View Page (Small)
+
+**Current state:** Delete is **fully implemented** in the backend:
+- Route: `DELETE /applications/<account_id>/<int:app_id>/delete` (POST, `applications.py` ~line 210)
+- API client: `WaasClient.delete_application_v2(app_id)` calls `DELETE /v2/waasapi/applications/{id}/`
+- List template: Delete button already appears in `list.html` when viewing v2 API mode (shows v2 integer IDs)
+
+**Gap:** The application **view page** (`view.html`) has no delete button. The view page uses the v4 API (app names), but delete requires a v2 integer app ID. The v2 app ID needs to be resolved and passed to the template.
+
+**Tasks:**
+
+| # | Task | Files | Notes |
+|---|------|-------|-------|
+| 8.2.1 | Resolve v2 app ID in view route | `app/routes/applications.py` | In `view_application()`, if account has v2 credentials, call v2 `GET /applications/` to find the integer ID matching the app name. Pass `v2_app_id` to template. Cache or do a lightweight lookup. |
+| 8.2.2 | Add delete button to view page | `app/templates/applications/view.html` | Add a "Delete Application" button in the Quick Actions card (or page header). Use the existing `data-confirm-message` pattern with the confirmation modal. Only show if: `v2_app_id` is available, user has write permission, user is not a viewer. |
+| 8.2.3 | i18n — translate new strings | `app/translations/es/` | Translate confirmation message and button label. |
+
+---
+
+#### 8.3 "Show Me the API Call" — Curl Command Display (Medium)
+
+**Goal:** For any API operation the portal performs, let users see the equivalent `curl` command. Useful for learning, debugging, and scripting outside the portal.
+
+**Current state:**
+- `WaasClient._make_request()` already builds URLs, headers, and auth for both v2 and v4 APIs
+- Token redaction logic already exists (lines ~270-277 of `waas_client.py`) — shows first 10-17 chars then `...[REDACTED]`
+- Clone error display (`clone.html`) already shows request method, URL, request data, and response data in an expandable detail section
+- `WaasApiError` class stores `request_method`, `request_url`, `request_data`, `response_data`
+
+**Auth header differences:**
+- v4: `Authorization: Bearer <api_key>`
+- v2: `auth-api: <token>` (no Bearer prefix)
+
+**Implementation approach:** Server-side curl generation in `WaasClient` + reusable Jinja macro for display + copy-to-clipboard JS.
+
+**Tasks:**
+
+| # | Task | Files | Notes |
+|---|------|-------|-------|
+| 8.3.1 | Add `generate_curl_command()` to WaasClient | `app/waas_client.py` | Method that accepts `method`, `endpoint`, `data`, `params`, `api_version` and returns a formatted, multi-line curl string. Reuse URL/header/auth building logic from `_make_request()`. Always redact auth tokens. |
+| 8.3.2 | Create reusable API call modal macro | `app/templates/macros/api_curl_modal.html` (new) | Jinja macro: `api_curl_button(modal_id)` renders a small `<i class="bi bi-code-slash"></i> API` button; `api_curl_modal(id, curl_command)` renders a modal with syntax-highlighted curl in a `<pre>` block and a "Copy" button. |
+| 8.3.3 | Add `copyToClipboard()` JS helper | `app/static/js/app.js` | `window.copyToClipboard(text)` using `navigator.clipboard.writeText()` with toast feedback ("Copied!" / "Copy failed"). |
+| 8.3.4 | Add curl to application view page | `app/routes/applications.py`, `view.html` | In `view_application()`, generate curl for the `GET /applications/{name}/export/` call. Pass to template. Show button + modal in the "Raw API Data" card header. |
+| 8.3.5 | Add curl to security config page | `app/routes/applications.py`, `security.html` | Generate curl commands for each of the 4 security GET endpoints. Show button + modal per section and/or in the "Raw Security Data" card header. |
+| 8.3.6 | Add curl to create/clone forms | `applications/create.html`, `applications/clone.html` | For write operations, generate the curl command from the submitted form data and show it in the success flash or a post-submit modal. Alternatively, add a "Preview API Call" button that builds the curl from current form values via JS before submission. |
+| 8.3.7 | Add curl to list applications page | `app/routes/applications.py`, `list.html` | Generate curl for `GET /applications/` and show a small API button in the page header. |
+| 8.3.8 | Add JSON endpoint for dynamic curl generation | `app/routes/applications.py` | `GET /applications/api/<account_id>/curl?operation=<op>&app_id=<id>` returns JSON with `{curl_command, method, url, headers_redacted}`. Used by AJAX for operations where curl depends on current form state. |
+| 8.3.9 | i18n — translate new strings | `app/translations/es/` | Translate button labels ("Show API Call", "Copy curl Command"), modal title, toast messages. |
+
+**Security considerations:**
+- Auth tokens must ALWAYS be redacted in displayed curl commands (reuse existing redaction logic)
+- Viewer role users can see curl for read operations but tokens are still redacted
+- Rate limit the JSON curl endpoint to prevent abuse
+
+---
+
+#### Phase 8 Summary
+
+| # | Feature | Complexity | Status |
+|---|---------|------------|--------|
+| 8.1 | Dark mode / light mode toggle | Medium (9 tasks) | ⬜ Pending |
+| 8.2 | Delete app button on view page | Small (3 tasks) | ⬜ Pending |
+| 8.3 | "Show me the API call" curl display | Medium (9 tasks) | ⬜ Pending |
 
 ---
 

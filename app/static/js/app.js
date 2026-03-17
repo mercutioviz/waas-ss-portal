@@ -65,6 +65,11 @@ document.addEventListener('DOMContentLoaded', function () {
         loadingOverlay.classList.add('d-none');
     };
 
+    // Dismiss loading overlay on page load — catches cases where a form
+    // POST returns the same page (e.g. validation/API error) instead of
+    // redirecting, which would otherwise leave the overlay stuck on screen.
+    window.hideLoading();
+
     // Auto-wire forms with data-loading attribute
     document.querySelectorAll('form[data-loading]').forEach(function (form) {
         form.addEventListener('submit', function () {

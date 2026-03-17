@@ -634,6 +634,8 @@ def clone_application(account_id, app_id):
         backend_type=default_backend_type,
     )
 
+    api_error = None
+
     if form.validate_on_submit():
         create_data = {
             'applicationName': form.new_name.data.strip(),
@@ -663,52 +665,64 @@ def clone_application(account_id, app_id):
                 step_names.append(_('Copy security settings'))
 
             def _bg_clone():
-                from app.background_tasks import run_clone_operation
+                try:
+                    import time
+                    time.sleep(2)  # Wait for client to connect and join room
+                    from app.background_tasks import run_clone_operation
 
-                steps = []
+                    steps = []
 
-                # Step 1: Create
-                def _create():
-                    client.create_application_v2(create_data)
-                    return {'status': 'success'}
-                steps.append({'name': str(_('Create application')), 'func': _create})
-
-                # Step 2: Import
-                if clone_servers or clone_endpoints:
-                    def _import():
-                        import_data = {}
-                        if clone_servers:
-                            import_data['servers'] = source_app.get('servers', [])
-                        if clone_endpoints:
-                            import_data['endpoints'] = source_app.get('endpoints', {})
-                        client.import_application(
-                            new_app_name, import_data,
-                            include_servers=clone_servers,
-                            include_endpoints=clone_endpoints
-                        )
+                    # Step 1: Create
+                    def _create():
+                        client.create_application_v2(create_data)
                         return {'status': 'success'}
-                    steps.append({'name': str(_('Import configuration')), 'func': _import})
+                    steps.append({'name': str(_('Create application')), 'func': _create})
 
-                # Step 3: Security
-                if clone_security:
-                    def _security():
-                        security = client.get_security_config(app_id)
-                        mode = security.get('protection_mode')
-                        if mode:
-                            client.update_security_config(new_app_name, {'protection_mode': mode})
-                        rl = security.get('request_limits', {})
-                        if rl:
-                            client.update_request_limits(new_app_name, rl)
-                        cj = security.get('clickjacking_protection', {})
-                        if cj:
-                            client.update_clickjacking_protection(new_app_name, cj)
-                        dtp = security.get('data_theft_protection', {})
-                        if dtp:
-                            client.update_data_theft_protection(new_app_name, dtp)
-                        return {'status': 'success'}
-                    steps.append({'name': str(_('Copy security settings')), 'func': _security})
+                    # Step 2: Import
+                    if clone_servers or clone_endpoints:
+                        def _import():
+                            import_data = {}
+                            if clone_servers:
+                                import_data['servers'] = source_app.get('servers', [])
+                            if clone_endpoints:
+                                import_data['endpoints'] = source_app.get('endpoints', {})
+                            client.import_application(
+                                new_app_name, import_data,
+                                include_servers=clone_servers,
+                                include_endpoints=clone_endpoints
+                            )
+                            return {'status': 'success'}
+                        steps.append({'name': str(_('Import configuration')), 'func': _import})
 
-                run_clone_operation(session_id, steps)
+                    # Step 3: Security
+                    if clone_security:
+                        def _security():
+                            security = client.get_security_config(app_id)
+                            mode = security.get('protection_mode')
+                            if mode:
+                                client.update_security_config(new_app_name, {'protection_mode': mode})
+                            rl = security.get('request_limits', {})
+                            if rl:
+                                client.update_request_limits(new_app_name, rl)
+                            cj = security.get('clickjacking_protection', {})
+                            if cj:
+                                client.update_clickjacking_protection(new_app_name, cj)
+                            dtp = security.get('data_theft_protection', {})
+                            if dtp:
+                                client.update_data_theft_protection(new_app_name, dtp)
+                            return {'status': 'success'}
+                        steps.append({'name': str(_('Copy security settings')), 'func': _security})
+
+                    logger.info(f'Calling run_clone_operation with {len(steps)} steps')
+                    run_clone_operation(session_id, steps)
+                    logger.info(f'Background clone task completed for session {session_id}')
+                except Exception as e:
+                    logger.error(f'Background clone task exception: {e}', exc_info=True)
+                    socketio.emit('clone_progress', {
+                        'phase': 'aborted',
+                        'reason': f'Internal error: {str(e)}',
+                        'results': [],
+                    }, room=session_id)
 
             socketio.start_background_task(_bg_clone)
 
@@ -778,13 +792,22 @@ def clone_application(account_id, app_id):
 
         except WaasApiError as e:
             flash(_('Failed to clone application: %(error)s', error=str(e)), 'danger')
+            api_error = {
+                'message': str(e),
+                'status_code': e.status_code,
+                'method': e.request_method,
+                'url': e.request_url,
+                'request_data': e.request_data,
+                'response_data': e.response_data,
+            }
 
     return render_template(
         'applications/clone.html',
         form=form,
         account=account,
         source_app=source_app,
-        app_id=app_id
+        app_id=app_id,
+        api_error=api_error
     )
 
 

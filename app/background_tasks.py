@@ -3,6 +3,7 @@
 import logging
 import traceback
 from app import socketio
+from app.waas_client import WaasApiError
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,20 @@ def run_clone_operation(session_id, steps):
             result = step['func']()
             result['step_name'] = step_name
             results.append(result)
+        except WaasApiError as e:
+            logger.error(f'Clone step "{step_name}" error: {traceback.format_exc()}')
+            results.append({
+                'step_name': step_name,
+                'status': 'error',
+                'error': str(e),
+                'api_details': {
+                    'status_code': e.status_code,
+                    'method': e.request_method,
+                    'url': e.request_url,
+                    'request_data': e.request_data,
+                    'response_data': e.response_data,
+                },
+            })
         except Exception as e:
             logger.error(f'Clone step "{step_name}" error: {traceback.format_exc()}')
             results.append({

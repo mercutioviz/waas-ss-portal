@@ -43,6 +43,23 @@
             <div id="failArea" class="d-none">
                 <div class="alert alert-danger">
                     <i class="bi bi-x-circle"></i> <span id="failReason">{{ _('Clone failed.') }}</span>
+                    <div id="apiDetailsBlock" class="d-none mt-2">
+                        <details>
+                            <summary>{{ _('API Request/Response Details') }}</summary>
+                            <div class="mt-2" style="font-size: 0.85em;">
+                                <p class="mb-1" id="apiDetailRequest"></p>
+                                <p class="mb-1" id="apiDetailStatus"></p>
+                                <div id="apiDetailRequestBodyBlock" class="d-none">
+                                    <p class="mb-1"><strong>{{ _('Request Body') }}:</strong></p>
+                                    <pre class="bg-dark text-light p-2 rounded" style="max-height: 300px; overflow: auto;" id="apiDetailRequestBody"></pre>
+                                </div>
+                                <div id="apiDetailResponseBodyBlock" class="d-none">
+                                    <p class="mb-1"><strong>{{ _('Response Body') }}:</strong></p>
+                                    <pre class="bg-dark text-light p-2 rounded" style="max-height: 300px; overflow: auto;" id="apiDetailResponseBody"></pre>
+                                </div>
+                            </div>
+                        </details>
+                    </div>
                 </div>
                 <a href="{{ url_for('applications.list_applications', account_id=account_id) }}" class="btn btn-secondary">
                     <i class="bi bi-arrow-left"></i> {{ _('Back to Applications') }}
@@ -83,6 +100,30 @@
         if (iconEl) iconEl.classList.add('d-none');
     }
 
+    function showApiDetails(apiDetails) {
+        if (!apiDetails) return;
+        var block = document.getElementById('apiDetailsBlock');
+        block.classList.remove('d-none');
+        if (apiDetails.method && apiDetails.url) {
+            document.getElementById('apiDetailRequest').innerHTML =
+                '<strong>Request:</strong> <code>' + apiDetails.method + ' ' + apiDetails.url + '</code>';
+        }
+        if (apiDetails.status_code) {
+            document.getElementById('apiDetailStatus').innerHTML =
+                '<strong>Status Code:</strong> <code>' + apiDetails.status_code + '</code>';
+        }
+        if (apiDetails.request_data) {
+            document.getElementById('apiDetailRequestBodyBlock').classList.remove('d-none');
+            document.getElementById('apiDetailRequestBody').textContent =
+                JSON.stringify(apiDetails.request_data, null, 2);
+        }
+        if (apiDetails.response_data) {
+            document.getElementById('apiDetailResponseBodyBlock').classList.remove('d-none');
+            document.getElementById('apiDetailResponseBody').textContent =
+                JSON.stringify(apiDetails.response_data, null, 2);
+        }
+    }
+
     socket.on('clone_progress', function(data) {
         var bar = document.getElementById('progressBar');
         var status = document.getElementById('statusMessage');
@@ -111,6 +152,10 @@
             } else {
                 bar.classList.add('bg-danger');
                 document.getElementById('failArea').classList.remove('d-none');
+                if (data.results && data.results.length) {
+                    var failedStep = data.results.find(function(r) { return r.api_details; });
+                    if (failedStep) showApiDetails(failedStep.api_details);
+                }
             }
             socket.disconnect();
         } else if (data.phase === 'aborted') {
@@ -120,6 +165,11 @@
             document.getElementById('completionArea').classList.remove('d-none');
             document.getElementById('failArea').classList.remove('d-none');
             document.getElementById('failReason').textContent = data.reason || '{{ _("Clone aborted.") }}';
+            // Show API details from the failed step
+            if (data.results && data.results.length) {
+                var failedStep = data.results.find(function(r) { return r.api_details; });
+                if (failedStep) showApiDetails(failedStep.api_details);
+            }
             socket.disconnect();
         }
     });

@@ -20,10 +20,14 @@ logger = logging.getLogger(__name__)
 
 class WaasApiError(Exception):
     """Custom exception for WaaS API errors"""
-    def __init__(self, message, status_code=None, response_data=None):
+    def __init__(self, message, status_code=None, response_data=None,
+                 request_method=None, request_url=None, request_data=None):
         super().__init__(message)
         self.status_code = status_code
         self.response_data = response_data
+        self.request_method = request_method
+        self.request_url = request_url
+        self.request_data = request_data
 
 
 class WaasClient:
@@ -348,20 +352,26 @@ class WaasClient:
                 raise WaasApiError(
                     f'WaaS API error: {error_msg}',
                     status_code=response.status_code,
-                    response_data=response_data
+                    response_data=response_data,
+                    request_method=method,
+                    request_url=url,
+                    request_data=data,
                 )
 
             return response_data
 
         except requests.exceptions.ConnectionError as e:
             logger.error(f'WaaS API Connection Error: {e}')
-            raise WaasApiError(f'Cannot connect to WaaS API: {e}')
+            raise WaasApiError(f'Cannot connect to WaaS API: {e}',
+                               request_method=method, request_url=url, request_data=data)
         except requests.exceptions.Timeout as e:
             logger.error(f'WaaS API Timeout: {e}')
-            raise WaasApiError(f'WaaS API request timed out: {e}')
+            raise WaasApiError(f'WaaS API request timed out: {e}',
+                               request_method=method, request_url=url, request_data=data)
         except requests.exceptions.RequestException as e:
             logger.error(f'WaaS API Request Error: {e}')
-            raise WaasApiError(f'WaaS API request failed: {e}')
+            raise WaasApiError(f'WaaS API request failed: {e}',
+                               request_method=method, request_url=url, request_data=data)
 
     # === Account / Verify (v2 API) ===
     def verify_account(self):

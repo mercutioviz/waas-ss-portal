@@ -1,6 +1,6 @@
 # WaaS Self-Service Portal — Implementation Plan
 
-*Last updated: 2026-03-17 (Phase 8 planned — 3 new features)*
+*Last updated: 2026-03-17 (Phase 8 complete — all phases done)*
 
 ---
 
@@ -210,9 +210,15 @@ pybabel compile -d app/translations
 
 ---
 
-### Phase 8: Dark Mode, Delete App Button, Show API Call
+### Phase 8: Dark Mode, Delete App Button, Show API Call ✅ DONE
 
 **Goal:** Three user-facing features — a dark/light theme toggle, a more accessible delete application button, and a "show me the API call" feature that displays curl equivalents.
+
+**What was built:**
+
+- **Dark/Light Mode Toggle (8.1)** — `User.theme` column with `get_theme()` cascade (`User.theme` → `session['theme']` → `'light'`). FOUC prevention via inline `<script>` reading `localStorage` before body renders. Sun/moon toggle button in navbar (auth + anon). JS `toggleTheme()` flips `data-bs-theme`, saves to `localStorage`, fire-and-forget POST to `/auth/set-theme`. CSS overrides for `[data-bs-theme="dark"]` covering body, cards, tables, code blocks, diffs, inline-edit fields, footer, loading overlay. Bootstrap 5.3's built-in dark mode handles most components automatically.
+- **Delete Button on View Page (8.2)** — `view_application()` route resolves v2 integer app ID by calling `list_applications_v2()` and matching by name. Delete button in Quick Actions card, guarded by `v2_app_id`, `user_can_write`, and `account.has_v2_credentials`. Uses existing `data-confirm-message` pattern for confirmation modal.
+- **API Curl Display (8.3)** — `generate_curl_command()` method on `WaasClient` builds formatted multi-line curl strings with redacted auth tokens (first 10 chars + `...[REDACTED]`). Reusable `api_curl_modal.html` Jinja macro with `api_curl_button(modal_id)` and `api_curl_modal(id, curl_command)`. `copyToClipboard()` JS with clipboard API + fallback. Curl buttons on application list, view, create, and security pages.
 
 ---
 
@@ -298,9 +304,9 @@ pybabel compile -d app/translations
 
 | # | Feature | Complexity | Status |
 |---|---------|------------|--------|
-| 8.1 | Dark mode / light mode toggle | Medium (9 tasks) | ⬜ Pending |
-| 8.2 | Delete app button on view page | Small (3 tasks) | ⬜ Pending |
-| 8.3 | "Show me the API call" curl display | Medium (9 tasks) | ⬜ Pending |
+| 8.1 | Dark mode / light mode toggle | Medium (9 tasks) | ✅ Complete |
+| 8.2 | Delete app button on view page | Small (3 tasks) | ✅ Complete |
+| 8.3 | "Show me the API call" curl display | Medium (9 tasks) | ✅ Complete |
 
 ---
 

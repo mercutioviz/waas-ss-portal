@@ -141,7 +141,11 @@ class WaasClient:
                 logger.warning(f'  v2 Login response not JSON: {response.text[:500]}')
 
             if not response.ok:
-                error_msg = response_data.get('message', response_data.get('error', f'HTTP {response.status_code}'))
+                error_msg = (response_data.get('message')
+                             or response_data.get('error')
+                             or response_data.get('errors')
+                             or response_data.get('detail')
+                             or f'HTTP {response.status_code}')
                 logger.error(f'WaaS v2 Login Error: {response.status_code} - {error_msg}')
                 raise WaasApiError(
                     f'v2 login failed: {error_msg}',
@@ -236,7 +240,7 @@ class WaasClient:
             self.session.headers.pop('auth-api', None)
             self.session.headers['Authorization'] = f'Bearer {self.api_key}'
 
-    def _make_request(self, method, endpoint, data=None, params=None, files=None, timeout=None, api_version='v4'):
+    def _make_request(self, method, endpoint, data=None, params=None, files=None, timeout=None, api_version='v4', _retried=False):
         """Make an API request and handle response.
 
         Args:
@@ -290,7 +294,21 @@ class WaasClient:
             elif data:
                 kwargs['json'] = data
 
-            response = self.session.request(method, url, **kwargs)
+            if api_version == 'v2':
+                # Use a clean request for v2 calls to avoid session/cookie
+                # contamination from prior v4 calls, which causes the v2 API
+                # to reject the token with a "does not match current session" 403.
+                v2_headers = {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'auth-api': self.api_key,
+                }
+                if files:
+                    v2_headers.pop('Content-Type', None)
+                kwargs.pop('headers', None)
+                response = requests.request(method, url, headers=v2_headers, **kwargs)
+            else:
+                response = self.session.request(method, url, **kwargs)
 
             logger.info(f'WaaS API Response: {response.status_code} {response.reason} for {method} {url}')
 
@@ -303,7 +321,28 @@ class WaasClient:
                 logger.warning(f'  Response not JSON. Raw (first 500 chars): {response.text[:500]}')
 
             if not response.ok:
-                error_msg = response_data.get('message', response_data.get('error', f'HTTP {response.status_code}'))
+                error_msg = (response_data.get('message')
+                             or response_data.get('error')
+                             or response_data.get('errors')
+                             or response_data.get('detail')
+                             or f'HTTP {response.status_code}')
+
+                # v2 API returns 403 when cached token is invalidated by a
+                # concurrent session (e.g. WaaS web UI login).  Invalidate
+                # the cached token and retry once with a fresh login.
+                if (response.status_code == 403 and api_version == 'v2'
+                        and not _retried and self._account
+                        and self._account.has_v2_credentials):
+                    logger.warning('v2 API 403 — cached token rejected; forcing re-login and retry.')
+                    self._account.v2_token_expiry = 0
+                    from app import db
+                    db.session.commit()
+                    return self._make_request(
+                        method, endpoint, data=data, params=params,
+                        files=files, timeout=timeout,
+                        api_version=api_version, _retried=True,
+                    )
+
                 logger.error(f'WaaS API Error: {response.status_code} - {error_msg}')
                 logger.error(f'  Full response: {json.dumps(response_data, default=str)[:1000]}')
                 raise WaasApiError(

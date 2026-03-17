@@ -1,15 +1,14 @@
 """Gunicorn production configuration."""
 
-import multiprocessing
-
 # Server socket
 bind = 'unix:/home/admin/waas-ss-portal/waas-portal.sock'
 
 # Worker processes
+# Single worker required for Flask-SocketIO without a message queue (Redis).
+# Gevent handles concurrency via greenlets, so one worker is sufficient.
 worker_class = 'geventwebsocket.gunicorn.workers.GeventWebSocketWorker'
-workers = (2 * multiprocessing.cpu_count()) + 1
+workers = 1
 
-# Pre-load app so APScheduler runs once, not per-worker
 preload_app = True
 
 # Timeouts

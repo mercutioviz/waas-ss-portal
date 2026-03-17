@@ -616,7 +616,7 @@ class WaasClient:
 
         Returns the created application data from the API.
         """
-        return self._make_request('POST', '/applications/', data=data, api_version='v2')
+        return self._make_request('POST', '/applications/', data=data, api_version='v2', timeout=120)
 
     def delete_application_v2(self, app_id):
         """Delete an application via v2 API.

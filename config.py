@@ -5,7 +5,7 @@ from pathlib import Path
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 # Application version
-VERSION = '0.1.0'
+VERSION = '0.2.0'
 
 
 class Config:

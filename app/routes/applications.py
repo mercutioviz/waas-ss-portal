@@ -1,6 +1,6 @@
 import logging
 import uuid
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
 from app.models import WaasAccount, AuditLog, get_user_accounts, get_account_for_user, can_write
@@ -166,19 +166,21 @@ def create_application(account_id):
             'applicationName': form.application_name.data.strip(),
             'hostnames': [{'hostname': form.hostname.data.strip()}],
             'backendIp': form.backend_ip.data.strip(),
-            'backendPort': form.backend_port.data,
+            'backendPort': str(form.backend_port.data),
             'backendType': form.backend_type.data,
-            'useExistingIp': False,
+            'useExistingIp': True,
             'maliciousTraffic': form.malicious_traffic.data,
             'useHttps': form.use_https.data,
             'useHttp': form.use_http.data,
             'redirectHTTP': form.redirect_http.data,
+            'service_type': 'HTTP',
+            'container': -1,
         }
 
         if form.use_https.data:
-            data['httpsServicePort'] = 443
+            data['httpsServicePort'] = '443'
         if form.use_http.data:
-            data['httpServicePort'] = 80
+            data['httpServicePort'] = '80'
 
         try:
             result = client.create_application_v2(data)
@@ -641,12 +643,17 @@ def clone_application(account_id, app_id):
             'applicationName': form.new_name.data.strip(),
             'hostnames': [{'hostname': form.new_hostname.data.strip()}],
             'backendIp': form.backend_ip.data.strip(),
-            'backendPort': form.backend_port.data,
+            'backendPort': str(form.backend_port.data),
             'backendType': form.backend_type.data,
-            'useExistingIp': False,
+            'useExistingIp': True,
             'maliciousTraffic': 'Passive',
             'useHttps': True,
             'useHttp': True,
+            'service_type': 'HTTP',
+            'httpServicePort': '80',
+            'httpsServicePort': '443',
+            'redirectHTTP': True,
+            'container': -1,
         }
 
         new_app_name = form.new_name.data.strip()
@@ -658,71 +665,80 @@ def clone_application(account_id, app_id):
             clone_endpoints = form.clone_endpoints.data
             clone_security = form.clone_security.data
 
-            step_names = [_('Create application')]
+            # Resolve translated step names while still in request context
+            create_step_name = str(_('Create application'))
+            import_step_name = str(_('Import configuration'))
+            security_step_name = str(_('Copy security settings'))
+
+            step_names = [create_step_name]
             if clone_servers or clone_endpoints:
-                step_names.append(_('Import configuration'))
+                step_names.append(import_step_name)
             if clone_security:
-                step_names.append(_('Copy security settings'))
+                step_names.append(security_step_name)
+
+            # Capture app reference for background task context
+            app = current_app._get_current_object()
 
             def _bg_clone():
-                try:
-                    import time
-                    time.sleep(2)  # Wait for client to connect and join room
-                    from app.background_tasks import run_clone_operation
+                with app.app_context():
+                    try:
+                        import time
+                        time.sleep(2)  # Wait for client to connect and join room
+                        from app.background_tasks import run_clone_operation
 
-                    steps = []
+                        steps = []
 
-                    # Step 1: Create
-                    def _create():
-                        client.create_application_v2(create_data)
-                        return {'status': 'success'}
-                    steps.append({'name': str(_('Create application')), 'func': _create})
-
-                    # Step 2: Import
-                    if clone_servers or clone_endpoints:
-                        def _import():
-                            import_data = {}
-                            if clone_servers:
-                                import_data['servers'] = source_app.get('servers', [])
-                            if clone_endpoints:
-                                import_data['endpoints'] = source_app.get('endpoints', {})
-                            client.import_application(
-                                new_app_name, import_data,
-                                include_servers=clone_servers,
-                                include_endpoints=clone_endpoints
-                            )
+                        # Step 1: Create
+                        def _create():
+                            client.create_application_v2(create_data)
                             return {'status': 'success'}
-                        steps.append({'name': str(_('Import configuration')), 'func': _import})
+                        steps.append({'name': create_step_name, 'func': _create})
 
-                    # Step 3: Security
-                    if clone_security:
-                        def _security():
-                            security = client.get_security_config(app_id)
-                            mode = security.get('protection_mode')
-                            if mode:
-                                client.update_security_config(new_app_name, {'protection_mode': mode})
-                            rl = security.get('request_limits', {})
-                            if rl:
-                                client.update_request_limits(new_app_name, rl)
-                            cj = security.get('clickjacking_protection', {})
-                            if cj:
-                                client.update_clickjacking_protection(new_app_name, cj)
-                            dtp = security.get('data_theft_protection', {})
-                            if dtp:
-                                client.update_data_theft_protection(new_app_name, dtp)
-                            return {'status': 'success'}
-                        steps.append({'name': str(_('Copy security settings')), 'func': _security})
+                        # Step 2: Import
+                        if clone_servers or clone_endpoints:
+                            def _import():
+                                import_data = {}
+                                if clone_servers:
+                                    import_data['servers'] = source_app.get('servers', [])
+                                if clone_endpoints:
+                                    import_data['endpoints'] = source_app.get('endpoints', {})
+                                client.import_application(
+                                    new_app_name, import_data,
+                                    include_servers=clone_servers,
+                                    include_endpoints=clone_endpoints
+                                )
+                                return {'status': 'success'}
+                            steps.append({'name': import_step_name, 'func': _import})
 
-                    logger.info(f'Calling run_clone_operation with {len(steps)} steps')
-                    run_clone_operation(session_id, steps)
-                    logger.info(f'Background clone task completed for session {session_id}')
-                except Exception as e:
-                    logger.error(f'Background clone task exception: {e}', exc_info=True)
-                    socketio.emit('clone_progress', {
-                        'phase': 'aborted',
-                        'reason': f'Internal error: {str(e)}',
-                        'results': [],
-                    }, room=session_id)
+                        # Step 3: Security
+                        if clone_security:
+                            def _security():
+                                security = client.get_security_config(app_id)
+                                mode = security.get('protection_mode')
+                                if mode:
+                                    client.update_security_config(new_app_name, {'protection_mode': mode})
+                                rl = security.get('request_limits', {})
+                                if rl:
+                                    client.update_request_limits(new_app_name, rl)
+                                cj = security.get('clickjacking_protection', {})
+                                if cj:
+                                    client.update_clickjacking_protection(new_app_name, cj)
+                                dtp = security.get('data_theft_protection', {})
+                                if dtp:
+                                    client.update_data_theft_protection(new_app_name, dtp)
+                                return {'status': 'success'}
+                            steps.append({'name': security_step_name, 'func': _security})
+
+                        logger.info(f'Calling run_clone_operation with {len(steps)} steps')
+                        run_clone_operation(session_id, steps)
+                        logger.info(f'Background clone task completed for session {session_id}')
+                    except Exception as e:
+                        logger.error(f'Background clone task exception: {e}', exc_info=True)
+                        socketio.emit('clone_progress', {
+                            'phase': 'aborted',
+                            'reason': f'Internal error: {str(e)}',
+                            'results': [],
+                        }, room=session_id)
 
             socketio.start_background_task(_bg_clone)
 
@@ -926,42 +942,55 @@ def bulk_security_execute():
         session_id = str(uuid.uuid4())
         total = len(app_selections)
 
+        # Resolve translated label and capture app ref while in request context
+        bulk_op_name = str(action_info['label'])
+        app = current_app._get_current_object()
+
+        # Pre-build clients per account while current_user is available
+        account_clients = {}
+        items = []
+        for sel in app_selections:
+            parts = sel.split(':', 1)
+            label = parts[1] if len(parts) == 2 else sel
+            items.append({'selection': sel, 'label': label})
+            if len(parts) == 2:
+                acct_id = int(parts[0])
+                if acct_id not in account_clients:
+                    client, account, perm = get_client_for_account(acct_id, min_permission='write')
+                    account_clients[acct_id] = (client, perm)
+
         def _bg_bulk():
-            from app.background_tasks import run_bulk_operation
-            items = []
-            for sel in app_selections:
-                parts = sel.split(':', 1)
-                label = parts[1] if len(parts) == 2 else sel
-                items.append({'selection': sel, 'label': label})
+            with app.app_context():
+                from app.background_tasks import run_bulk_operation
 
-            def _op(item):
-                sel = item['selection']
-                parts = sel.split(':', 1)
-                if len(parts) != 2:
-                    return {'status': 'error', 'error': 'Invalid format'}
-                acct_id, app_name = int(parts[0]), parts[1]
+                def _op(item):
+                    sel = item['selection']
+                    parts = sel.split(':', 1)
+                    if len(parts) != 2:
+                        return {'status': 'error', 'error': 'Invalid format'}
+                    acct_id, app_name = int(parts[0]), parts[1]
 
-                client, account, perm = get_client_for_account(acct_id, min_permission='write')
-                if not client or not can_write(perm):
-                    return {'status': 'error', 'error': 'Insufficient permissions'}
+                    client, perm = account_clients.get(acct_id, (None, None))
+                    if not client or not can_write(perm):
+                        return {'status': 'error', 'error': 'Insufficient permissions'}
 
-                try:
-                    if action_info['method'] == 'security':
-                        client.update_security_config(app_name, action_info['data'])
-                    elif action_info['method'] == 'endpoints':
-                        app_export = client.get_application(app_name)
-                        endpoints = app_export.get('endpoints', {})
-                        for key, value in action_info['data'].items():
-                            if isinstance(value, dict) and isinstance(endpoints.get(key), dict):
-                                endpoints[key].update(value)
-                            else:
-                                endpoints[key] = value
-                        client.import_application(app_name, {'endpoints': endpoints}, include_endpoints=True)
-                    return {'status': 'success'}
-                except WaasApiError as e:
-                    return {'status': 'error', 'error': str(e)}
+                    try:
+                        if action_info['method'] == 'security':
+                            client.update_security_config(app_name, action_info['data'])
+                        elif action_info['method'] == 'endpoints':
+                            app_export = client.get_application(app_name)
+                            endpoints = app_export.get('endpoints', {})
+                            for key, value in action_info['data'].items():
+                                if isinstance(value, dict) and isinstance(endpoints.get(key), dict):
+                                    endpoints[key].update(value)
+                                else:
+                                    endpoints[key] = value
+                            client.import_application(app_name, {'endpoints': endpoints}, include_endpoints=True)
+                        return {'status': 'success'}
+                    except WaasApiError as e:
+                        return {'status': 'error', 'error': str(e)}
 
-            run_bulk_operation(session_id, items, _op, name=str(action_info['label']))
+                run_bulk_operation(session_id, items, _op, name=bulk_op_name)
 
         socketio.start_background_task(_bg_bulk)
 

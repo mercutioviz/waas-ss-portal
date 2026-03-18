@@ -8,7 +8,7 @@ import os
 os.environ.setdefault('FLASK_ENV', 'production')
 
 from app import create_app, db, socketio
-from app.models import User
+from app.models import User, Feature
 
 app = create_app('production')
 
@@ -27,3 +27,9 @@ with app.app_context():
         db.session.add(admin)
         db.session.commit()
         app.logger.info('Created default admin user (admin/admin)')
+
+    # Seed predefined features
+    from run import seed_features
+    created = seed_features()
+    if created:
+        app.logger.info(f'Seeded {created} predefined features.')

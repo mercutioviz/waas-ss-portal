@@ -173,7 +173,7 @@ def create_app(config_name='default'):
         return {'csrf_token': generate_csrf}
 
     # Register blueprints
-    from app.routes import main, auth, admin, accounts, applications, certificates, logs, proxy, templates, reports
+    from app.routes import main, auth, admin, accounts, applications, certificates, logs, proxy, templates, reports, features
     from app.routes import help as help_bp
     app.register_blueprint(main.bp)
     app.register_blueprint(auth.bp)
@@ -184,6 +184,7 @@ def create_app(config_name='default'):
     app.register_blueprint(logs.bp)
     app.register_blueprint(proxy.bp)
     app.register_blueprint(templates.bp)
+    app.register_blueprint(features.bp)
     app.register_blueprint(reports.bp)
     app.register_blueprint(help_bp.bp)
 

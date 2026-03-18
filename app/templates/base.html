@@ -63,6 +63,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint and request.endpoint.startswith('features.') %}active{% endif %}"
+                           href="{{ url_for('features.list_features') }}">
+                            <i class="bi bi-lightning"></i> {{ _('Features') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if request.endpoint and request.endpoint.startswith('reports.') %}active{% endif %}"
                            href="{{ url_for('reports.list_reports') }}">
                             <i class="bi bi-calendar-check"></i> {{ _('Reports') }}

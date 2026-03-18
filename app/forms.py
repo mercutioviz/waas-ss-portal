@@ -493,6 +493,78 @@ class CloneApplicationForm(FlaskForm):
     submit = SubmitField(_l('Clone Application'), render_kw={'class': 'btn btn-primary'})
 
 
+class FeatureForm(FlaskForm):
+    """Form for creating/editing a feature"""
+    name = StringField(
+        _l('Feature Name'),
+        validators=[DataRequired(), Length(max=100)],
+        render_kw={'placeholder': _l('e.g., Harden TLS 1.2+'), 'class': 'form-control'}
+    )
+    description = TextAreaField(
+        _l('Description'),
+        validators=[Optional(), Length(max=500)],
+        render_kw={'placeholder': _l('Describe what this feature does...'), 'class': 'form-control', 'rows': '3'}
+    )
+    category = SelectField(
+        _l('Category'),
+        choices=[
+            ('Security Hardening', _l('Security Hardening')),
+            ('Performance', _l('Performance')),
+            ('Compliance', _l('Compliance')),
+            ('Network', _l('Network')),
+            ('Custom', _l('Custom')),
+        ],
+        default='Custom',
+        validators=[DataRequired()],
+        render_kw={'class': 'form-select'}
+    )
+    is_global = BooleanField(
+        _l('Global Feature (visible to all users)'),
+        default=False,
+        render_kw={'class': 'form-check-input'}
+    )
+    submit = SubmitField(_l('Save Feature'), render_kw={'class': 'btn btn-primary'})
+
+
+class FeatureFromAppForm(FlaskForm):
+    """Form for creating a feature from a live application export"""
+    name = StringField(
+        _l('Feature Name'),
+        validators=[DataRequired(), Length(max=100)],
+        render_kw={'placeholder': _l('e.g., Harden TLS 1.2+'), 'class': 'form-control'}
+    )
+    description = TextAreaField(
+        _l('Description'),
+        validators=[Optional(), Length(max=500)],
+        render_kw={'placeholder': _l('Describe what this feature does...'), 'class': 'form-control', 'rows': '3'}
+    )
+    category = SelectField(
+        _l('Category'),
+        choices=[
+            ('Security Hardening', _l('Security Hardening')),
+            ('Performance', _l('Performance')),
+            ('Compliance', _l('Compliance')),
+            ('Network', _l('Network')),
+            ('Custom', _l('Custom')),
+        ],
+        default='Custom',
+        validators=[DataRequired()],
+        render_kw={'class': 'form-select'}
+    )
+    is_global = BooleanField(
+        _l('Global Feature (visible to all users)'),
+        default=False,
+        render_kw={'class': 'form-check-input'}
+    )
+    include_basic_security = BooleanField(_l('Basic Security (protection mode)'), default=True, render_kw={'class': 'form-check-input'})
+    include_request_limits = BooleanField(_l('Request Limits'), default=True, render_kw={'class': 'form-check-input'})
+    include_clickjacking = BooleanField(_l('Clickjacking Protection'), default=True, render_kw={'class': 'form-check-input'})
+    include_data_theft = BooleanField(_l('Data Theft Protection'), default=True, render_kw={'class': 'form-check-input'})
+    include_servers = BooleanField(_l('Backend Servers'), default=False, render_kw={'class': 'form-check-input'})
+    include_endpoints = BooleanField(_l('Endpoints Configuration'), default=False, render_kw={'class': 'form-check-input'})
+    submit = SubmitField(_l('Create Feature'), render_kw={'class': 'btn btn-primary'})
+
+
 class TemplateFromAppForm(FlaskForm):
     """Form for creating a template from a live application export"""
     name = StringField(

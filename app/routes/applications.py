@@ -76,6 +76,29 @@ def list_applications():
         else:
             error = _('Account not found or inactive.')
 
+    # Build protection_modes lookup from v2 API data
+    protection_modes = {}
+    if applications and client and selected_account:
+        if api_version == 'v2':
+            # v2 response already has basic_security.protection_mode
+            for app in applications:
+                name = app.get('name', '')
+                mode = app.get('basic_security', {}).get('protection_mode')
+                if name and mode:
+                    protection_modes[name] = mode
+        elif selected_account.has_v2_credentials:
+            # v4 mode but account has v2 creds — make secondary v2 call
+            try:
+                v2_result = client.list_applications_v2()
+                v2_apps = _parse_app_list(v2_result)
+                for app in v2_apps:
+                    name = app.get('name', '')
+                    mode = app.get('basic_security', {}).get('protection_mode')
+                    if name and mode:
+                        protection_modes[name] = mode
+            except WaasApiError:
+                logger.debug('Failed to fetch v2 app list for protection modes')
+
     # Generate curl command for the list API call
     list_curl = None
     if client and selected_account:
@@ -95,7 +118,8 @@ def list_applications():
         selected_account_id=selected_account_id,
         api_version=api_version,
         error=error,
-        list_curl=list_curl
+        list_curl=list_curl,
+        protection_modes=protection_modes
     )
 
 

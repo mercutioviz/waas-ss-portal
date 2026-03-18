@@ -122,6 +122,7 @@
                             {% else %}
                             <th class="d-none d-md-table-cell">{{ _('Servers') }}</th>
                             {% endif %}
+                            <th class="d-none d-md-table-cell">{{ _('Block Mode') }}</th>
                             <th>{{ _('Actions') }}</th>
                         </tr>
                     </thead>
@@ -167,6 +168,20 @@
                             {% else %}
                             <td class="d-none d-md-table-cell">{{ servers | length }}</td>
                             {% endif %}
+                            <td class="d-none d-md-table-cell">
+                                {% if api_version == 'v2' %}
+                                    {% set mode = app.get('basic_security', {}).get('protection_mode') %}
+                                {% else %}
+                                    {% set mode = protection_modes.get(app_name) %}
+                                {% endif %}
+                                {% if mode == 'Active' %}
+                                <span class="badge bg-success"><i class="bi bi-shield-check"></i> {{ _('Active') }}</span>
+                                {% elif mode == 'Passive' %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-shield-exclamation"></i> {{ _('Passive') }}</span>
+                                {% else %}
+                                <span class="text-muted">{{ _('N/A') }}</span>
+                                {% endif %}
+                            </td>
                             <td>
                                 <div class="d-flex gap-1">
                                     {% if app_name and app_name != 'Unnamed' %}

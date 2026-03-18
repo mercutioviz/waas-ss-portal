@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Edit') }} {{ feature.name }} - {{ _('Features') }} - WaaS Portal{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="mt-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">{{ _('Dashboard') }}</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('features.list_features') }}">{{ _('Features') }}</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('features.view_feature', feature_id=feature.id) }}">{{ feature.name }}</a></li>
+        <li class="breadcrumb-item active">{{ _('Edit') }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="mt-4 mb-4">
+    <h2><i class="bi bi-pencil-square"></i> {{ _('Edit Feature') }}</h2>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" class="needs-validation" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+                {{ form.name.label(class="form-label") }}
+                {{ form.name() }}
+                {% for error in form.name.errors %}
+                <div class="invalid-feedback d-block">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.description.label(class="form-label") }}
+                {{ form.description() }}
+                {% for error in form.description.errors %}
+                <div class="invalid-feedback d-block">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.category.label(class="form-label") }}
+                {{ form.category() }}
+                {% for error in form.category.errors %}
+                <div class="invalid-feedback d-block">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            {% if current_user.is_admin %}
+            <div class="mb-3 form-check">
+                {{ form.is_global() }}
+                {{ form.is_global.label(class="form-check-label") }}
+                <div class="form-text">{{ _('Global features are visible to all users.') }}</div>
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+                {{ form.submit() }}
+                <a href="{{ url_for('features.view_feature', feature_id=feature.id) }}" class="btn btn-secondary">{{ _('Cancel') }}</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

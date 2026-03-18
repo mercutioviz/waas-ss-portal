@@ -429,6 +429,64 @@ class ConfigTemplate(db.Model):
         self.config_data = json.dumps(value, indent=2)
 
 
+class Feature(db.Model):
+    """Model for curated, trackable config patches (features)"""
+    __tablename__ = 'features'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    category = db.Column(db.String(50), index=True)  # Security Hardening, Performance, Compliance, Network, Custom
+    config_data = db.Column(db.Text, nullable=False, default='{}')
+    is_global = db.Column(db.Boolean, default=False, index=True)
+    is_predefined = db.Column(db.Boolean, default=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = db.relationship('User', backref=db.backref('features', lazy='dynamic'))
+    applications = db.relationship('FeatureApplication', backref='feature', lazy='dynamic', cascade='all, delete-orphan')
+
+    def __repr__(self):
+        return f'<Feature {self.id}: {self.name}>'
+
+    @property
+    def config_dict(self):
+        """Parse config_data JSON string into a dict"""
+        try:
+            return json.loads(self.config_data) if self.config_data else {}
+        except (json.JSONDecodeError, TypeError):
+            return {}
+
+    @config_dict.setter
+    def config_dict(self, value):
+        """Serialize dict to JSON string for storage"""
+        self.config_data = json.dumps(value, indent=2)
+
+
+class FeatureApplication(db.Model):
+    """Junction model tracking which apps a feature has been applied to"""
+    __tablename__ = 'feature_applications'
+    __table_args__ = (
+        db.UniqueConstraint('feature_id', 'account_id', 'app_name', name='uq_feature_app'),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    feature_id = db.Column(db.Integer, db.ForeignKey('features.id', ondelete='CASCADE'), nullable=False, index=True)
+    account_id = db.Column(db.Integer, db.ForeignKey('waas_accounts.id', ondelete='CASCADE'), nullable=False, index=True)
+    app_name = db.Column(db.String(255), nullable=False)
+    applied_at = db.Column(db.DateTime, default=datetime.utcnow)
+    applied_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    # Relationships
+    account = db.relationship('WaasAccount', backref=db.backref('feature_applications', lazy='dynamic'))
+    applier = db.relationship('User', foreign_keys=[applied_by])
+
+    def __repr__(self):
+        return f'<FeatureApplication feature={self.feature_id} app={self.app_name}>'
+
+
 class AccountShare(db.Model):
     """Model for sharing WaaS accounts between portal users"""
     __tablename__ = 'account_shares'

@@ -595,14 +595,19 @@ def update_endpoints(account_id, app_id):
     except ValidationError as e:
         return jsonify({'success': False, 'error': 'Validation failed', 'fields': e.errors}), 400
 
+    api_version = 'v4'  # Currently endpoints update uses v4 only
+    api_method = 'PATCH'
+    api_path = f'/applications/{app_id}/endpoints/'
+
     try:
         application = client.get_application(app_id)
         endpoints = application.get('endpoints', {})
 
         if section == 'tls':
+            # Merge user payload into the full exported https config
             https_cfg = endpoints.get('https', {})
             https_cfg.update(payload)
-            endpoints['https'] = https_cfg
+            api_payload = {'https': https_cfg}
         elif section == 'ports':
             port_num = payload.pop('port', None)
             ports = endpoints.get('ports', [])
@@ -612,11 +617,11 @@ def update_endpoints(account_id, app_id):
                     adv.update(payload)
                     p['advanced_configuration'] = adv
                     break
-            endpoints['ports'] = ports
+            api_payload = {'ports': ports}
         else:
             return jsonify({'success': False, 'error': f'Unknown section: {section}'}), 400
 
-        client.import_application(app_id, {'endpoints': endpoints}, include_endpoints=True)
+        result = client.update_application_endpoints(app_id, api_payload)
 
         AuditLog.log(
             user_id=current_user.id,
@@ -627,8 +632,27 @@ def update_endpoints(account_id, app_id):
             ip_address=request.remote_addr
         )
 
-        return jsonify({'success': True})
+        return jsonify({
+            'success': True,
+            'api': {'version': api_version, 'method': api_method, 'path': api_path}
+        })
     except WaasApiError as e:
+        error_detail = str(e)
+        if e.response_data and isinstance(e.response_data, dict) and 'raw' not in e.response_data:
+            error_detail = f'{error_detail}: {e.response_data}'
+        return jsonify({
+            'success': False,
+            'error': error_detail,
+            'api': {
+                'version': api_version,
+                'method': e.request_method or api_method,
+                'path': e.request_url or api_path,
+                'status': e.status_code,
+                'response': e.response_data if (e.response_data and 'raw' not in (e.response_data if isinstance(e.response_data, dict) else {})) else None,
+            }
+        }), 400
+    except Exception as e:
+        logger.exception(f'Unexpected error updating endpoints for {app_id}')
         return jsonify({'success': False, 'error': str(e)}), 500
 
 

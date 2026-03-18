@@ -564,8 +564,8 @@
                     <div class="col-md-4">
                         <label class="form-label">{{ _('Cipher Suite') }}</label>
                         <select class="form-select form-select-sm" name="cipher_suite_name">
-                            {% for cs in ['Default', 'ECDHE', 'DHE', 'Custom'] %}
-                            <option value="{{ cs }}" {{ 'selected' if https_cfg.get('cipher_suite_name') == cs }}>{{ cs }}</option>
+                            {% for cs, label in [('all', 'All'), ('mozilla_old_compatibility_suite', 'Mozilla Old'), ('mozilla_intermediate_compatibility_suite', 'Mozilla Intermediate'), ('mozilla_modern_compatibility_suite', 'Mozilla Modern'), ('custom', 'Custom')] %}
+                            <option value="{{ cs }}" {{ 'selected' if https_cfg.get('cipher_suite_name') == cs }}>{{ label }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -628,6 +628,10 @@
 
     function ajaxPost(url, data, statusEl) {
         if (statusEl) statusEl.innerHTML = '<span class="spinner-border spinner-border-sm text-primary"></span>';
+        var bodyStr = JSON.stringify(data);
+        console.group('[ajaxPost] ' + url);
+        console.log('Request payload:', data);
+        console.log('Request body:', bodyStr);
         return fetch(url, {
             method: 'POST',
             headers: {
@@ -635,10 +639,30 @@
                 'X-CSRFToken': csrf,
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: JSON.stringify(data)
+            body: bodyStr
         })
-        .then(function(r) { return r.json(); })
-        .then(function(resp) {
+        .then(function(r) {
+            console.log('Response status:', r.status, r.statusText);
+            console.log('Response headers:', [...r.headers.entries()]);
+            return r.text();
+        })
+        .then(function(text) {
+            console.log('Response body (raw):', text.substring(0, 2000));
+            if (text.length > 2000) console.log('... (' + text.length + ' bytes total)');
+            console.groupEnd();
+            var resp;
+            try {
+                resp = JSON.parse(text);
+            } catch(e) {
+                console.error('JSON parse failed:', e.message, 'First 200 chars:', text.substring(0, 200));
+                throw e;
+            }
+            if (resp.api) {
+                console.log('%cWaaS API: ' + (resp.api.version || '?') + ' ' + (resp.api.method || '?') + ' ' + (resp.api.path || '?'),
+                    'color: ' + (resp.success ? 'green' : 'red') + '; font-weight: bold');
+                if (resp.api.status) console.log('WaaS API status:', resp.api.status);
+                if (resp.api.response) console.log('WaaS API response:', resp.api.response);
+            }
             if (resp.success) {
                 if (statusEl) statusEl.innerHTML = '<i class="bi bi-check-circle text-success"></i>';
                 if (window.showToast) window.showToast('Saved successfully.', 'success');
@@ -649,6 +673,7 @@
             }
         })
         .catch(function(err) {
+            console.groupEnd();
             if (statusEl) statusEl.innerHTML = '<i class="bi bi-x-circle text-danger"></i>';
             if (window.showToast) window.showToast('Network error: ' + err.message, 'danger');
         });

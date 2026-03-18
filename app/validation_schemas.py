@@ -48,7 +48,11 @@ ENDPOINT_TLS_FIELDS = {
     'enable_tls_1_3': FieldValidator('bool'),
     'enable_pfs': FieldValidator('bool'),
     'cipher_suite_name': FieldValidator('string', allowed=[
-        'Default', 'ECDHE', 'ECDSA', 'Custom',
+        'all',
+        'mozilla_old_compatibility_suite',
+        'mozilla_intermediate_compatibility_suite',
+        'mozilla_modern_compatibility_suite',
+        'custom',
     ]),
 }
 

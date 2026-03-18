@@ -440,6 +440,14 @@ class WaasClient:
             'include_endpoints': 'true'
         })
 
+    def update_application_endpoints(self, app_id, data):
+        """Update endpoint configuration for an application.
+
+        Uses PATCH /applications/{appName}/endpoints/ to directly update
+        the endpoint settings (TLS, ports, etc.).
+        """
+        return self._make_request('PATCH', f'/applications/{app_id}/endpoints/', data=data)
+
     def import_application(self, app_id, data, include_servers=False, include_endpoints=False):
         """Import (merge) partial config into an existing application.
 

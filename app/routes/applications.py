@@ -179,6 +179,17 @@ def view_application(account_id, app_id):
         except WaasApiError:
             pass  # v2 lookup failed — just hide the delete button
 
+    # Fetch URL access redirect rules
+    url_access_rules = []
+    try:
+        rules_result = client.get_url_access_rules(app_id)
+        if isinstance(rules_result, list):
+            url_access_rules = rules_result
+        elif isinstance(rules_result, dict):
+            url_access_rules = rules_result.get('results', rules_result.get('data', []))
+    except WaasApiError:
+        pass  # feature may not be available
+
     # Generate curl command
     view_curl = None
     try:
@@ -195,7 +206,8 @@ def view_application(account_id, app_id):
         application=application,
         app_id=app_id,
         v2_app_id=v2_app_id,
-        view_curl=view_curl
+        view_curl=view_curl,
+        url_access_rules=url_access_rules
     )
 
 
@@ -944,6 +956,103 @@ def bulk_security(account_id=None):
     """Bulk security operations page."""
     accounts = get_user_accounts(current_user)
     return render_template('applications/bulk_security.html', accounts=accounts)
+
+
+# ---- URL Access & Redirects CRUD ----
+
+@bp.route('/<int:account_id>/<app_id>/url-access-rules/create', methods=['POST'])
+@login_required
+@limiter.limit("20 per minute")
+def create_url_access_rule(account_id, app_id):
+    """Create a new URL access redirect rule."""
+    client, account, perm = get_client_for_account(account_id, min_permission='write')
+    if not client or not can_write(perm):
+        return jsonify({'success': False, 'error': 'Insufficient permissions'}), 403
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'error': 'Request body required'}), 400
+
+    try:
+        result = client.create_url_access_rule(app_id, data)
+
+        AuditLog.log(
+            user_id=current_user.id,
+            action='url_access_rule_create',
+            resource_type='application',
+            resource_id=app_id,
+            details=f'Created URL access rule for app {app_id} on account {account.account_name}',
+            ip_address=request.remote_addr
+        )
+
+        return jsonify({'success': True, 'data': result})
+    except WaasApiError as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/<int:account_id>/<app_id>/url-access-rules/update', methods=['POST'])
+@login_required
+@limiter.limit("20 per minute")
+def update_url_access_rule(account_id, app_id):
+    """Update an existing URL access redirect rule."""
+    client, account, perm = get_client_for_account(account_id, min_permission='write')
+    if not client or not can_write(perm):
+        return jsonify({'success': False, 'error': 'Insufficient permissions'}), 403
+
+    data = request.get_json()
+    if not data or 'rule_name' not in data or 'fields' not in data:
+        return jsonify({'success': False, 'error': 'rule_name and fields required'}), 400
+
+    rule_name = data['rule_name']
+    fields = data['fields']
+
+    try:
+        result = client.update_url_access_rule(app_id, rule_name, fields)
+
+        AuditLog.log(
+            user_id=current_user.id,
+            action='url_access_rule_update',
+            resource_type='application',
+            resource_id=app_id,
+            details=f'Updated URL access rule "{rule_name}" for app {app_id} on account {account.account_name}',
+            ip_address=request.remote_addr
+        )
+
+        return jsonify({'success': True, 'data': result})
+    except WaasApiError as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/<int:account_id>/<app_id>/url-access-rules/delete', methods=['POST'])
+@login_required
+@limiter.limit("20 per minute")
+def delete_url_access_rule(account_id, app_id):
+    """Delete a URL access redirect rule."""
+    client, account, perm = get_client_for_account(account_id, min_permission='write')
+    if not client or not can_write(perm):
+        return jsonify({'success': False, 'error': 'Insufficient permissions'}), 403
+
+    data = request.get_json()
+    if not data or 'rule_name' not in data:
+        return jsonify({'success': False, 'error': 'rule_name required'}), 400
+
+    rule_name = data['rule_name']
+
+    try:
+        client.delete_url_access_rule(app_id, rule_name)
+
+        AuditLog.log(
+            user_id=current_user.id,
+            action='url_access_rule_delete',
+            resource_type='application',
+            resource_id=app_id,
+            details=f'Deleted URL access rule "{rule_name}" for app {app_id} on account {account.account_name}',
+            ip_address=request.remote_addr
+        )
+
+        return jsonify({'success': True})
+    except WaasApiError as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @bp.route('/bulk-security', methods=['POST'])

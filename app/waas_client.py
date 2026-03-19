@@ -759,3 +759,24 @@ class WaasClient:
     def update_proxy_settings(self, app_id, data):
         """Update reverse proxy settings"""
         return self._make_request('PUT', f'/applications/{app_id}/proxy/', data=data)
+
+    # === URL Access & Redirects ===
+    def get_url_access_rules(self, app_id):
+        """List all URL access redirect rules for an application."""
+        return self._make_request('GET', f'/applications/{app_id}/url_access_redirects/rules/')
+
+    def create_url_access_rule(self, app_id, data):
+        """Create a new URL access redirect rule."""
+        return self._make_request('POST', f'/applications/{app_id}/url_access_redirects/rules/', data=data)
+
+    def get_url_access_rule(self, app_id, rule_name):
+        """Get a single URL access redirect rule."""
+        return self._make_request('GET', f'/applications/{app_id}/url_access_redirects/rules/{rule_name}/')
+
+    def update_url_access_rule(self, app_id, rule_name, data):
+        """Update an existing URL access redirect rule."""
+        return self._make_request('PATCH', f'/applications/{app_id}/url_access_redirects/rules/{rule_name}/', data=data)
+
+    def delete_url_access_rule(self, app_id, rule_name):
+        """Delete a URL access redirect rule."""
+        return self._make_request('DELETE', f'/applications/{app_id}/url_access_redirects/rules/{rule_name}/')

@@ -583,6 +583,159 @@
 {% endif %}
 {% endif %}
 
+<!-- URL Access & Redirects -->
+<div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-signpost-2"></i> {{ _('URL Access & Redirects') }} ({{ url_access_rules | length }})</h5>
+        {% if user_can_write %}
+        <button class="btn btn-sm btn-outline-success" data-bs-toggle="collapse" data-bs-target="#addUrlAccessRule">
+            <i class="bi bi-plus-circle"></i> {{ _('Add Rule') }}
+        </button>
+        {% endif %}
+    </div>
+    {% if url_access_rules %}
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>{{ _('Name') }}</th>
+                        <th>{{ _('URL Match') }}</th>
+                        <th>{{ _('Action') }}</th>
+                        <th>{{ _('Redirect URL') }}</th>
+                        <th>{{ _('Status Code') }}</th>
+                        {% if user_can_write %}
+                        <th>{{ _('Actions') }}</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rule in url_access_rules %}
+                    <tr>
+                        <td><strong>{{ rule.get('name', 'N/A') }}</strong></td>
+                        <td><code>{{ rule.get('url_match', rule.get('url', 'N/A')) }}</code></td>
+                        <td>
+                            {% set action = rule.get('action_type', rule.get('action', 'N/A')) %}
+                            {% if action == 'Redirect' %}
+                            <span class="badge bg-info">{{ action }}</span>
+                            {% elif action == 'Allow' %}
+                            <span class="badge bg-success">{{ action }}</span>
+                            {% elif action == 'Deny URL' or action == 'Deny' %}
+                            <span class="badge bg-danger">{{ action }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ action }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ rule.get('redirect_url', '-') | null_dash }}</td>
+                        <td>{{ rule.get('redirect_status_code', '-') | null_dash }}</td>
+                        {% if user_can_write %}
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#editUrlRule-{{ loop.index }}" title="{{ _('Edit') }}">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger btn-delete-url-rule" data-rule-name="{{ rule.get('name', '') }}" data-account-id="{{ account.id }}" data-app-id="{{ app_id }}" title="{{ _('Delete') }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% if user_can_write %}
+                    <tr class="collapse" id="editUrlRule-{{ loop.index }}">
+                        <td colspan="6" class="bg-light">
+                            <form class="url-rule-edit-form p-2" data-account-id="{{ account.id }}" data-app-id="{{ app_id }}" data-rule-name="{{ rule.get('name', '') }}">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-3">
+                                        <label class="form-label">{{ _('URL Match') }}</label>
+                                        <input type="text" class="form-control form-control-sm" name="url_match" value="{{ rule.get('url_match', rule.get('url', '')) }}">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">{{ _('Action') }}</label>
+                                        <select class="form-select form-select-sm" name="action_type">
+                                            {% for val in ['Allow', 'Deny URL', 'Redirect'] %}
+                                            <option value="{{ val }}" {{ 'selected' if rule.get('action_type', rule.get('action')) == val }}>{{ val }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">{{ _('Redirect URL') }}</label>
+                                        <input type="text" class="form-control form-control-sm" name="redirect_url" value="{{ rule.get('redirect_url', '') }}">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">{{ _('Status Code') }}</label>
+                                        <select class="form-select form-select-sm" name="redirect_status_code">
+                                            {% for code in ['301', '302', '303', '307', '308'] %}
+                                            <option value="{{ code }}" {{ 'selected' if rule.get('redirect_status_code')|string == code }}>{{ code }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check-circle"></i> {{ _('Save') }}</button>
+                                        <span class="field-status"></span>
+                                    </div>
+                                </div>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="card-body text-center py-4">
+        <p class="text-muted mb-0">{{ _('No URL access redirect rules configured.') }}</p>
+    </div>
+    {% endif %}
+
+    {% if user_can_write %}
+    <div class="collapse" id="addUrlAccessRule">
+        <div class="card-body border-top bg-light">
+            <h6><i class="bi bi-plus-circle"></i> {{ _('Add URL Access Rule') }}</h6>
+            <form class="url-rule-create-form" data-account-id="{{ account.id }}" data-app-id="{{ app_id }}">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label">{{ _('Rule Name') }}</label>
+                        <input type="text" class="form-control form-control-sm" name="name" required placeholder="{{ _('e.g., redirect-old') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ _('URL Match') }}</label>
+                        <input type="text" class="form-control form-control-sm" name="url_match" required placeholder="{{ _('e.g., /old-page*') }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">{{ _('Action') }}</label>
+                        <select class="form-select form-select-sm" name="action_type">
+                            <option value="Allow">Allow</option>
+                            <option value="Deny URL">Deny URL</option>
+                            <option value="Redirect" selected>Redirect</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ _('Redirect URL') }}</label>
+                        <input type="text" class="form-control form-control-sm" name="redirect_url" placeholder="{{ _('e.g., /new-page') }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">{{ _('Status Code') }}</label>
+                        <select class="form-select form-select-sm" name="redirect_status_code">
+                            <option value="301">301</option>
+                            <option value="302" selected>302</option>
+                            <option value="303">303</option>
+                            <option value="307">307</option>
+                            <option value="308">308</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-plus-circle"></i> {{ _('Create Rule') }}</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#addUrlAccessRule">{{ _('Cancel') }}</button>
+                    <span class="field-status ms-2"></span>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
 <!-- Raw Application Data -->
 <div class="card mt-4">
     <div class="card-header d-flex justify-content-between align-items-center">
@@ -752,6 +905,55 @@
 
             ajaxPost('/applications/' + accountId + '/' + appId + '/endpoints/update',
                 { section: 'tls', data: data }, statusEl);
+        });
+    });
+
+    // URL Access Rule — Create
+    document.querySelectorAll('.url-rule-create-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var accountId = form.dataset.accountId;
+            var appId = form.dataset.appId;
+            var statusEl = form.querySelector('.field-status');
+            var data = {};
+
+            form.querySelectorAll('input, select').forEach(function(el) {
+                if (el.name) data[el.name] = el.value;
+            });
+
+            ajaxPost('/applications/' + accountId + '/' + appId + '/url-access-rules/create', data, statusEl);
+        });
+    });
+
+    // URL Access Rule — Edit
+    document.querySelectorAll('.url-rule-edit-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var accountId = form.dataset.accountId;
+            var appId = form.dataset.appId;
+            var ruleName = form.dataset.ruleName;
+            var statusEl = form.querySelector('.field-status');
+            var fields = {};
+
+            form.querySelectorAll('input, select').forEach(function(el) {
+                if (el.name) fields[el.name] = el.value;
+            });
+
+            ajaxPost('/applications/' + accountId + '/' + appId + '/url-access-rules/update',
+                { rule_name: ruleName, fields: fields }, statusEl);
+        });
+    });
+
+    // URL Access Rule — Delete
+    document.querySelectorAll('.btn-delete-url-rule').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var ruleName = btn.dataset.ruleName;
+            if (!confirm('Delete URL access rule "' + ruleName + '"?')) return;
+            var accountId = btn.dataset.accountId;
+            var appId = btn.dataset.appId;
+            ajaxPost('/applications/' + accountId + '/' + appId + '/url-access-rules/delete',
+                { rule_name: ruleName }, null);
         });
     });
 })();

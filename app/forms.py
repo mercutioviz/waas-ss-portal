@@ -527,6 +527,7 @@ class FeatureForm(FlaskForm):
             ('/applications/{app_id}/data_theft_protection/', _l('Data Theft Protection')),
             ('/applications/{app_id}/endpoints/', _l('Endpoints (TLS/Ports)')),
             ('/applications/{app_id}/import/', _l('Import (Generic)')),
+            ('/applications/{app_id}/url_access_redirects/rules/', _l('URL Access & Redirects')),
         ],
         default='/applications/{app_id}/import/',
         validators=[DataRequired()],

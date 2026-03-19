@@ -448,6 +448,11 @@ class WaasClient:
         """
         return self._make_request('PATCH', f'/applications/{app_id}/endpoints/', data=data)
 
+    def call_api(self, method, endpoint_template, app_id, data):
+        """Call an arbitrary WaaS API endpoint, substituting {app_id}."""
+        endpoint = endpoint_template.replace('{app_id}', app_id)
+        return self._make_request(method, endpoint, data=data)
+
     def import_application(self, app_id, data, include_servers=False, include_endpoints=False):
         """Import (merge) partial config into an existing application.
 

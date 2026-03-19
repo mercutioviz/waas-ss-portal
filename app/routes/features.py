@@ -39,6 +39,26 @@ def get_feature_or_404(feature_id, owner_only=False):
     return feature
 
 
+def apply_feature_to_app(client, feature, app_id):
+    """Apply a feature to an app using its configured API endpoint.
+
+    For /endpoints/ targets, merges feature config on top of the current
+    endpoint config so we don't clobber user's cipher suites, PFS, etc.
+    """
+    payload = feature.config_dict
+
+    if '/endpoints/' in feature.api_endpoint:
+        try:
+            current_config = client.get_application(app_id)
+            current_https = (current_config.get('endpoints', {}).get('https') or {})
+            merged = {**current_https, **(payload.get('https', {}))}
+            payload = {'https': merged}
+        except WaasApiError:
+            pass  # proceed with feature payload as-is
+
+    return client.call_api(feature.api_method, feature.api_endpoint, app_id, payload)
+
+
 CATEGORY_BADGES = {
     'Security Hardening': 'bg-danger',
     'Performance': 'bg-success',
@@ -88,6 +108,8 @@ def add_feature():
             description=form.description.data.strip() if form.description.data else None,
             category=form.category.data,
             is_global=is_global,
+            api_endpoint=form.api_endpoint.data,
+            api_method=form.api_method.data,
             config_data='{}',
         )
         db.session.add(feature)
@@ -149,6 +171,8 @@ def edit_feature(feature_id):
         feature.description = form.description.data.strip() if form.description.data else None
         feature.category = form.category.data
         feature.is_global = form.is_global.data and current_user.is_admin
+        feature.api_endpoint = form.api_endpoint.data
+        feature.api_method = form.api_method.data
         db.session.commit()
 
         AuditLog.log(
@@ -345,16 +369,8 @@ def apply_feature(feature_id, account_id, app_id):
         flash(_('Account not found or insufficient permissions.'), 'danger')
         return redirect(url_for('features.view_feature', feature_id=feature_id))
 
-    include_servers = request.form.get('include_servers') == 'on'
-    include_endpoints = request.form.get('include_endpoints') == 'on'
-
     try:
-        client.import_application(
-            app_id,
-            feature.config_dict,
-            include_servers=include_servers,
-            include_endpoints=include_endpoints,
-        )
+        apply_feature_to_app(client, feature, app_id)
 
         # Upsert FeatureApplication record
         fa = FeatureApplication.query.filter_by(
@@ -407,8 +423,6 @@ def bulk_apply(feature_id):
 
     if request.method == 'POST':
         selected_apps = request.form.getlist('selected_apps')
-        include_servers = request.form.get('include_servers') == 'on'
-        include_endpoints = request.form.get('include_endpoints') == 'on'
 
         if not selected_apps:
             flash(_('No applications selected.'), 'warning')
@@ -429,12 +443,7 @@ def bulk_apply(feature_id):
                 continue
 
             try:
-                client.import_application(
-                    app_name,
-                    feature.config_dict,
-                    include_servers=include_servers,
-                    include_endpoints=include_endpoints,
-                )
+                apply_feature_to_app(client, feature, app_name)
                 # Upsert FeatureApplication
                 fa = FeatureApplication.query.filter_by(
                     feature_id=feature.id, account_id=acct_id, app_name=app_name
@@ -509,6 +518,8 @@ def export_feature(feature_id):
         'description': feature.description or '',
         'category': feature.category or 'Custom',
         'config_data': feature.config_dict,
+        'api_endpoint': feature.api_endpoint,
+        'api_method': feature.api_method,
         'is_global': feature.is_global,
         'exported_at': datetime.now(timezone.utc).isoformat(),
         'version': '1.0',
@@ -575,6 +586,8 @@ def import_feature():
             description=(data.get('description', '') or '').strip()[:500] or None,
             category=data.get('category', 'Custom').strip()[:50],
             is_global=is_global,
+            api_endpoint=data.get('api_endpoint', '/applications/{app_id}/import/').strip()[:255],
+            api_method=data.get('api_method', 'PATCH').strip()[:10],
         )
         feature.config_dict = data['config_data']
         db.session.add(feature)

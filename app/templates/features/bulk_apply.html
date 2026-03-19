@@ -21,19 +21,10 @@
 <form method="POST" data-confirm-message="{{ _('Apply this feature to all selected applications?') }}" data-loading="Applying feature...">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-    <!-- Options -->
-    <div class="card mb-4">
-        <div class="card-header"><h5 class="mb-0">{{ _('Import Options') }}</h5></div>
-        <div class="card-body">
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" name="include_servers" id="bulkServers">
-                <label class="form-check-label" for="bulkServers">{{ _('Include Servers') }}</label>
-            </div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" name="include_endpoints" id="bulkEndpoints">
-                <label class="form-check-label" for="bulkEndpoints">{{ _('Include Endpoints') }}</label>
-            </div>
-        </div>
+    <!-- API info -->
+    <div class="alert alert-info mb-4">
+        <i class="bi bi-info-circle"></i>
+        {{ _('This feature will call') }} <code>{{ feature.api_method }} {{ feature.api_endpoint }}</code> {{ _('for each selected application.') }}
     </div>
 
     <!-- Applications by Account -->

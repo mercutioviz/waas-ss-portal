@@ -518,6 +518,27 @@ class FeatureForm(FlaskForm):
         validators=[DataRequired()],
         render_kw={'class': 'form-select'}
     )
+    api_endpoint = SelectField(
+        _l('API Endpoint'),
+        choices=[
+            ('/applications/{app_id}/basic_security/', _l('Basic Security')),
+            ('/applications/{app_id}/request_limits/', _l('Request Limits')),
+            ('/applications/{app_id}/clickjacking_protection/', _l('Clickjacking Protection')),
+            ('/applications/{app_id}/data_theft_protection/', _l('Data Theft Protection')),
+            ('/applications/{app_id}/endpoints/', _l('Endpoints (TLS/Ports)')),
+            ('/applications/{app_id}/import/', _l('Import (Generic)')),
+        ],
+        default='/applications/{app_id}/import/',
+        validators=[DataRequired()],
+        render_kw={'class': 'form-select'}
+    )
+    api_method = SelectField(
+        _l('API Method'),
+        choices=[('PATCH', 'PATCH'), ('PUT', 'PUT'), ('POST', 'POST')],
+        default='PATCH',
+        validators=[DataRequired()],
+        render_kw={'class': 'form-select'}
+    )
     is_global = BooleanField(
         _l('Global Feature (visible to all users)'),
         default=False,

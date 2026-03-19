@@ -49,6 +49,8 @@
                         <span class="badge bg-secondary">{{ _('Private') }}</span>
                         {% endif %}
                     </td></tr>
+                    <tr><th>{{ _('API Endpoint') }}</th><td><code>{{ feature.api_endpoint }}</code></td></tr>
+                    <tr><th>{{ _('API Method') }}</th><td><span class="badge bg-warning text-dark">{{ feature.api_method }}</span></td></tr>
                     <tr><th>{{ _('Applied To') }}</th><td><span class="badge bg-primary">{{ applied_apps | length }} {{ _('apps') }}</span></td></tr>
                     <tr><th>{{ _('Created') }}</th><td>{{ feature.created_at | datetime_format }}</td></tr>
                     <tr><th>{{ _('Updated') }}</th><td>{{ feature.updated_at | datetime_format }}</td></tr>
@@ -147,15 +149,7 @@
                         <option value="">{{ _('Select account first...') }}</option>
                     </select>
                 </div>
-                <div class="col-12 col-md-4">
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="include_servers" id="applyServers">
-                        <label class="form-check-label" for="applyServers">{{ _('Include Servers') }}</label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="include_endpoints" id="applyEndpoints">
-                        <label class="form-check-label" for="applyEndpoints">{{ _('Include Endpoints') }}</label>
-                    </div>
+                <div class="col-12 col-md-4 d-flex align-items-end">
                 </div>
             </div>
             <div class="mt-3">

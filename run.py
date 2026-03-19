@@ -57,12 +57,15 @@ def seed_features():
             'name': 'Harden TLS 1.2+',
             'description': 'Disable TLS 1.0 and 1.1, enable only TLS 1.2 and 1.3 for stronger encryption.',
             'category': 'Security Hardening',
+            'api_endpoint': '/applications/{app_id}/endpoints/',
+            'api_method': 'PATCH',
             'config_data': {
-                'tls_settings': {
-                    'tls_1_0': 'Off',
-                    'tls_1_1': 'Off',
-                    'tls_1_2': 'On',
-                    'tls_1_3': 'On',
+                'https': {
+                    'enable_tls_1': False,
+                    'enable_tls_1_1': False,
+                    'enable_tls_1_2': True,
+                    'enable_tls_1_3': True,
+                    'enable_ssl_3': False,
                 }
             },
         },
@@ -70,6 +73,8 @@ def seed_features():
             'name': 'Enable Active Protection',
             'description': 'Switch WAF protection mode from Passive (monitor) to Active (block malicious traffic).',
             'category': 'Security Hardening',
+            'api_endpoint': '/applications/{app_id}/basic_security/',
+            'api_method': 'PATCH',
             'config_data': {
                 'protection_mode': 'Active',
             },
@@ -78,43 +83,44 @@ def seed_features():
             'name': 'Strict Request Limits',
             'description': 'Apply restrictive request size limits to defend against oversized payloads and buffer overflow attacks.',
             'category': 'Security Hardening',
+            'api_endpoint': '/applications/{app_id}/request_limits/',
+            'api_method': 'PATCH',
             'config_data': {
-                'request_limits': {
-                    'max_request_length': 32768,
-                    'max_request_line_length': 4096,
-                    'max_number_of_headers': 50,
-                    'max_header_value_length': 4096,
-                    'max_number_of_cookies': 20,
-                    'max_cookie_value_length': 2048,
-                }
+                'max_request_length': 32768,
+                'max_request_line_length': 4096,
+                'max_number_of_headers': 50,
+                'max_header_value_length': 4096,
+                'max_number_of_cookies': 20,
+                'max_cookie_value_length': 2048,
             },
         },
         {
             'name': 'Enable Clickjacking Protection',
             'description': 'Enable clickjacking prevention by adding X-Frame-Options and Content-Security-Policy frame-ancestors headers.',
             'category': 'Compliance',
+            'api_endpoint': '/applications/{app_id}/clickjacking_protection/',
+            'api_method': 'PATCH',
             'config_data': {
-                'clickjacking_protection': {
-                    'status': 'On',
-                    'options': 'Same Origin',
-                }
+                'status': 'On',
+                'options': 'Same Origin',
             },
         },
         {
             'name': 'Enable Data Theft Protection',
             'description': 'Enable masking of credit card numbers and Social Security Numbers in HTTP responses.',
             'category': 'Compliance',
+            'api_endpoint': '/applications/{app_id}/data_theft_protection/',
+            'api_method': 'PATCH',
             'config_data': {
-                'data_theft_protection': {
-                    'status': 'On',
-                    'credit_card_numbers': 'On',
-                    'social_security_numbers': 'On',
-                }
+                'status': 'On',
+                'credit_card_numbers': 'On',
+                'social_security_numbers': 'On',
             },
         },
     ]
 
     created = 0
+    updated = 0
     for feat_data in predefined:
         existing = Feature.query.filter_by(name=feat_data['name'], is_predefined=True).first()
         if not existing:
@@ -125,12 +131,31 @@ def seed_features():
                 category=feat_data['category'],
                 is_global=True,
                 is_predefined=True,
+                api_endpoint=feat_data.get('api_endpoint', '/applications/{app_id}/import/'),
+                api_method=feat_data.get('api_method', 'PATCH'),
             )
             feature.config_dict = feat_data['config_data']
             db.session.add(feature)
             created += 1
+        else:
+            # Update existing predefined features with api_endpoint, api_method, and config
+            changed = False
+            new_endpoint = feat_data.get('api_endpoint', '/applications/{app_id}/import/')
+            new_method = feat_data.get('api_method', 'PATCH')
+            if existing.api_endpoint != new_endpoint:
+                existing.api_endpoint = new_endpoint
+                changed = True
+            if existing.api_method != new_method:
+                existing.api_method = new_method
+                changed = True
+            new_config = json.dumps(feat_data['config_data'], indent=2)
+            if existing.config_data != new_config:
+                existing.config_dict = feat_data['config_data']
+                changed = True
+            if changed:
+                updated += 1
 
-    if created:
+    if created or updated:
         db.session.commit()
     return created
 

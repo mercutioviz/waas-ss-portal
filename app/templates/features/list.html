@@ -144,6 +144,7 @@
                         <td>
                             <a href="{{ url_for('features.view_feature', feature_id=f.id) }}"><strong>{{ f.name }}</strong></a>
                             <span class="badge bg-dark ms-1">{{ _('Built-in') }}</span>
+                            <br><small class="text-muted"><code>{{ f.api_method }} {{ f.api_endpoint | replace('/applications/{app_id}/', '...') }}</code></small>
                         </td>
                         <td><span class="badge {{ category_badges.get(f.category, 'bg-secondary') }}">{{ f.category or 'Custom' }}</span></td>
                         <td>{{ f.description or '' | truncate(50) }}</td>

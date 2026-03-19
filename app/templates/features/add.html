@@ -45,6 +45,24 @@
                 {% endfor %}
             </div>
 
+            <div class="row">
+                <div class="col-md-8 mb-3">
+                    {{ form.api_endpoint.label(class="form-label") }}
+                    {{ form.api_endpoint() }}
+                    <div class="form-text">{{ _('Which WaaS API endpoint to call when applying this feature.') }}</div>
+                    {% for error in form.api_endpoint.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-4 mb-3">
+                    {{ form.api_method.label(class="form-label") }}
+                    {{ form.api_method() }}
+                    {% for error in form.api_method.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
             {% if current_user.is_admin %}
             <div class="mb-3 form-check">
                 {{ form.is_global() }}

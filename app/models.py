@@ -441,6 +441,8 @@ class Feature(db.Model):
     config_data = db.Column(db.Text, nullable=False, default='{}')
     is_global = db.Column(db.Boolean, default=False, index=True)
     is_predefined = db.Column(db.Boolean, default=False, index=True)
+    api_endpoint = db.Column(db.String(255), nullable=False, server_default='/applications/{app_id}/import/')
+    api_method = db.Column(db.String(10), nullable=False, server_default='PATCH')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

@@ -1,6 +1,6 @@
 # WaaS Self-Service Portal — Implementation Plan
 
-*Last updated: 2026-03-17 (Phase 8 complete — all phases done)*
+*Last updated: 2026-03-30 (Phase 9 added — new features & improvements)*
 
 ---
 
@@ -307,6 +307,42 @@ pybabel compile -d app/translations
 | 8.1 | Dark mode / light mode toggle | Medium (9 tasks) | ✅ Complete |
 | 8.2 | Delete app button on view page | Small (3 tasks) | ✅ Complete |
 | 8.3 | "Show me the API call" curl display | Medium (9 tasks) | ✅ Complete |
+
+---
+
+## Phase 9: New Features & Improvements
+
+*Added: 2026-03-30*
+
+### Quick Wins
+
+| # | Task | Description | Status |
+|---|------|-------------|--------|
+| 9.1 | Dashboard Widgets | Add Chart.js charts to dashboard — attack trends over time, top blocked IPs, request volume, server health overview | Pending |
+| 9.2 | Bulk Delete | Allow selecting multiple apps/rules for batch deletion with confirmation | Pending |
+| 9.3 | Notification Preferences | Let users choose email vs. in-app notifications for report delivery | Pending |
+| 9.4 | API Key Expiry Warnings | Track and alert when v2 tokens or API keys are approaching expiration | Pending |
+
+### Medium Effort
+
+| # | Task | Description | Status |
+|---|------|-------------|--------|
+| 9.5 | Real-Time Log Streaming | Use WebSocket infrastructure to stream WAF logs live instead of requiring manual refresh | Pending |
+| 9.6 | Config Drift Detection | Compare an app's current config against its saved template/feature and highlight differences | Pending |
+| 9.7 | Role-Based Dashboard | Different dashboard views for admin vs. user vs. viewer roles | Pending |
+| 9.8 | Search/Filter Everywhere | Global search across apps, accounts, templates, and features | Pending |
+| 9.9 | Application Groups Management | CRUD for app groups with bulk operations per group | Pending |
+| 9.10 | Two-Factor Authentication (2FA) | TOTP support for portal login security | Pending |
+
+### Larger Features
+
+| # | Task | Description | Status |
+|---|------|-------------|--------|
+| 9.11 | REST API for Portal | Expose portal functionality via a JSON API for automation/CI-CD integration | Pending |
+| 9.12 | Webhook/Alert System | Trigger alerts on WAF events (e.g., spike in blocked requests, server health changes) | Pending |
+| 9.13 | Configuration Change History | Track config changes per app over time with diffs (beyond audit log) | Pending |
+| 9.14 | Multi-Language Expansion | Add French, German, Portuguese translations leveraging existing i18n infrastructure | Pending |
+| 9.15 | Terraform/IaC Export | Export app configurations as infrastructure-as-code definitions | Pending |
 
 ---
 

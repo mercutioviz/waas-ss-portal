@@ -53,6 +53,90 @@
 </div>
 
 {% if accounts %}
+<!-- Security Overview Charts -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0"><i class="bi bi-graph-up"></i> {{ _('Security Overview') }}</h5>
+    <div class="btn-group btn-group-sm" id="chart-range-selector">
+        <button type="button" class="btn btn-outline-secondary" data-range="r_1h">1h</button>
+        <button type="button" class="btn btn-outline-secondary active" data-range="r_24h">24h</button>
+        <button type="button" class="btn btn-outline-secondary" data-range="r_7d">7d</button>
+        <button type="button" class="btn btn-outline-secondary" data-range="r_30d">30d</button>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Attack Timeline -->
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-bar-chart-line"></i> {{ _('Event Timeline') }}</h6>
+                <small class="text-muted" id="chart-summary-requests">
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                </small>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 260px;">
+                    <canvas id="attackTimelineChart"></canvas>
+                </div>
+                <div id="timeline-empty" class="text-center py-4 text-muted d-none">
+                    <i class="bi bi-bar-chart-line display-6"></i>
+                    <p class="mt-2 mb-0">{{ _('No log data available for this time range.') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Server Health -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header"><h6 class="mb-0"><i class="bi bi-heart-pulse"></i> {{ _('Server Health') }}</h6></div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <div style="position: relative; height: 220px; width: 220px;">
+                    <canvas id="serverHealthChart"></canvas>
+                </div>
+                <div id="health-empty" class="text-center py-4 text-muted d-none">
+                    <i class="bi bi-heart-pulse display-6"></i>
+                    <p class="mt-2 mb-0">{{ _('No server data.') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Top IPs -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header"><h6 class="mb-0"><i class="bi bi-geo-alt"></i> {{ _('Top Client IPs') }}</h6></div>
+            <div class="card-body">
+                <div style="position: relative; height: 240px;">
+                    <canvas id="topIpsChart"></canvas>
+                </div>
+                <div id="ips-empty" class="text-center py-4 text-muted d-none">
+                    <i class="bi bi-geo-alt display-6"></i>
+                    <p class="mt-2 mb-0">{{ _('No IP data available.') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Attack Types -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header"><h6 class="mb-0"><i class="bi bi-shield-exclamation"></i> {{ _('Top Event Types') }}</h6></div>
+            <div class="card-body">
+                <div style="position: relative; height: 240px;">
+                    <canvas id="attackTypesChart"></canvas>
+                </div>
+                <div id="types-empty" class="text-center py-4 text-muted d-none">
+                    <i class="bi bi-shield-exclamation display-6"></i>
+                    <p class="mt-2 mb-0">{{ _('No event data available.') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="mb-4">
     <h5 class="mb-3"><i class="bi bi-key"></i> {{ _('Your WaaS Accounts') }}</h5>
     <div class="row g-3" id="account-cards">
@@ -198,8 +282,10 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // ---- Existing dashboard counts ----
     fetch('{{ url_for("main.dashboard_counts") }}')
         .then(function(response) { return response.json(); })
         .then(function(data) {
@@ -251,6 +337,186 @@ document.addEventListener('DOMContentLoaded', function() {
                 el.textContent = '\u2014';
             });
         });
+
+    // ---- Chart.js Dashboard Widgets ----
+    {% if accounts %}
+    var isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    var gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    var textColor = isDark ? '#adb5bd' : '#666';
+
+    Chart.defaults.color = textColor;
+    Chart.defaults.borderColor = gridColor;
+
+    var timelineChart = null;
+    var healthChart = null;
+    var ipsChart = null;
+    var typesChart = null;
+
+    function loadChartData(range) {
+        var summaryEl = document.getElementById('chart-summary-requests');
+        summaryEl.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+
+        fetch('{{ url_for("main.dashboard_chart_data") }}?range=' + range)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                renderTimeline(data.attack_timeline);
+                renderServerHealth(data.server_health);
+                renderTopIps(data.top_ips);
+                renderAttackTypes(data.top_attack_types);
+
+                var s = data.summary;
+                summaryEl.textContent = s.total_requests + ' {{ _("events") }} / ' + s.apps_checked + ' {{ _("apps") }}';
+            })
+            .catch(function(err) {
+                console.error('Chart data error:', err);
+                summaryEl.textContent = '{{ _("Failed to load") }}';
+                showEmpty('timeline-empty', 'attackTimelineChart');
+                showEmpty('health-empty', 'serverHealthChart');
+                showEmpty('ips-empty', 'topIpsChart');
+                showEmpty('types-empty', 'attackTypesChart');
+            });
+    }
+
+    function showEmpty(emptyId, canvasId) {
+        document.getElementById(emptyId).classList.remove('d-none');
+        document.getElementById(canvasId).style.display = 'none';
+    }
+
+    function showCanvas(emptyId, canvasId) {
+        document.getElementById(emptyId).classList.add('d-none');
+        document.getElementById(canvasId).style.display = '';
+    }
+
+    function renderTimeline(tl) {
+        if (timelineChart) timelineChart.destroy();
+        if (!tl.labels.length) { showEmpty('timeline-empty', 'attackTimelineChart'); return; }
+        showCanvas('timeline-empty', 'attackTimelineChart');
+        var ctx = document.getElementById('attackTimelineChart').getContext('2d');
+        timelineChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: tl.labels,
+                datasets: [{
+                    label: '{{ _("Events") }}',
+                    data: tl.data,
+                    backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    borderWidth: 1,
+                    borderRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { maxRotation: 45, maxTicksLimit: 12 } },
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+
+    function renderServerHealth(sh) {
+        if (healthChart) healthChart.destroy();
+        var total = sh.up + sh.down + sh.unknown;
+        if (!total) { showEmpty('health-empty', 'serverHealthChart'); return; }
+        showCanvas('health-empty', 'serverHealthChart');
+        var ctx = document.getElementById('serverHealthChart').getContext('2d');
+        healthChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['{{ _("Up") }}', '{{ _("Down") }}', '{{ _("Unknown") }}'],
+                datasets: [{
+                    data: [sh.up, sh.down, sh.unknown],
+                    backgroundColor: ['#198754', '#dc3545', '#6c757d'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } }
+                },
+                cutout: '60%'
+            }
+        });
+    }
+
+    function renderTopIps(ips) {
+        if (ipsChart) ipsChart.destroy();
+        if (!ips.labels.length) { showEmpty('ips-empty', 'topIpsChart'); return; }
+        showCanvas('ips-empty', 'topIpsChart');
+        var ctx = document.getElementById('topIpsChart').getContext('2d');
+        ipsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ips.labels,
+                datasets: [{
+                    label: '{{ _("Requests") }}',
+                    data: ips.data,
+                    backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                    borderColor: 'rgba(13, 110, 253, 1)',
+                    borderWidth: 1,
+                    borderRadius: 3
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0 } },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    function renderAttackTypes(types) {
+        if (typesChart) typesChart.destroy();
+        if (!types.labels.length) { showEmpty('types-empty', 'attackTypesChart'); return; }
+        showCanvas('types-empty', 'attackTypesChart');
+        var colors = [
+            'rgba(220, 53, 69, 0.8)', 'rgba(255, 193, 7, 0.8)', 'rgba(13, 110, 253, 0.8)',
+            'rgba(25, 135, 84, 0.8)', 'rgba(111, 66, 193, 0.8)', 'rgba(253, 126, 20, 0.8)',
+            'rgba(32, 201, 151, 0.8)', 'rgba(102, 16, 242, 0.8)'
+        ];
+        var ctx = document.getElementById('attackTypesChart').getContext('2d');
+        typesChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: types.labels,
+                datasets: [{
+                    data: types.data,
+                    backgroundColor: colors.slice(0, types.labels.length),
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } }
+                }
+            }
+        });
+    }
+
+    // Range selector
+    document.querySelectorAll('#chart-range-selector button').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelector('#chart-range-selector .active').classList.remove('active');
+            btn.classList.add('active');
+            loadChartData(btn.dataset.range);
+        });
+    });
+
+    // Initial load
+    loadChartData('r_24h');
+    {% endif %}
 });
 </script>
 {% endblock extra_js %}

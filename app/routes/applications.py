@@ -146,7 +146,22 @@ def api_list_applications():
                     'name': app.get('name', ''),
                     'app_group': app.get('app_group', ''),
                 })
-        return jsonify({'applications': app_list})
+
+        # Merge v2 integer IDs when account has v2 credentials
+        if account.has_v2_credentials:
+            try:
+                v2_result = client.list_applications_v2()
+                v2_apps = _parse_app_list(v2_result)
+                v2_map = {}
+                for v2_app in v2_apps:
+                    if isinstance(v2_app, dict) and v2_app.get('name'):
+                        v2_map[v2_app['name']] = v2_app.get('id')
+                for item in app_list:
+                    item['v2_id'] = v2_map.get(item['name'])
+            except WaasApiError:
+                pass  # v2 lookup failed — leave v2_id absent
+
+        return jsonify({'applications': app_list, 'has_v2_credentials': account.has_v2_credentials})
     except WaasApiError as e:
         return jsonify({'applications': [], 'error': str(e)}), 500
 
@@ -1240,6 +1255,157 @@ def bulk_security_execute():
     return render_template(
         'applications/bulk_security_results.html',
         action_label=action_info['label'],
+        results=results,
+        total=total,
+        succeeded=succeeded,
+        failed=failed,
+    )
+
+
+# ---- Bulk Delete ----
+
+@bp.route('/bulk-delete', methods=['GET'])
+@bp.route('/bulk-delete/<int:account_id>', methods=['GET'])
+@login_required
+def bulk_delete(account_id=None):
+    """Bulk delete applications page."""
+    if current_user.role == 'viewer':
+        flash(_('You do not have permission to delete applications.'), 'danger')
+        return redirect(url_for('applications.list_applications'))
+    accounts = get_user_accounts(current_user)
+    # Only show accounts with v2 credentials (required for deletion)
+    v2_accounts = [a for a in accounts if a.has_v2_credentials]
+    return render_template('applications/bulk_delete.html', accounts=v2_accounts, all_accounts=accounts)
+
+
+@bp.route('/bulk-delete', methods=['POST'])
+@login_required
+@limiter.limit("5 per minute")
+def bulk_delete_execute():
+    """Execute a bulk delete operation on selected applications."""
+    if current_user.role == 'viewer':
+        flash(_('You do not have permission to delete applications.'), 'danger')
+        return redirect(url_for('applications.bulk_delete'))
+
+    app_selections = request.form.getlist('apps')  # format: "account_id:v2_id:app_name"
+
+    if not app_selections:
+        flash(_('Please select at least one application to delete.'), 'warning')
+        return redirect(url_for('applications.bulk_delete'))
+
+    use_websocket = request.form.get('use_websocket') == '1'
+
+    if use_websocket:
+        session_id = str(uuid.uuid4())
+        total = len(app_selections)
+
+        app = current_app._get_current_object()
+
+        # Pre-build clients per account while current_user is available
+        account_clients = {}
+        items = []
+        for sel in app_selections:
+            parts = sel.split(':', 2)
+            label = parts[2] if len(parts) == 3 else sel
+            items.append({'selection': sel, 'label': label})
+            if len(parts) >= 2:
+                acct_id = int(parts[0])
+                if acct_id not in account_clients:
+                    client, account, perm = get_client_for_account(acct_id, min_permission='write')
+                    account_clients[acct_id] = (client, account, perm)
+
+        def _bg_bulk():
+            with app.app_context():
+                from app.background_tasks import run_bulk_operation
+
+                def _op(item):
+                    sel = item['selection']
+                    parts = sel.split(':', 2)
+                    if len(parts) != 3:
+                        return {'status': 'error', 'error': 'Invalid format'}
+                    acct_id, v2_id, app_name = int(parts[0]), parts[1], parts[2]
+
+                    client, account, perm = account_clients.get(acct_id, (None, None, None))
+                    if not client or not can_write(perm):
+                        return {'status': 'error', 'error': 'Insufficient permissions'}
+
+                    if not account.has_v2_credentials:
+                        return {'status': 'error', 'error': 'v2 credentials required'}
+
+                    try:
+                        client.delete_application_v2(v2_id)
+                        return {'status': 'success'}
+                    except WaasApiError as e:
+                        return {'status': 'error', 'error': str(e)}
+
+                run_bulk_operation(session_id, items, _op, name='Bulk Delete Applications')
+
+        socketio.start_background_task(_bg_bulk)
+
+        return render_template(
+            'applications/bulk_delete_progress.html',
+            session_id=session_id,
+            total=total,
+        )
+
+    # Synchronous fallback
+    results = []
+    for sel in app_selections:
+        parts = sel.split(':', 2)
+        if len(parts) != 3:
+            continue
+        acct_id, v2_id, app_name = int(parts[0]), parts[1], parts[2]
+
+        client, account, perm = get_client_for_account(acct_id, min_permission='write')
+        if not client or not can_write(perm):
+            results.append({
+                'app_name': app_name,
+                'account_name': f'Account #{acct_id}',
+                'status': 'error',
+                'error': 'Insufficient permissions',
+            })
+            continue
+
+        if not account.has_v2_credentials:
+            results.append({
+                'app_name': app_name,
+                'account_name': account.account_name,
+                'status': 'error',
+                'error': 'v2 credentials required',
+            })
+            continue
+
+        try:
+            client.delete_application_v2(v2_id)
+            results.append({
+                'app_name': app_name,
+                'account_name': account.account_name,
+                'status': 'success',
+                'error': None,
+            })
+        except WaasApiError as e:
+            results.append({
+                'app_name': app_name,
+                'account_name': account.account_name,
+                'status': 'error',
+                'error': str(e),
+            })
+
+    total = len(results)
+    succeeded = sum(1 for r in results if r['status'] == 'success')
+    failed = total - succeeded
+
+    AuditLog.log(
+        user_id=current_user.id,
+        action='bulk_delete',
+        resource_type='application',
+        resource_id=None,
+        details=f'Bulk delete: {total} apps ({succeeded} ok, {failed} failed)',
+        ip_address=request.remote_addr
+    )
+
+    return render_template(
+        'applications/bulk_delete_results.html',
         results=results,
         total=total,
         succeeded=succeeded,

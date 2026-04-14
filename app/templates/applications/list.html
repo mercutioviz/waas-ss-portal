@@ -23,9 +23,14 @@
         {% if list_curl %}{{ api_curl_button('listCurlModal') }}{% endif %}
     </div>
     {% if current_user.role != 'viewer' %}
-    <a href="{{ url_for('applications.bulk_security') }}" class="btn btn-outline-danger btn-sm">
-        <i class="bi bi-shield-gear"></i> {{ _('Bulk Security') }}
-    </a>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('applications.bulk_security') }}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-shield-gear"></i> {{ _('Bulk Security') }}
+        </a>
+        <a href="{{ url_for('applications.bulk_delete') }}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-trash"></i> {{ _('Bulk Delete') }}
+        </a>
+    </div>
     {% endif %}
 </div>
 

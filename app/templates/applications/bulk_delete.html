@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Bulk Delete Applications') }} - WaaS Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+    <h2><i class="bi bi-trash"></i> {{ _('Bulk Delete Applications') }}</h2>
+    <a href="{{ url_for('applications.list_applications') }}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> {{ _('Back') }}</a>
+</div>
+
+<div class="alert alert-danger">
+    <i class="bi bi-exclamation-triangle-fill"></i> <strong>{{ _('Warning:') }}</strong> {{ _('Application deletion is permanent and cannot be undone. All associated configuration, servers, and security policies will be removed.') }}
+</div>
+
+<form method="POST" data-confirm-message="{{ _('Are you sure you want to permanently delete all selected applications? This action CANNOT be undone.') }}" data-loading="{{ _('Deleting applications...') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <!-- Application Selection -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">{{ _('Select Applications to Delete') }}</h5>
+            <span class="badge bg-danger" id="selectedCount">0 {{ _('selected') }}</span>
+        </div>
+        <div class="card-body">
+            {% if accounts %}
+            {% for account in accounts %}
+            <div class="mb-3">
+                <div class="d-flex align-items-center mb-2">
+                    <a class="text-decoration-none fw-bold" data-bs-toggle="collapse" href="#acctApps-{{ account.id }}" role="button">
+                        <i class="bi bi-chevron-down"></i> <i class="bi bi-key"></i> {{ account.account_name }}
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2 select-all-btn" data-account-id="{{ account.id }}">{{ _('Select All') }}</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary ms-1 select-none-btn" data-account-id="{{ account.id }}">{{ _('None') }}</button>
+                </div>
+                <div class="collapse show" id="acctApps-{{ account.id }}">
+                    <div class="ps-4" id="appList-{{ account.id }}">
+                        <div class="text-muted"><small><i class="bi bi-hourglass-split"></i> {{ _('Loading applications...') }}</small></div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="text-muted">{{ _('No accounts with v2 credentials available. Application deletion requires v2 API credentials (email/password) on the account.') }}</p>
+            {% endif %}
+
+            {% if all_accounts|length > accounts|length %}
+            <div class="alert alert-info mt-3 mb-0">
+                <i class="bi bi-info-circle"></i> {{ _('%(count)s account(s) hidden — v2 credentials (email/password) are required for application deletion.', count=all_accounts|length - accounts|length) }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" name="use_websocket" value="1" id="useWebsocket" checked>
+        <label class="form-check-label" for="useWebsocket">{{ _('Show real-time progress') }}</label>
+    </div>
+
+    <button type="submit" class="btn btn-danger btn-lg" id="deleteBtn" disabled>
+        <i class="bi bi-trash"></i> {{ _('Delete Selected Applications') }}
+    </button>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var accounts = {{ accounts | map(attribute='id') | list | tojson }};
+
+    // Load apps for each account
+    accounts.forEach(function(accountId) {
+        fetch('/applications/api/list?account_id=' + accountId, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var container = document.getElementById('appList-' + accountId);
+            if (!container) return;
+
+            var apps = data.applications || [];
+            if (apps.length === 0) {
+                container.innerHTML = '<small class="text-muted">{{ _("No applications found.") }}</small>';
+                return;
+            }
+
+            var html = '';
+            var skipped = 0;
+            apps.forEach(function(app) {
+                if (!app.v2_id) {
+                    skipped++;
+                    return;
+                }
+                var value = accountId + ':' + app.v2_id + ':' + app.name;
+                html += '<div class="form-check mb-1">' +
+                    '<input class="form-check-input app-check" type="checkbox" name="apps" value="' + value + '" data-account-id="' + accountId + '">' +
+                    '<label class="form-check-label">' + app.name + (app.app_group ? ' <span class="badge bg-info">' + app.app_group + '</span>' : '') +
+                    ' <small class="text-muted">(v2 ID: ' + app.v2_id + ')</small></label>' +
+                    '</div>';
+            });
+            if (skipped > 0) {
+                html += '<small class="text-muted d-block mt-1"><i class="bi bi-info-circle"></i> ' + skipped + ' app(s) skipped — no v2 ID resolved.</small>';
+            }
+            if (html === '') {
+                html = '<small class="text-muted">{{ _("No applications with v2 IDs found.") }}</small>';
+            }
+            container.innerHTML = html;
+
+            // Re-bind count after loading
+            container.querySelectorAll('.app-check').forEach(function(cb) {
+                cb.addEventListener('change', updateCount);
+            });
+        })
+        .catch(function() {
+            var container = document.getElementById('appList-' + accountId);
+            if (container) container.innerHTML = '<small class="text-danger">{{ _("Failed to load applications.") }}</small>';
+        });
+    });
+
+    function updateCount() {
+        var count = document.querySelectorAll('.app-check:checked').length;
+        var badge = document.getElementById('selectedCount');
+        var btn = document.getElementById('deleteBtn');
+        if (badge) badge.textContent = count + ' selected';
+        if (btn) btn.disabled = count === 0;
+    }
+
+    // Select All / None buttons
+    document.querySelectorAll('.select-all-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var acctId = btn.dataset.accountId;
+            document.querySelectorAll('.app-check[data-account-id="' + acctId + '"]').forEach(function(cb) { cb.checked = true; });
+            updateCount();
+        });
+    });
+
+    document.querySelectorAll('.select-none-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var acctId = btn.dataset.accountId;
+            document.querySelectorAll('.app-check[data-account-id="' + acctId + '"]').forEach(function(cb) { cb.checked = false; });
+            updateCount();
+        });
+    });
+})();
+</script>
+{% endblock %}

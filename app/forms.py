@@ -83,6 +83,15 @@ class RegistrationForm(FlaskForm):
             raise ValidationError(_l('Email already registered.'))
 
 
+class NotificationPreferencesForm(FlaskForm):
+    """Form for user notification preferences"""
+    notify_report_email = BooleanField(_l('Email notifications'), default=True, render_kw={'class': 'form-check-input'})
+    notify_report_inapp = BooleanField(_l('In-app notifications'), default=True, render_kw={'class': 'form-check-input'})
+    notify_cert_expiry_email = BooleanField(_l('Email notifications'), default=True, render_kw={'class': 'form-check-input'})
+    notify_cert_expiry_inapp = BooleanField(_l('In-app notifications'), default=True, render_kw={'class': 'form-check-input'})
+    submit = SubmitField(_l('Save Preferences'), render_kw={'class': 'btn btn-primary'})
+
+
 class ChangePasswordForm(FlaskForm):
     """Form for changing password"""
     current_password = PasswordField(

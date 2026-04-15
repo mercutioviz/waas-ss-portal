@@ -165,6 +165,14 @@ def create_app(config_name='default'):
         """Make get_theme available to all templates"""
         return {'get_theme': get_theme}
 
+    # Context processor to inject unread notification count
+    @app.context_processor
+    def inject_notification_count():
+        if current_user and getattr(current_user, 'is_authenticated', False):
+            from app.models import Notification
+            return {'notification_count': Notification.unread_count(current_user.id)}
+        return {'notification_count': 0}
+
     # Context processor to inject CSRF token function
     @app.context_processor
     def inject_csrf_token():

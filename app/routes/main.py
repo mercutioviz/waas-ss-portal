@@ -1,5 +1,5 @@
 from collections import Counter, defaultdict
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from flask import Blueprint, render_template, redirect, url_for, jsonify, request
 from flask_login import login_required, current_user
 import logging
@@ -132,6 +132,32 @@ def dashboard_counts():
         total_apps += acct_info['app_count']
         total_certs += acct_info['cert_count']
         account_data.append(acct_info)
+
+    # Create in-app notifications for expiring certs (deduplicated: 1 per cert per 24h)
+    if expiring_certs:
+        try:
+            from app.models import Notification
+            from app import db
+            if current_user.notify_cert_expiry_inapp is None or current_user.notify_cert_expiry_inapp:
+                cutoff = datetime.utcnow() - timedelta(hours=24)
+                for cert in expiring_certs:
+                    dedup_title = f'Certificate expiring: {cert["name"]}'
+                    existing = Notification.query.filter(
+                        Notification.user_id == current_user.id,
+                        Notification.type == 'cert_expiry',
+                        Notification.title == dedup_title,
+                        Notification.created_at >= cutoff,
+                    ).first()
+                    if not existing:
+                        Notification.create(
+                            user_id=current_user.id,
+                            type='cert_expiry',
+                            title=dedup_title,
+                            message=f'{cert["name"]} on account {cert["account_name"]} expires in {cert["days_remaining"]} days ({cert["expiry"]}).',
+                            link=f'/certificates/?account_id={cert["account_id"]}',
+                        )
+        except Exception as e:
+            logger.warning(f'Failed to create cert expiry notification: {e}')
 
     return jsonify({
         'app_count': total_apps,

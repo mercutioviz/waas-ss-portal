@@ -26,6 +26,12 @@ class User(UserMixin, db.Model):
     locale = db.Column(db.String(10), default='en')
     theme = db.Column(db.String(10), default='light')
 
+    # Notification preferences
+    notify_report_email = db.Column(db.Boolean, default=True)
+    notify_report_inapp = db.Column(db.Boolean, default=True)
+    notify_cert_expiry_email = db.Column(db.Boolean, default=True)
+    notify_cert_expiry_inapp = db.Column(db.Boolean, default=True)
+
     # Relationships
     waas_accounts = db.relationship('WaasAccount', backref='owner', lazy='dynamic', cascade='all, delete-orphan')
 
@@ -645,3 +651,48 @@ def get_account_for_user(account_id, user, require_active=True, min_permission='
             return account, share.permission
 
     return None, None
+
+
+class Notification(db.Model):
+    """Model for in-app user notifications"""
+    __tablename__ = 'notifications'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    type = db.Column(db.String(50), nullable=False)  # 'report', 'cert_expiry'
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    link = db.Column(db.String(500), nullable=True)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    # Relationship
+    user = db.relationship('User', backref=db.backref('notifications', lazy='dynamic'))
+
+    def __repr__(self):
+        return f'<Notification {self.id}: {self.type} for User {self.user_id}>'
+
+    @staticmethod
+    def create(user_id, type, title, message, link=None):
+        """Create and persist a new notification."""
+        n = Notification(
+            user_id=user_id,
+            type=type,
+            title=title,
+            message=message,
+            link=link,
+        )
+        db.session.add(n)
+        db.session.commit()
+        return n
+
+    @staticmethod
+    def unread_count(user_id):
+        """Return count of unread notifications for user."""
+        return Notification.query.filter_by(user_id=user_id, is_read=False).count()
+
+    @staticmethod
+    def get_recent(user_id, limit=20):
+        """Return recent notifications for user, newest first."""
+        return Notification.query.filter_by(user_id=user_id)\
+            .order_by(Notification.created_at.desc()).limit(limit).all()

@@ -17,8 +17,10 @@
                     <tr><th>{{ _('Account Created') }}</th><td>{{ current_user.created_at|datetime_format }}</td></tr>
                 </table>
             </div>
-            <div class="card-footer">
+            <div class="card-footer d-flex gap-2 flex-wrap">
                 <a href="{{ url_for('auth.change_password') }}" class="btn btn-primary btn-sm"><i class="bi bi-lock"></i> {{ _('Change Password') }}</a>
+                <a href="{{ url_for('auth.notification_preferences') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-bell"></i> {{ _('Notification Preferences') }}</a>
+                <a href="{{ url_for('auth.notifications') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-bell-fill"></i> {{ _('Notifications') }}</a>
             </div>
         </div>
     </div>

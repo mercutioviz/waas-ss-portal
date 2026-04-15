@@ -276,6 +276,22 @@ def run_scheduled_reports(app):
                 report.next_run_at = compute_next_run(report)
                 db.session.commit()
 
+                # Create in-app notification if user preference allows it
+                try:
+                    from app.models import Notification, User
+                    owner = db.session.get(User, report.user_id)
+                    if owner and (owner.notify_report_inapp is None or owner.notify_report_inapp):
+                        report_label = {'waf_summary': 'WAF Summary', 'access_summary': 'Access Summary', 'security_overview': 'Security Overview'}.get(report.report_type, report.report_type)
+                        Notification.create(
+                            user_id=report.user_id,
+                            type='report',
+                            title=f'Report ready: {report.name}',
+                            message=f'{report_label} completed successfully.',
+                            link='/reports/',
+                        )
+                except Exception as notif_err:
+                    logger.warning(f'Failed to create notification for report {report.id}: {notif_err}')
+
                 logger.info(f'Report {report.id} completed successfully')
 
             except Exception as e:

@@ -3,8 +3,8 @@ from flask_login import login_user, logout_user, login_required, current_user
 from flask_babel import gettext as _
 from datetime import datetime
 from app import db
-from app.models import User, AuditLog
-from app.forms import LoginForm, ChangePasswordForm
+from app.models import User, AuditLog, Notification
+from app.forms import LoginForm, ChangePasswordForm, NotificationPreferencesForm
 from app import limiter
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -167,3 +167,79 @@ def set_theme():
 
     next_url = request.form.get('next') or request.referrer or url_for('main.dashboard')
     return redirect(next_url)
+
+
+@bp.route('/notification-preferences', methods=['GET', 'POST'])
+@login_required
+def notification_preferences():
+    """View and update notification preferences"""
+    form = NotificationPreferencesForm()
+    if form.validate_on_submit():
+        current_user.notify_report_email = form.notify_report_email.data
+        current_user.notify_report_inapp = form.notify_report_inapp.data
+        current_user.notify_cert_expiry_email = form.notify_cert_expiry_email.data
+        current_user.notify_cert_expiry_inapp = form.notify_cert_expiry_inapp.data
+        db.session.commit()
+        flash(_('Notification preferences saved.'), 'success')
+        return redirect(url_for('auth.profile'))
+
+    # Pre-populate form from current user
+    if request.method == 'GET':
+        form.notify_report_email.data = current_user.notify_report_email if current_user.notify_report_email is not None else True
+        form.notify_report_inapp.data = current_user.notify_report_inapp if current_user.notify_report_inapp is not None else True
+        form.notify_cert_expiry_email.data = current_user.notify_cert_expiry_email if current_user.notify_cert_expiry_email is not None else True
+        form.notify_cert_expiry_inapp.data = current_user.notify_cert_expiry_inapp if current_user.notify_cert_expiry_inapp is not None else True
+
+    return render_template('auth/notification_preferences.html', form=form)
+
+
+@bp.route('/notifications')
+@login_required
+def notifications():
+    """Full notifications list page"""
+    notifs = Notification.get_recent(current_user.id, limit=50)
+    return render_template('auth/notifications.html', notifications=notifs)
+
+
+@bp.route('/notifications/api')
+@login_required
+def notifications_api():
+    """JSON API: recent notifications + unread count for navbar AJAX"""
+    notifs = Notification.get_recent(current_user.id, limit=10)
+    return jsonify({
+        'unread_count': Notification.unread_count(current_user.id),
+        'notifications': [
+            {
+                'id': n.id,
+                'type': n.type,
+                'title': n.title,
+                'message': n.message,
+                'link': n.link,
+                'is_read': n.is_read,
+                'created_at': n.created_at.isoformat() if n.created_at else None,
+            }
+            for n in notifs
+        ],
+    })
+
+
+@bp.route('/notifications/read/<int:id>', methods=['POST'])
+@login_required
+def notification_mark_read(id):
+    """Mark a single notification as read"""
+    notif = Notification.query.filter_by(id=id, user_id=current_user.id).first_or_404()
+    notif.is_read = True
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+
+@bp.route('/notifications/read-all', methods=['POST'])
+@login_required
+def notification_mark_all_read():
+    """Mark all notifications as read"""
+    Notification.query.filter_by(user_id=current_user.id, is_read=False).update({'is_read': True})
+    db.session.commit()
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'status': 'ok'})
+    flash(_('All notifications marked as read.'), 'success')
+    return redirect(url_for('auth.notifications'))

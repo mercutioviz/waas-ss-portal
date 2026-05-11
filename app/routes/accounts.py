@@ -36,6 +36,8 @@ def add_account():
         # Store credentials (at least one set is guaranteed by form validation)
         if form.api_key.data and form.api_key.data.strip():
             account.api_key = form.api_key.data.strip()
+        if form.api_key_expiry.data:
+            account.api_key_expiry = form.api_key_expiry.data
         if form.waas_email.data and form.waas_email.data.strip():
             account.waas_email = form.waas_email.data.strip()
         if form.waas_password.data and form.waas_password.data.strip():
@@ -114,9 +116,11 @@ def edit_account(account_id):
         form.api_key.data = ''
         form.waas_email.data = account.waas_email or ''
         form.waas_password.data = ''
+        form.api_key_expiry.data = account.api_key_expiry
 
     if form.is_submitted() and form.validate(is_edit=True, account=account):
         account.account_name = form.account_name.data
+        account.api_key_expiry = form.api_key_expiry.data
 
         # Update credentials only if new values provided
         if form.api_key.data and form.api_key.data.strip():
@@ -235,8 +239,9 @@ def rotate_key(account_id):
                 flash(_('New API key verification failed: %(error)s. Key was NOT saved.', error=str(e)), 'danger')
                 return render_template('accounts/rotate_key.html', form=form, account=account)
 
-        # Save the new key
+        # Save the new key and optional expiry
         account.api_key = new_key
+        account.api_key_expiry = form.api_key_expiry.data
         # Invalidate cached v2 tokens
         account.v2_auth_token = None
         account.v2_token_expiry = None

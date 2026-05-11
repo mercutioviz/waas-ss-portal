@@ -28,10 +28,16 @@
                             </div>
                         </div>
                         <div class="card-body">
-                            <div class="mb-0">
+                            <div class="mb-3">
                                 {{ form.api_key(class="form-control font-monospace", placeholder=_("Leave blank to keep current key")) }}
                                 <div class="form-text">{{ _('Leave blank to keep the existing API key.') }}</div>
                                 {% for error in form.api_key.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            </div>
+                            <div class="mb-0">
+                                <label for="api_key_expiry" class="form-label">{{ _('API Key Expiry Date') }}</label>
+                                {{ form.api_key_expiry() }}
+                                <div class="form-text">{{ _('Optional. Set a reminder date for when this API key expires.') }}</div>
+                                {% for error in form.api_key_expiry.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
                         </div>
                     </div>

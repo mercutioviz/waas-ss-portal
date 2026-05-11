@@ -133,6 +133,49 @@ def dashboard_counts():
         total_certs += acct_info['cert_count']
         account_data.append(acct_info)
 
+    # Check for expiring API keys
+    expiring_keys = []
+    for account in accounts:
+        if account.api_key_expiry:
+            days_remaining = (account.api_key_expiry - today).days
+            if days_remaining <= 30:
+                expiring_keys.append({
+                    'account_id': account.id,
+                    'account_name': account.account_name,
+                    'expiry': str(account.api_key_expiry),
+                    'days_remaining': days_remaining,
+                })
+
+    # Create in-app notifications for expiring API keys (deduplicated: 1 per account per 24h)
+    if expiring_keys:
+        try:
+            from app.models import Notification
+            from app import db as _db
+            if current_user.notify_apikey_expiry_inapp is None or current_user.notify_apikey_expiry_inapp:
+                cutoff = datetime.utcnow() - timedelta(hours=24)
+                for key_info in expiring_keys:
+                    dedup_title = f'API key expiring: {key_info["account_name"]}'
+                    existing = Notification.query.filter(
+                        Notification.user_id == current_user.id,
+                        Notification.type == 'api_key_expiry',
+                        Notification.title == dedup_title,
+                        Notification.created_at >= cutoff,
+                    ).first()
+                    if not existing:
+                        if key_info['days_remaining'] <= 0:
+                            msg = f'API key for account {key_info["account_name"]} has expired ({key_info["expiry"]}).'
+                        else:
+                            msg = f'API key for account {key_info["account_name"]} expires in {key_info["days_remaining"]} days ({key_info["expiry"]}).'
+                        Notification.create(
+                            user_id=current_user.id,
+                            type='api_key_expiry',
+                            title=dedup_title,
+                            message=msg,
+                            link=f'/accounts/{key_info["account_id"]}',
+                        )
+        except Exception as e:
+            logger.warning(f'Failed to create API key expiry notification: {e}')
+
     # Create in-app notifications for expiring certs (deduplicated: 1 per cert per 24h)
     if expiring_certs:
         try:
@@ -164,6 +207,7 @@ def dashboard_counts():
         'cert_count': total_certs,
         'accounts': account_data,
         'expiring_certs': sorted(expiring_certs, key=lambda c: c['days_remaining']),
+        'expiring_keys': sorted(expiring_keys, key=lambda k: k['days_remaining']),
         'errors': errors,
     })
 

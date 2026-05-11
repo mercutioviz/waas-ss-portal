@@ -42,6 +42,24 @@
                     <tr><th>{{ _('Owner') }}</th><td>{{ account.owner.display_name }}</td></tr>
                     <tr><th>{{ _('Created') }}</th><td>{{ account.created_at|datetime_format }}</td></tr>
                     <tr><th>{{ _('Last Verified') }}</th><td>{{ account.last_verified|datetime_format if account.last_verified else _('Never') }}</td></tr>
+                    <tr>
+                        <th>{{ _('API Key Expiry') }}</th>
+                        <td>
+                            {% if account.api_key_expiry %}
+                                {% set days_remaining = (account.api_key_expiry - today_date).days %}
+                                {{ account.api_key_expiry.strftime('%Y-%m-%d') }}
+                                {% if days_remaining <= 0 %}
+                                <span class="badge bg-danger">{{ _('Expired') }}</span>
+                                {% elif days_remaining <= 30 %}
+                                <span class="badge bg-warning text-dark">{{ days_remaining }} {{ _('days left') }}</span>
+                                {% else %}
+                                <span class="badge bg-success">{{ days_remaining }} {{ _('days left') }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">{{ _('Not set') }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
                 </table>
             </div>
         </div>

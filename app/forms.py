@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from flask_babel import lazy_gettext as _l
-from wtforms import StringField, PasswordField, BooleanField, SelectField, SubmitField, TextAreaField, IntegerField, SelectMultipleField
+from wtforms import StringField, PasswordField, BooleanField, SelectField, SubmitField, TextAreaField, IntegerField, SelectMultipleField, DateField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, Optional, Regexp, NumberRange
 from flask_wtf.file import FileField, FileAllowed
 
@@ -89,6 +89,8 @@ class NotificationPreferencesForm(FlaskForm):
     notify_report_inapp = BooleanField(_l('In-app notifications'), default=True, render_kw={'class': 'form-check-input'})
     notify_cert_expiry_email = BooleanField(_l('Email notifications'), default=True, render_kw={'class': 'form-check-input'})
     notify_cert_expiry_inapp = BooleanField(_l('In-app notifications'), default=True, render_kw={'class': 'form-check-input'})
+    notify_apikey_expiry_email = BooleanField(_l('Email notifications'), default=True, render_kw={'class': 'form-check-input'})
+    notify_apikey_expiry_inapp = BooleanField(_l('In-app notifications'), default=True, render_kw={'class': 'form-check-input'})
     submit = SubmitField(_l('Save Preferences'), render_kw={'class': 'btn btn-primary'})
 
 
@@ -126,6 +128,11 @@ class WaasAccountForm(FlaskForm):
         _l('API Key / Token (v4)'),
         validators=[Optional(), Length(min=10, max=500)],
         render_kw={'placeholder': _l('Paste WaaS API key here'), 'class': 'form-control', 'type': 'password'}
+    )
+    api_key_expiry = DateField(
+        _l('API Key Expiry Date'),
+        validators=[Optional()],
+        render_kw={'type': 'date', 'class': 'form-control'}
     )
     waas_email = StringField(
         _l('WaaS Email (v2)'),
@@ -346,6 +353,11 @@ class RotateApiKeyForm(FlaskForm):
         _l('New API Key'),
         validators=[DataRequired(), Length(min=10, max=500)],
         render_kw={'placeholder': _l('Paste new WaaS API key here'), 'class': 'form-control', 'type': 'password'}
+    )
+    api_key_expiry = DateField(
+        _l('New Key Expiry Date'),
+        validators=[Optional()],
+        render_kw={'type': 'date', 'class': 'form-control'}
     )
     verify_key = BooleanField(_l('Verify new key before saving'), default=True, render_kw={'class': 'form-check-input'})
     submit = SubmitField(_l('Rotate API Key'), render_kw={'class': 'btn btn-primary'})

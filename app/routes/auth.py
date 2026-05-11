@@ -179,6 +179,8 @@ def notification_preferences():
         current_user.notify_report_inapp = form.notify_report_inapp.data
         current_user.notify_cert_expiry_email = form.notify_cert_expiry_email.data
         current_user.notify_cert_expiry_inapp = form.notify_cert_expiry_inapp.data
+        current_user.notify_apikey_expiry_email = form.notify_apikey_expiry_email.data
+        current_user.notify_apikey_expiry_inapp = form.notify_apikey_expiry_inapp.data
         db.session.commit()
         flash(_('Notification preferences saved.'), 'success')
         return redirect(url_for('auth.profile'))
@@ -189,6 +191,8 @@ def notification_preferences():
         form.notify_report_inapp.data = current_user.notify_report_inapp if current_user.notify_report_inapp is not None else True
         form.notify_cert_expiry_email.data = current_user.notify_cert_expiry_email if current_user.notify_cert_expiry_email is not None else True
         form.notify_cert_expiry_inapp.data = current_user.notify_cert_expiry_inapp if current_user.notify_cert_expiry_inapp is not None else True
+        form.notify_apikey_expiry_email.data = current_user.notify_apikey_expiry_email if current_user.notify_apikey_expiry_email is not None else True
+        form.notify_apikey_expiry_inapp.data = current_user.notify_apikey_expiry_inapp if current_user.notify_apikey_expiry_inapp is not None else True
 
     return render_template('auth/notification_preferences.html', form=form)
 

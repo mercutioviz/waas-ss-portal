@@ -146,12 +146,12 @@ def create_app(config_name='default'):
             return '—'
         return s
 
-    # Context processor to inject version into all templates
+    # Context processor to inject version and date into all templates
     @app.context_processor
     def inject_version():
         """Make version available to all templates"""
         from config import VERSION
-        return {'app_version': VERSION}
+        return {'app_version': VERSION, 'today_date': datetime.utcnow().date()}
 
     # Context processor to inject locale into all templates
     @app.context_processor
@@ -219,6 +219,25 @@ def create_app(config_name='default'):
     # Create database tables
     with app.app_context():
         db.create_all()
+
+        # Manual ALTER TABLE migrations for SQLite (add columns if missing)
+        import sqlite3
+        _db_path = app.config.get('SQLALCHEMY_DATABASE_URI', '').replace('sqlite:///', '')
+        if _db_path and os.path.exists(_db_path):
+            _conn = sqlite3.connect(_db_path)
+            _cursor = _conn.cursor()
+            _migrations = [
+                ('waas_accounts', 'api_key_expiry', 'DATE'),
+                ('users', 'notify_apikey_expiry_email', 'BOOLEAN DEFAULT 1'),
+                ('users', 'notify_apikey_expiry_inapp', 'BOOLEAN DEFAULT 1'),
+            ]
+            for _table, _col, _coltype in _migrations:
+                try:
+                    _cursor.execute(f'ALTER TABLE {_table} ADD COLUMN {_col} {_coltype}')
+                except sqlite3.OperationalError:
+                    pass  # column already exists
+            _conn.commit()
+            _conn.close()
 
         # Initialize default system settings if not present
         from app.models import SystemSettings

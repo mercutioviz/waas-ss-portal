@@ -47,6 +47,15 @@
                         <div class="form-text">{{ _('Paste the new API key from your WaaS account settings.') }}</div>
                     </div>
 
+                    <div class="mb-3">
+                        <label for="api_key_expiry" class="form-label">{{ _('New Key Expiry Date') }}</label>
+                        {{ form.api_key_expiry() }}
+                        {% for error in form.api_key_expiry.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                        <div class="form-text">{{ _('Optional. Set a reminder date for when this new API key expires.') }}</div>
+                    </div>
+
                     <div class="mb-3 form-check">
                         {{ form.verify_key() }}
                         <label class="form-check-label" for="verify_key">{{ _('Verify new key before saving') }}</label>

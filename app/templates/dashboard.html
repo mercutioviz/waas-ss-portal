@@ -8,6 +8,8 @@
 
 <!-- Certificate Expiry Warning Banner (populated via AJAX) -->
 <div id="cert-expiry-banner" class="d-none"></div>
+<!-- API Key Expiry Warning Banner (populated via AJAX) -->
+<div id="key-expiry-banner" class="d-none"></div>
 
 <div class="row g-4 mb-4">
     <div class="col-6 col-md-4">
@@ -323,6 +325,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 html += '</ul></div>';
                 banner.innerHTML = html;
                 banner.classList.remove('d-none');
+            }
+
+            if (data.expiring_keys && data.expiring_keys.length > 0) {
+                var keyBanner = document.getElementById('key-expiry-banner');
+                var keyHtml = '<div class="alert alert-warning mb-4"><h6 class="alert-heading"><i class="bi bi-key-fill"></i> {{ _("API Key Expiration Warnings") }}</h6><ul class="mb-0">';
+                data.expiring_keys.forEach(function(key) {
+                    var keyLabel = key.days_remaining <= 0
+                        ? '<span class="badge bg-danger">{{ _("Expired") }}</span>'
+                        : '<span class="badge bg-warning text-dark">' + key.days_remaining + ' {{ _("days") }}</span>';
+                    keyHtml += '<li>' + keyLabel + ' <strong>' + key.account_name + '</strong>';
+                    keyHtml += ' &mdash; {{ _("expires") }} ' + key.expiry;
+                    keyHtml += ' <a href="/accounts/' + key.account_id + '" class="ms-1">{{ _("View") }}</a>';
+                    keyHtml += '</li>';
+                });
+                keyHtml += '</ul></div>';
+                keyBanner.innerHTML = keyHtml;
+                keyBanner.classList.remove('d-none');
             }
 
             if (data.errors && data.errors.length > 0) {

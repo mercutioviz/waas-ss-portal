@@ -31,6 +31,8 @@ class User(UserMixin, db.Model):
     notify_report_inapp = db.Column(db.Boolean, default=True)
     notify_cert_expiry_email = db.Column(db.Boolean, default=True)
     notify_cert_expiry_inapp = db.Column(db.Boolean, default=True)
+    notify_apikey_expiry_email = db.Column(db.Boolean, default=True)
+    notify_apikey_expiry_inapp = db.Column(db.Boolean, default=True)
 
     # Relationships
     waas_accounts = db.relationship('WaasAccount', backref='owner', lazy='dynamic', cascade='all, delete-orphan')
@@ -90,6 +92,9 @@ class WaasAccount(db.Model):
     last_verified = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
+
+    # API key expiry tracking
+    api_key_expiry = db.Column(db.Date, nullable=True)
 
     # v2 API credentials (email/password login)
     waas_email_encrypted = db.Column(db.Text, nullable=True)

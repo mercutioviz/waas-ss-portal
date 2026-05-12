@@ -1,5 +1,16 @@
 {% extends "base.html" %}
+{% from "macros/page.html" import breadcrumbs %}
 {% block title %}{{ _('Clone Application') }} - WaaS Portal{% endblock %}
+
+{% block breadcrumbs %}
+{{ breadcrumbs([
+    (_('Dashboard'), url_for('main.dashboard')),
+    (_('Applications'), url_for('applications.list_applications')),
+    (account.account_name, url_for('applications.list_applications', account_id=account.id)),
+    (app_id, url_for('applications.view_application', account_id=account.id, app_id=app_id)),
+    (_('Clone'), None)
+]) }}
+{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center mt-4">

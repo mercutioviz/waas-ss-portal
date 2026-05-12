@@ -1,6 +1,16 @@
 {% extends "base.html" %}
 {% from "macros/api_curl_modal.html" import api_curl_button, api_curl_modal %}
+{% from "macros/page.html" import breadcrumbs %}
 {% block title %}{{ _('Create Application') }} - WaaS Portal{% endblock %}
+
+{% block breadcrumbs %}
+{{ breadcrumbs([
+    (_('Dashboard'), url_for('main.dashboard')),
+    (_('Applications'), url_for('applications.list_applications')),
+    (account.account_name, url_for('applications.list_applications', account_id=account.id)),
+    (_('Create'), None)
+]) }}
+{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center mt-4">

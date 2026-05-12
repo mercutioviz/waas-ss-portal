@@ -1,5 +1,15 @@
 {% extends "base.html" %}
+{% from "macros/page.html" import breadcrumbs %}
 {% block title %}{{ _('Bulk Security — Progress') }} — WaaS Portal{% endblock %}
+
+{% block breadcrumbs %}
+{{ breadcrumbs([
+    (_('Dashboard'), url_for('main.dashboard')),
+    (_('Applications'), url_for('applications.list_applications')),
+    (_('Bulk Security'), url_for('applications.bulk_security')),
+    (_('Progress'), None)
+]) }}
+{% endblock %}
 
 {% block content %}
 <div class="mt-4 mb-3">

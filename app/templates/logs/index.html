@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/page.html" import module_info %}
 {% block title %}{{ _('Logs') }} - WaaS Portal{% endblock %}
 
 {% block breadcrumbs %}
@@ -16,6 +17,13 @@
 {% endblock %}
 
 {% block content %}
+{{ module_info(
+    key='logs',
+    icon='journal-text',
+    title=_('Log Viewer'),
+    body=_('WAF, access, and false-positive analysis logs from your protected applications. Pick an account and then an application to drill into traffic and security events.'),
+    help_topic='help.logs'
+) }}
 <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
     <h2><i class="bi bi-journal-text"></i> {{ _('Log Viewer') }}</h2>
 </div>

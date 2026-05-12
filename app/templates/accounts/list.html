@@ -1,7 +1,22 @@
 {% extends "base.html" %}
+{% from "macros/page.html" import module_info, breadcrumbs %}
 {% block title %}{{ _('WaaS Accounts') }} - {{ _('WaaS Portal') }}{% endblock %}
 
+{% block breadcrumbs %}
+{{ breadcrumbs([
+    (_('Dashboard'), url_for('main.dashboard')),
+    (_('Accounts'), None)
+]) }}
+{% endblock %}
+
 {% block content %}
+{{ module_info(
+    key='accounts',
+    icon='key',
+    title=_('WaaS Accounts'),
+    body=_('WaaS Accounts hold the API credentials needed to manage applications, certificates, and logs. Register one account per Barracuda WaaS tenant.'),
+    help_topic='help.accounts'
+) }}
 <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
     <h2><i class="bi bi-key"></i> {{ _('WaaS Accounts') }}</h2>
     <a href="{{ url_for('accounts.add_account') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> {{ _('Add Account') }}</a>

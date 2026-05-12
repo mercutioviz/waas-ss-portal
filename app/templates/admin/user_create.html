@@ -1,5 +1,15 @@
 {% extends "base.html" %}
+{% from "macros/page.html" import breadcrumbs %}
 {% block title %}{{ _('Create User') }} - WaaS Portal{% endblock %}
+
+{% block breadcrumbs %}
+{{ breadcrumbs([
+    (_('Dashboard'), url_for('main.dashboard')),
+    (_('Admin'), url_for('admin.index')),
+    (_('Users'), url_for('admin.list_users')),
+    (_('Create User'), None)
+]) }}
+{% endblock %}
 
 {% block content %}
 <div class="mt-4 mb-4">

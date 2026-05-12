@@ -25,65 +25,55 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarMain">
                 {% if current_user.is_authenticated %}
+                {% set ep = request.endpoint or '' %}
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}"
+                        <a class="nav-link {% if ep == 'main.dashboard' %}active{% endif %}"
                            href="{{ url_for('main.dashboard') }}">
                             <i class="bi bi-speedometer2"></i> {{ _('Dashboard') }}
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint and request.endpoint.startswith('accounts.') %}active{% endif %}"
-                           href="{{ url_for('accounts.list_accounts') }}">
-                            <i class="bi bi-key"></i> {{ _('Accounts') }}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if ep.startswith('accounts.') or ep.startswith('applications.') or ep.startswith('certificates.') %}active{% endif %}"
+                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-collection"></i> {{ _('Resources') }}
                         </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item {% if ep.startswith('accounts.') %}active{% endif %}" href="{{ url_for('accounts.list_accounts') }}"><i class="bi bi-key"></i> {{ _('Accounts') }}</a></li>
+                            <li><a class="dropdown-item {% if ep.startswith('applications.') %}active{% endif %}" href="{{ url_for('applications.list_applications') }}"><i class="bi bi-globe"></i> {{ _('Applications') }}</a></li>
+                            <li><a class="dropdown-item {% if ep.startswith('certificates.') %}active{% endif %}" href="{{ url_for('certificates.list_certificates') }}"><i class="bi bi-file-earmark-lock"></i> {{ _('Certificates') }}</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if ep.startswith('templates.') or ep.startswith('features.') %}active{% endif %}"
+                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-sliders"></i> {{ _('Configuration') }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item {% if ep.startswith('templates.') %}active{% endif %}" href="{{ url_for('templates.list_templates') }}"><i class="bi bi-file-earmark-code"></i> {{ _('Templates') }}</a></li>
+                            <li><a class="dropdown-item {% if ep.startswith('features.') %}active{% endif %}" href="{{ url_for('features.list_features') }}"><i class="bi bi-braces"></i> {{ _('Raw Configs') }}</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if ep.startswith('logs.') or ep.startswith('reports.') %}active{% endif %}"
+                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-bar-chart"></i> {{ _('Observability') }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item {% if ep.startswith('logs.') %}active{% endif %}" href="{{ url_for('logs.index') }}"><i class="bi bi-journal-text"></i> {{ _('Logs') }}</a></li>
+                            <li><a class="dropdown-item {% if ep.startswith('reports.') %}active{% endif %}" href="{{ url_for('reports.list_reports') }}"><i class="bi bi-calendar-check"></i> {{ _('Reports') }}</a></li>
+                        </ul>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint and request.endpoint.startswith('applications.') %}active{% endif %}"
-                           href="{{ url_for('applications.list_applications') }}">
-                            <i class="bi bi-globe"></i> {{ _('Applications') }}
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint and request.endpoint.startswith('certificates.') %}active{% endif %}"
-                           href="{{ url_for('certificates.list_certificates') }}">
-                            <i class="bi bi-file-earmark-lock"></i> {{ _('Certificates') }}
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint and request.endpoint.startswith('logs.') %}active{% endif %}"
-                           href="{{ url_for('logs.index') }}">
-                            <i class="bi bi-journal-text"></i> {{ _('Logs') }}
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint and request.endpoint.startswith('templates.') %}active{% endif %}"
-                           href="{{ url_for('templates.list_templates') }}">
-                            <i class="bi bi-file-earmark-code"></i> {{ _('Templates') }}
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint and request.endpoint.startswith('features.') %}active{% endif %}"
-                           href="{{ url_for('features.list_features') }}">
-                            <i class="bi bi-lightning"></i> {{ _('Features') }}
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint and request.endpoint.startswith('reports.') %}active{% endif %}"
-                           href="{{ url_for('reports.list_reports') }}">
-                            <i class="bi bi-calendar-check"></i> {{ _('Reports') }}
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint and request.endpoint.startswith('help.') %}active{% endif %}"
+                        <a class="nav-link {% if ep.startswith('help.') %}active{% endif %}"
                            href="{{ url_for('help.index') }}">
                             <i class="bi bi-question-circle"></i> {{ _('Help') }}
                         </a>
                     </li>
                     {% if current_user.role == 'admin' %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {% if request.endpoint and request.endpoint.startswith('admin.') %}active{% endif %}"
-                           href="#" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle {% if ep.startswith('admin.') %}active{% endif %}"
+                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-gear"></i> {{ _('Admin') }}
                         </a>
                         <ul class="dropdown-menu">

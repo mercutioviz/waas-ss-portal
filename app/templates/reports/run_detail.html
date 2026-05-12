@@ -1,5 +1,15 @@
 {% extends "base.html" %}
+{% from "macros/page.html" import breadcrumbs %}
 {% block title %}{{ _('Run Details') }} - {{ report.name }} - {{ _('WaaS Portal') }}{% endblock %}
+
+{% block breadcrumbs %}
+{{ breadcrumbs([
+    (_('Dashboard'), url_for('main.dashboard')),
+    (_('Reports'), url_for('reports.list_reports')),
+    (report.name, url_for('reports.view_report', report_id=report.id)),
+    (_('Run Details'), None)
+]) }}
+{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mt-4 mb-4">

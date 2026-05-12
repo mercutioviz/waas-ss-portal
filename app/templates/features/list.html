@@ -1,39 +1,44 @@
 {% extends "base.html" %}
-{% block title %}{{ _('Features') }} - WaaS Portal{% endblock %}
+{% from "macros/page.html" import page_header, breadcrumbs, empty_state, module_info %}
+{% block title %}{{ _('Raw Configs') }} - WaaS Portal{% endblock %}
 
 {% block breadcrumbs %}
-<nav aria-label="breadcrumb" class="mt-3">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">{{ _('Dashboard') }}</a></li>
-        <li class="breadcrumb-item active">{{ _('Features') }}</li>
-    </ol>
-</nav>
+{{ breadcrumbs([
+    (_('Dashboard'), url_for('main.dashboard')),
+    (_('Raw Configs'), None),
+]) }}
 {% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mt-4 mb-4">
-    <h2><i class="bi bi-lightning"></i> {{ _('Features') }}</h2>
-    {% if current_user.role != 'viewer' %}
-    <div class="d-flex gap-2">
-        <a href="{{ url_for('features.import_feature') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-upload"></i> {{ _('Import Feature') }}
-        </a>
-        <a href="{{ url_for('features.add_feature') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> {{ _('New Feature') }}
-        </a>
-    </div>
-    {% endif %}
-</div>
+{{ page_header(
+    'braces',
+    _('Raw Configs'),
+    subtitle=_('Reusable raw WaaS v4 API payloads. Save once, apply to many applications.'),
+    actions=(
+      [
+        {'url': url_for('features.import_feature'), 'label': _('Import'), 'icon': 'upload', 'class': 'btn-outline-secondary'},
+        {'url': url_for('features.add_feature'),    'label': _('New Raw Config'), 'icon': 'plus-circle', 'class': 'btn-primary'},
+      ] if current_user.role != 'viewer' else []
+    )
+) }}
+
+{{ module_info(
+    'raw_configs',
+    'info-circle',
+    _('What are Raw Configs?'),
+    _('Raw Configs hold the verbatim JSON body of a v4 WaaS API call (e.g. /import/, /basic_security/). Use them when you need full control over the payload. For named, reusable presets with friendly forms, use Templates instead.'),
+    help_topic=None
+) }}
 
 <!-- Search -->
 <div class="mb-3">
-    <input type="text" class="form-control" id="featureSearch" placeholder="{{ _('Search features...') }}" data-search-target="feature-row">
+    <input type="text" class="form-control" id="featureSearch" placeholder="{{ _('Search raw configs...') }}" data-search-target="feature-row">
 </div>
 
-<!-- My Features -->
+<!-- My Raw Configs -->
 <div class="card mb-4">
     <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-person"></i> {{ _('My Features') }} ({{ my_features | length }})</h5>
+        <h5 class="mb-0"><i class="bi bi-person"></i> {{ _('My Raw Configs') }} ({{ my_features | length }})</h5>
     </div>
     {% if my_features %}
     <div class="card-body p-0">
@@ -58,9 +63,9 @@
                         <td class="d-none d-md-table-cell"><span class="badge bg-secondary">{{ f.applications.count() }} {{ _('apps') }}</span></td>
                         <td class="d-none d-md-table-cell">{{ f.updated_at | datetime_format }}</td>
                         <td>
-                            <a href="{{ url_for('features.edit_feature', feature_id=f.id) }}" class="btn btn-sm btn-outline-primary" title="{{ _('Edit') }}"><i class="bi bi-pencil"></i></a>
-                            <a href="{{ url_for('features.edit_config', feature_id=f.id) }}" class="btn btn-sm btn-outline-secondary" title="{{ _('Edit Config') }}"><i class="bi bi-code-slash"></i></a>
-                            <a href="{{ url_for('features.export_feature', feature_id=f.id) }}" class="btn btn-sm btn-outline-success" title="{{ _('Export') }}"><i class="bi bi-download"></i></a>
+                            <a href="{{ url_for('features.edit_feature', feature_id=f.id) }}" class="btn btn-sm btn-outline-primary" title="{{ _('Edit') }}" aria-label="{{ _('Edit') }}"><i class="bi bi-pencil"></i></a>
+                            <a href="{{ url_for('features.edit_config', feature_id=f.id) }}" class="btn btn-sm btn-outline-secondary" title="{{ _('Edit Config') }}" aria-label="{{ _('Edit Config') }}"><i class="bi bi-code-slash"></i></a>
+                            <a href="{{ url_for('features.export_feature', feature_id=f.id) }}" class="btn btn-sm btn-outline-success" title="{{ _('Export') }}" aria-label="{{ _('Export') }}"><i class="bi bi-download"></i></a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -69,22 +74,20 @@
         </div>
     </div>
     {% else %}
-    <div class="card-body text-center py-5">
-        <i class="bi bi-lightning display-1 text-muted"></i>
-        <h4 class="mt-3">{{ _('No Features Yet') }}</h4>
-        <p class="text-muted">{{ _('Create a feature to save and track configuration patches across applications.') }}</p>
-        {% if current_user.role != 'viewer' %}
-        <a href="{{ url_for('features.add_feature') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> {{ _('Create Feature') }}</a>
-        {% endif %}
-    </div>
+    {{ empty_state(
+        'braces',
+        _('No Raw Configs Yet'),
+        _('Create a raw config to save and re-apply a JSON API payload across applications.'),
+        cta=({'url': url_for('features.add_feature'), 'label': _('Create Raw Config'), 'icon': 'plus-circle'} if current_user.role != 'viewer' else None)
+    ) }}
     {% endif %}
 </div>
 
-<!-- Global Features -->
+<!-- Global Raw Configs -->
 {% if global_features %}
 <div class="card mb-4">
     <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-globe2"></i> {{ _('Global Features') }} ({{ global_features | length }})</h5>
+        <h5 class="mb-0"><i class="bi bi-globe2"></i> {{ _('Global Raw Configs') }} ({{ global_features | length }})</h5>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -108,8 +111,8 @@
                         <td class="d-none d-md-table-cell"><span class="badge bg-secondary">{{ f.applications.count() }} {{ _('apps') }}</span></td>
                         <td class="d-none d-md-table-cell">{{ f.user.display_name }}</td>
                         <td>
-                            <a href="{{ url_for('features.view_feature', feature_id=f.id) }}" class="btn btn-sm btn-outline-primary" title="{{ _('View') }}"><i class="bi bi-eye"></i></a>
-                            <a href="{{ url_for('features.export_feature', feature_id=f.id) }}" class="btn btn-sm btn-outline-success" title="{{ _('Export') }}"><i class="bi bi-download"></i></a>
+                            <a href="{{ url_for('features.view_feature', feature_id=f.id) }}" class="btn btn-sm btn-outline-primary" title="{{ _('View') }}" aria-label="{{ _('View') }}"><i class="bi bi-eye"></i></a>
+                            <a href="{{ url_for('features.export_feature', feature_id=f.id) }}" class="btn btn-sm btn-outline-success" title="{{ _('Export') }}" aria-label="{{ _('Export') }}"><i class="bi bi-download"></i></a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -120,11 +123,11 @@
 </div>
 {% endif %}
 
-<!-- Predefined Features -->
+<!-- Predefined Raw Configs -->
 {% if predefined_features %}
 <div class="card">
     <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-shield-lock"></i> {{ _('Predefined Features') }} ({{ predefined_features | length }})</h5>
+        <h5 class="mb-0"><i class="bi bi-shield-lock"></i> {{ _('Predefined Raw Configs') }} ({{ predefined_features | length }})</h5>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -150,8 +153,8 @@
                         <td>{{ f.description or '' | truncate(50) }}</td>
                         <td class="d-none d-md-table-cell"><span class="badge bg-secondary">{{ f.applications.count() }} {{ _('apps') }}</span></td>
                         <td>
-                            <a href="{{ url_for('features.view_feature', feature_id=f.id) }}" class="btn btn-sm btn-outline-primary" title="{{ _('View') }}"><i class="bi bi-eye"></i></a>
-                            <a href="{{ url_for('features.export_feature', feature_id=f.id) }}" class="btn btn-sm btn-outline-success" title="{{ _('Export') }}"><i class="bi bi-download"></i></a>
+                            <a href="{{ url_for('features.view_feature', feature_id=f.id) }}" class="btn btn-sm btn-outline-primary" title="{{ _('View') }}" aria-label="{{ _('View') }}"><i class="bi bi-eye"></i></a>
+                            <a href="{{ url_for('features.export_feature', feature_id=f.id) }}" class="btn btn-sm btn-outline-success" title="{{ _('Export') }}" aria-label="{{ _('Export') }}"><i class="bi bi-download"></i></a>
                         </td>
                     </tr>
                     {% endfor %}

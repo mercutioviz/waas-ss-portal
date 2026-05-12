@@ -16,7 +16,22 @@ from app import limiter
 
 logger = logging.getLogger(__name__)
 
-bp = Blueprint('features', __name__, url_prefix='/features')
+bp = Blueprint('features', __name__, url_prefix='/raw-configs')
+
+
+# Legacy redirect blueprint — preserves old /features/* bookmarks.
+# Registered separately in app/__init__.py.
+legacy_bp = Blueprint('features_legacy', __name__, url_prefix='/features')
+
+
+@legacy_bp.route('/', defaults={'subpath': ''})
+@legacy_bp.route('/<path:subpath>')
+def legacy_redirect(subpath):
+    """301 redirect from old /features/* URLs to /raw-configs/*."""
+    target = '/raw-configs/' + subpath if subpath else '/raw-configs/'
+    if request.query_string:
+        target += '?' + request.query_string.decode('utf-8')
+    return redirect(target, code=301)
 
 
 def get_client_for_account(account_id, min_permission='read'):
@@ -94,7 +109,7 @@ def list_features():
 def add_feature():
     """Create a new feature"""
     if current_user.role == 'viewer':
-        flash(_('You do not have permission to create features.'), 'danger')
+        flash(_('You do not have permission to create raw configs.'), 'danger')
         return redirect(url_for('features.list_features'))
 
     form = FeatureForm()
@@ -124,7 +139,7 @@ def add_feature():
             ip_address=request.remote_addr,
         )
 
-        flash(_('Feature "%(name)s" created. Now edit its configuration.', name=feature.name), 'success')
+        flash(_('Raw config "%(name)s" created. Now edit its configuration.', name=feature.name), 'success')
         return redirect(url_for('features.edit_config', feature_id=feature.id))
 
     return render_template('features/add.html', form=form)
@@ -136,7 +151,7 @@ def view_feature(feature_id):
     """View feature details + applied apps"""
     feature = get_feature_or_404(feature_id)
     if not feature:
-        flash(_('Feature not found or access denied.'), 'danger')
+        flash(_('Raw config not found or access denied.'), 'danger')
         return redirect(url_for('features.list_features'))
 
     applied_apps = FeatureApplication.query.filter_by(feature_id=feature.id).order_by(FeatureApplication.applied_at.desc()).all()
@@ -157,11 +172,11 @@ def edit_feature(feature_id):
     """Edit feature metadata"""
     feature = get_feature_or_404(feature_id, owner_only=True)
     if not feature:
-        flash(_('Feature not found or access denied.'), 'danger')
+        flash(_('Raw config not found or access denied.'), 'danger')
         return redirect(url_for('features.list_features'))
 
     if current_user.role == 'viewer':
-        flash(_('You do not have permission to edit features.'), 'danger')
+        flash(_('You do not have permission to edit raw configs.'), 'danger')
         return redirect(url_for('features.view_feature', feature_id=feature_id))
 
     form = FeatureForm(obj=feature)
@@ -184,7 +199,7 @@ def edit_feature(feature_id):
             ip_address=request.remote_addr,
         )
 
-        flash(_('Feature "%(name)s" updated.', name=feature.name), 'success')
+        flash(_('Raw config "%(name)s" updated.', name=feature.name), 'success')
         return redirect(url_for('features.view_feature', feature_id=feature.id))
 
     return render_template('features/edit.html', form=form, feature=feature)
@@ -197,11 +212,11 @@ def edit_config(feature_id):
     """Edit raw JSON config data"""
     feature = get_feature_or_404(feature_id, owner_only=True)
     if not feature:
-        flash(_('Feature not found or access denied.'), 'danger')
+        flash(_('Raw config not found or access denied.'), 'danger')
         return redirect(url_for('features.list_features'))
 
     if current_user.role == 'viewer':
-        flash(_('You do not have permission to edit features.'), 'danger')
+        flash(_('You do not have permission to edit raw configs.'), 'danger')
         return redirect(url_for('features.view_feature', feature_id=feature_id))
 
     if request.method == 'POST':
@@ -220,7 +235,7 @@ def edit_config(feature_id):
                 ip_address=request.remote_addr,
             )
 
-            flash(_('Feature configuration updated.'), 'success')
+            flash(_('Raw config configuration updated.'), 'success')
             return redirect(url_for('features.view_feature', feature_id=feature.id))
         except json.JSONDecodeError as e:
             flash(_('Invalid JSON: %(error)s', error=str(e)), 'danger')
@@ -235,15 +250,15 @@ def delete_feature(feature_id):
     """Delete a feature (block predefined unless admin)"""
     feature = get_feature_or_404(feature_id, owner_only=True)
     if not feature:
-        flash(_('Feature not found or access denied.'), 'danger')
+        flash(_('Raw config not found or access denied.'), 'danger')
         return redirect(url_for('features.list_features'))
 
     if feature.is_predefined and not current_user.is_admin:
-        flash(_('Predefined features cannot be deleted.'), 'danger')
+        flash(_('Predefined raw configs cannot be deleted.'), 'danger')
         return redirect(url_for('features.view_feature', feature_id=feature_id))
 
     if current_user.role == 'viewer':
-        flash(_('You do not have permission to delete features.'), 'danger')
+        flash(_('You do not have permission to delete raw configs.'), 'danger')
         return redirect(url_for('features.list_features'))
 
     feature_name = feature.name
@@ -259,7 +274,7 @@ def delete_feature(feature_id):
     db.session.delete(feature)
     db.session.commit()
 
-    flash(_('Feature "%(name)s" deleted.', name=feature_name), 'success')
+    flash(_('Raw config "%(name)s" deleted.', name=feature_name), 'success')
     return redirect(url_for('features.list_features'))
 
 
@@ -268,7 +283,7 @@ def delete_feature(feature_id):
 def save_as_feature(account_id, app_id):
     """Create a feature from a live application's config"""
     if current_user.role == 'viewer':
-        flash(_('You do not have permission to create features.'), 'danger')
+        flash(_('You do not have permission to create raw configs.'), 'danger')
         return redirect(url_for('applications.view_application', account_id=account_id, app_id=app_id))
 
     client, account = get_client_for_account(account_id)
@@ -335,7 +350,7 @@ def save_as_feature(account_id, app_id):
             ip_address=request.remote_addr,
         )
 
-        flash(_('Feature "%(name)s" created from application "%(app_id)s".', name=feature.name, app_id=app_id), 'success')
+        flash(_('Raw config "%(name)s" created from application "%(app_id)s".', name=feature.name, app_id=app_id), 'success')
         return redirect(url_for('features.view_feature', feature_id=feature.id))
 
     if request.method == 'GET':
@@ -356,12 +371,12 @@ def save_as_feature(account_id, app_id):
 def apply_feature(feature_id, account_id, app_id):
     """Apply a feature to a single application and track it"""
     if current_user.role == 'viewer':
-        flash(_('You do not have permission to apply features.'), 'danger')
+        flash(_('You do not have permission to apply raw configs.'), 'danger')
         return redirect(url_for('features.view_feature', feature_id=feature_id))
 
     feature = get_feature_or_404(feature_id)
     if not feature:
-        flash(_('Feature not found or access denied.'), 'danger')
+        flash(_('Raw config not found or access denied.'), 'danger')
         return redirect(url_for('features.list_features'))
 
     client, account = get_client_for_account(account_id, min_permission='write')
@@ -398,9 +413,9 @@ def apply_feature(feature_id, account_id, app_id):
             ip_address=request.remote_addr,
         )
 
-        flash(_('Feature "%(name)s" applied to "%(app_id)s" successfully.', name=feature.name, app_id=app_id), 'success')
+        flash(_('Raw config "%(name)s" applied to "%(app_id)s" successfully.', name=feature.name, app_id=app_id), 'success')
     except WaasApiError as e:
-        flash(_('Failed to apply feature to "%(app_id)s": %(error)s', app_id=app_id, error=str(e)), 'danger')
+        flash(_('Failed to apply raw config to "%(app_id)s": %(error)s', app_id=app_id, error=str(e)), 'danger')
 
     return redirect(url_for('applications.view_application', account_id=account_id, app_id=app_id))
 
@@ -411,12 +426,12 @@ def apply_feature(feature_id, account_id, app_id):
 def bulk_apply(feature_id):
     """Apply a feature to multiple applications"""
     if current_user.role == 'viewer':
-        flash(_('You do not have permission to apply features.'), 'danger')
+        flash(_('You do not have permission to apply raw configs.'), 'danger')
         return redirect(url_for('features.view_feature', feature_id=feature_id))
 
     feature = get_feature_or_404(feature_id)
     if not feature:
-        flash(_('Feature not found or access denied.'), 'danger')
+        flash(_('Raw config not found or access denied.'), 'danger')
         return redirect(url_for('features.list_features'))
 
     accounts = get_user_accounts(current_user, active_only=True)
@@ -510,7 +525,7 @@ def export_feature(feature_id):
     """Export a feature as a JSON file download."""
     feature = get_feature_or_404(feature_id)
     if not feature:
-        flash(_('Feature not found or access denied.'), 'danger')
+        flash(_('Raw config not found or access denied.'), 'danger')
         return redirect(url_for('features.list_features'))
 
     export_data = {
@@ -550,7 +565,7 @@ def export_feature(feature_id):
 def import_feature():
     """Import a feature from a JSON file."""
     if current_user.role == 'viewer':
-        flash(_('You do not have permission to import features.'), 'danger')
+        flash(_('You do not have permission to import raw configs.'), 'danger')
         return redirect(url_for('features.list_features'))
 
     if request.method == 'POST':
@@ -571,11 +586,11 @@ def import_feature():
             return redirect(url_for('features.import_feature'))
 
         if not isinstance(data, dict) or 'name' not in data or 'config_data' not in data:
-            flash(_('Invalid feature format. File must contain "name" and "config_data" fields.'), 'danger')
+            flash(_('Invalid raw config format. File must contain "name" and "config_data" fields.'), 'danger')
             return redirect(url_for('features.import_feature'))
 
         if not isinstance(data['config_data'], dict):
-            flash(_('Invalid feature format. "config_data" must be a JSON object.'), 'danger')
+            flash(_('Invalid raw config format. "config_data" must be a JSON object.'), 'danger')
             return redirect(url_for('features.import_feature'))
 
         is_global = data.get('is_global', False) and current_user.is_admin
@@ -602,7 +617,7 @@ def import_feature():
             ip_address=request.remote_addr,
         )
 
-        flash(_('Feature "%(name)s" imported successfully.', name=feature.name), 'success')
+        flash(_('Raw config "%(name)s" imported successfully.', name=feature.name), 'success')
         return redirect(url_for('features.view_feature', feature_id=feature.id))
 
     return render_template('features/import.html')

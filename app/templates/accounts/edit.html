@@ -1,5 +1,15 @@
 {% extends "base.html" %}
+{% from "macros/page.html" import breadcrumbs %}
 {% block title %}{{ _('Edit') }} {{ account.account_name }} - {{ _('WaaS Portal') }}{% endblock %}
+
+{% block breadcrumbs %}
+{{ breadcrumbs([
+    (_('Dashboard'), url_for('main.dashboard')),
+    (_('Accounts'), url_for('accounts.list_accounts')),
+    (account.account_name, url_for('accounts.view_account', account_id=account.id)),
+    (_('Edit'), None)
+]) }}
+{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center mt-4">

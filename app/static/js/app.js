@@ -320,5 +320,20 @@ document.addEventListener('DOMContentLoaded', function () {
         document.body.removeChild(textarea);
     }
 
+    // -------------------------------------------------------
+    // Module Info Cards (Phase 10.1)
+    // Dismissible per-module landing cards persisted in localStorage.
+    // -------------------------------------------------------
+    document.querySelectorAll('.module-info-card[data-info-key]').forEach(function (card) {
+        var key = 'waas_info_dismissed_' + card.getAttribute('data-info-key');
+        if (localStorage.getItem(key) === '1') {
+            card.remove();
+            return;
+        }
+        card.addEventListener('closed.bs.alert', function () {
+            try { localStorage.setItem(key, '1'); } catch (e) { /* ignore quota */ }
+        });
+    });
+
     console.log('WaaS Portal initialized.');
 });

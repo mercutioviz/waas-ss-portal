@@ -193,6 +193,7 @@ def create_app(config_name='default'):
     app.register_blueprint(proxy.bp)
     app.register_blueprint(templates.bp)
     app.register_blueprint(features.bp)
+    app.register_blueprint(features.legacy_bp)  # 301 redirect /features/* -> /raw-configs/*
     app.register_blueprint(reports.bp)
     app.register_blueprint(help_bp.bp)
 

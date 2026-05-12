@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}{{ _('Import Feature') }} - WaaS Portal{% endblock %}
+{% block title %}{{ _('Import Raw Config') }} - WaaS Portal{% endblock %}
 
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb" class="mt-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">{{ _('Dashboard') }}</a></li>
-        <li class="breadcrumb-item"><a href="{{ url_for('features.list_features') }}">{{ _('Features') }}</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('features.list_features') }}">{{ _('Raw Configs') }}</a></li>
         <li class="breadcrumb-item active">{{ _('Import') }}</li>
     </ol>
 </nav>
@@ -16,16 +16,16 @@
     <div class="col-md-8 col-lg-6">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-upload"></i> {{ _('Import Feature') }}</h5>
+                <h5 class="mb-0"><i class="bi bi-upload"></i> {{ _('Import Raw Config') }}</h5>
             </div>
             <div class="card-body">
-                <p class="text-muted">{{ _('Upload a JSON file previously exported from this portal to create a new feature.') }}</p>
+                <p class="text-muted">{{ _('Upload a JSON file previously exported from this portal to create a new raw config.') }}</p>
 
-                <form method="POST" enctype="multipart/form-data" data-loading="Importing feature...">
+                <form method="POST" enctype="multipart/form-data" data-loading="Importing raw config...">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                     <div class="mb-3">
-                        <label for="feature_file" class="form-label">{{ _('Feature File') }}</label>
+                        <label for="feature_file" class="form-label">{{ _('Raw Config File') }}</label>
                         <input type="file" class="form-control" id="feature_file" name="feature_file" accept=".json" required>
                         <div class="form-text">{{ _('Accepted format: .json') }}</div>
                     </div>

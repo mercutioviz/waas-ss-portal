@@ -82,7 +82,7 @@
                                 </div>
                                 <span class="field-status"></span>
                                 {% else %}
-                                {% if value %}✅{% else %}❌{% endif %}
+                                {% if value %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}
                                 {% endif %}
                             {% else %}{{ value }}{% endif %}
                         </td>
@@ -109,7 +109,7 @@
                                 </div>
                                 <span class="field-status"></span>
                                 {% else %}
-                                {% if value %}✅{% else %}❌{% endif %}
+                                {% if value %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}
                                 {% endif %}
                             {% elif value is mapping %}
                             <code>{{ value | tojson }}</code>

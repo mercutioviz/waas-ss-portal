@@ -212,13 +212,13 @@
                 <div class="col-md-4">
                     <h6 class="text-muted">{{ _('SSL/TLS') }}</h6>
                     <table class="table table-sm table-borderless">
-                        <tr><td>TLS 1.0</td><td>{{ '✅' if server.ssl.get('protocol_tls_1_0_enabled') else '❌' }}</td></tr>
-                        <tr><td>TLS 1.1</td><td>{{ '✅' if server.ssl.get('protocol_tls_1_1_enabled') else '❌' }}</td></tr>
-                        <tr><td>TLS 1.2</td><td>{{ '✅' if server.ssl.get('protocol_tls_1_2_enabled') else '❌' }}</td></tr>
-                        <tr><td>TLS 1.3</td><td>{{ '✅' if server.ssl.get('protocol_tls_1_3_enabled') else '❌' }}</td></tr>
-                        <tr><td>{{ _('Validate Cert') }}</td><td>{{ '✅' if server.ssl.get('validate_ssl_certificate') else '❌' }}</td></tr>
-                        <tr><td>HTTP/2</td><td>{{ '✅' if server.ssl.get('enable_http2') else '❌' }}</td></tr>
-                        <tr><td>SNI</td><td>{{ '✅' if server.ssl.get('enable_sni') else '❌' }}</td></tr>
+                        <tr><td>TLS 1.0</td><td>{% if server.ssl.get('protocol_tls_1_0_enabled') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
+                        <tr><td>TLS 1.1</td><td>{% if server.ssl.get('protocol_tls_1_1_enabled') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
+                        <tr><td>TLS 1.2</td><td>{% if server.ssl.get('protocol_tls_1_2_enabled') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
+                        <tr><td>TLS 1.3</td><td>{% if server.ssl.get('protocol_tls_1_3_enabled') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
+                        <tr><td>{{ _('Validate Cert') }}</td><td>{% if server.ssl.get('validate_ssl_certificate') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
+                        <tr><td>HTTP/2</td><td>{% if server.ssl.get('enable_http2') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
+                        <tr><td>SNI</td><td>{% if server.ssl.get('enable_sni') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
                     </table>
                 </div>
                 {% endif %}
@@ -228,7 +228,7 @@
                 <div class="col-md-4">
                     <h6 class="text-muted">{{ _('Health Checks') }}</h6>
                     <table class="table table-sm table-borderless">
-                        <tr><td>{{ _('OOB Enabled') }}</td><td>{{ '✅' if server.health_checks.get('enable_oob_health_checks') else '❌' }}</td></tr>
+                        <tr><td>{{ _('OOB Enabled') }}</td><td>{% if server.health_checks.get('enable_oob_health_checks') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
                         <tr><td>{{ _('Interval') }}</td><td>{{ server.health_checks.get('oob_health_check_interval', 'N/A') }}s</td></tr>
                         <tr><td>{{ _('URL') }}</td><td><code>{{ server.health_checks.get('healthcheck_http_request_url', '/') }}</code></td></tr>
                         <tr><td>{{ _('Method') }}</td><td>{{ server.health_checks.get('healthcheck_method', 'GET') }}</td></tr>
@@ -245,7 +245,7 @@
                         <tr><td>{{ _('Max Connections') }}</td><td>{{ server.advanced.get('advanced_timing_max_connections', 'N/A') }}</td></tr>
                         <tr><td>{{ _('Max Requests') }}</td><td>{{ server.advanced.get('advanced_timing_max_requests', 'N/A') }}</td></tr>
                         <tr><td>{{ _('Timeout (ms)') }}</td><td>{{ server.advanced.get('advanced_timing_timeout', 'N/A') }}</td></tr>
-                        <tr><td>{{ _('Connection Pooling') }}</td><td>{{ '✅' if server.advanced.get('connection_pooling') else '❌' }}</td></tr>
+                        <tr><td>{{ _('Connection Pooling') }}</td><td>{% if server.advanced.get('connection_pooling') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
                     </table>
                 </div>
                 {% endif %}
@@ -437,8 +437,8 @@
                             <tr>
                                 <td><strong>{{ p.get('port', 'N/A') }}</strong></td>
                                 <td>{{ p.get('protocol', 'N/A') }}</td>
-                                <td>{{ '✅' if p.get('advanced_configuration', {}).get('enable_web_application_firewall') else '❌' }}</td>
-                                <td>{{ '✅' if p.get('advanced_configuration', {}).get('enable_http2') else '❌' }}</td>
+                                <td>{% if p.get('advanced_configuration', {}).get('enable_web_application_firewall') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td>
+                                <td>{% if p.get('advanced_configuration', {}).get('enable_http2') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td>
                                 {% if user_can_write %}
                                 <td>
                                     <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#editPort-{{ loop.index }}" title="{{ _('Edit') }}">
@@ -488,11 +488,11 @@
                     {% if deployment %}
                     <tr><th>{{ _('Primary Region') }}</th><td>{{ deployment.get('primary', 'N/A') }}</td></tr>
                     <tr><th>{{ _('Secondary Region') }}</th><td>{{ deployment.get('secondary', 'N/A') }}</td></tr>
-                    <tr><th>{{ _('Auto Region') }}</th><td>{{ '✅' if deployment.get('is_auto_region') else '❌' }}</td></tr>
-                    <tr><th>{{ _('Dedicated IP') }}</th><td>{{ '✅' if deployment.get('is_dedicated_ip') else '❌' }}</td></tr>
+                    <tr><th>{{ _('Auto Region') }}</th><td>{% if deployment.get('is_auto_region') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
+                    <tr><th>{{ _('Dedicated IP') }}</th><td>{% if deployment.get('is_dedicated_ip') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
                     {% endif %}
                     {% if cert_info and cert_info is mapping %}
-                    <tr><th>{{ _('Auto Certificate') }}</th><td>{{ '✅' if cert_info.get('use_automatic') else '❌' }}</td></tr>
+                    <tr><th>{{ _('Auto Certificate') }}</th><td>{% if cert_info.get('use_automatic') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
                     {% endif %}
                 </table>
             </div>
@@ -530,16 +530,16 @@
         <div class="row">
             <div class="col-md-6">
                 <table class="table table-sm table-borderless mb-0">
-                    <tr><td>SSL 3.0</td><td>{{ '✅' if https_cfg.get('enable_ssl_3') else '❌' }}</td></tr>
-                    <tr><td>TLS 1.0</td><td>{{ '✅' if https_cfg.get('enable_tls_1') else '❌' }}</td></tr>
-                    <tr><td>TLS 1.1</td><td>{{ '✅' if https_cfg.get('enable_tls_1_1') else '❌' }}</td></tr>
-                    <tr><td>TLS 1.2</td><td>{{ '✅' if https_cfg.get('enable_tls_1_2') else '❌' }}</td></tr>
-                    <tr><td>TLS 1.3</td><td>{{ '✅' if https_cfg.get('enable_tls_1_3') else '❌' }}</td></tr>
+                    <tr><td>SSL 3.0</td><td>{% if https_cfg.get('enable_ssl_3') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
+                    <tr><td>TLS 1.0</td><td>{% if https_cfg.get('enable_tls_1') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
+                    <tr><td>TLS 1.1</td><td>{% if https_cfg.get('enable_tls_1_1') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
+                    <tr><td>TLS 1.2</td><td>{% if https_cfg.get('enable_tls_1_2') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
+                    <tr><td>TLS 1.3</td><td>{% if https_cfg.get('enable_tls_1_3') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
                 </table>
             </div>
             <div class="col-md-6">
                 <table class="table table-sm table-borderless mb-0">
-                    <tr><td>{{ _('PFS') }}</td><td>{{ '✅' if https_cfg.get('enable_pfs') else '❌' }}</td></tr>
+                    <tr><td>{{ _('PFS') }}</td><td>{% if https_cfg.get('enable_pfs') %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td></tr>
                     <tr><td>{{ _('Cipher Suite') }}</td><td><code>{{ https_cfg.get('cipher_suite_name', 'N/A') }}</code></td></tr>
                 </table>
             </div>

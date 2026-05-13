@@ -33,9 +33,9 @@
                         <td><small>{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else _('Never') }}</small></td>
                         <td>
                             <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                            <form method="POST" action="{{ url_for('admin.toggle_user', user_id=user.id) }}" class="d-inline">
+                            <form method="POST" action="{{ url_for('admin.toggle_user', user_id=user.id) }}" class="d-inline" data-confirm-message="{{ _('Are you sure?') }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-sm btn-outline-{{ 'warning' if user.is_active else 'success' }}" onclick="return confirm('{{ _('Are you sure?') }}')">
+                                <button type="submit" class="btn btn-sm btn-outline-{{ 'warning' if user.is_active else 'success' }}">
                                     <i class="bi bi-{{ 'pause' if user.is_active else 'play' }}"></i>
                                 </button>
                             </form>

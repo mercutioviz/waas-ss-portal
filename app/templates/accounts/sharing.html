@@ -53,9 +53,9 @@
                                 <td>{{ share.grantor.display_name if share.grantor else '—' }}</td>
                                 <td>{{ share.granted_at|datetime_format }}</td>
                                 <td>
-                                    <form method="POST" action="{{ url_for('accounts.revoke_share', account_id=account.id, share_id=share.id) }}" class="d-inline">
+                                    <form method="POST" action="{{ url_for('accounts.revoke_share', account_id=account.id, share_id=share.id) }}" class="d-inline" data-confirm-message="{{ _('Revoke access for this user?') }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('{{ _('Revoke access for this user?') }}')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
                                             <i class="bi bi-x-circle"></i> {{ _('Revoke') }}
                                         </button>
                                     </form>

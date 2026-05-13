@@ -27,9 +27,9 @@
             {% endif %}
         </form>
         <a href="{{ url_for('reports.edit_report', report_id=report.id) }}" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> {{ _('Edit') }}</a>
-        <form method="POST" action="{{ url_for('reports.delete_report', report_id=report.id) }}" class="d-inline">
+        <form method="POST" action="{{ url_for('reports.delete_report', report_id=report.id) }}" class="d-inline" data-confirm-message="{{ _('Delete this report?') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-outline-danger" onclick="return confirm('{{ _('Delete this report?') }}')"><i class="bi bi-trash"></i> {{ _('Delete') }}</button>
+            <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i> {{ _('Delete') }}</button>
         </form>
         <a href="{{ url_for('reports.list_reports') }}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> {{ _('Back') }}</a>
     </div>

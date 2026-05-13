@@ -54,33 +54,51 @@
 <div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> {{ error }}</div>
 {% else %}
 
+{# Passive-mode callout #}
+{% if total_events > 0 and total_deny == 0 %}
+<div class="alert alert-warning mb-4">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <strong>{{ _('Passive / Monitor Mode detected') }}</strong> —
+    {{ _('All %(n)s WAF events have action <code>LOG</code>. The WAF is detecting threats but not blocking them. Review the groups below, then switch the application to Active mode when you are satisfied these are true positives.', n=total_events) }}
+</div>
+{% elif total_events > 0 and total_log > 0 %}
+<div class="alert alert-info mb-4">
+    <i class="bi bi-info-circle"></i>
+    {{ _('Mixed mode: %(deny)s blocked (DENY) + %(log)s detected (LOG).', deny=total_deny, log=total_log) }}
+</div>
+{% endif %}
+
 {# Summary Cards #}
 <div class="row mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body py-3">
-                <h3 class="mb-0 text-danger">{{ total_blocked }}</h3>
-                <small class="text-muted">{{ _('Total Blocked Requests') }}</small>
+                <h3 class="mb-0">{{ total_events }}</h3>
+                <small class="text-muted">{{ _('Total WAF Events') }}</small>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card text-center">
+    <div class="col-md-3">
+        <div class="card text-center border-danger">
             <div class="card-body py-3">
-                <h3 class="mb-0 text-warning">{{ attack_groups|length }}</h3>
-                <small class="text-muted">{{ _('Unique Attack Types') }}</small>
+                <h3 class="mb-0 text-danger">{{ total_deny }}</h3>
+                <small class="text-muted">{{ _('Blocked (DENY)') }}</small>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
+        <div class="card text-center border-warning">
+            <div class="card-body py-3">
+                <h3 class="mb-0 text-warning">{{ total_log }}</h3>
+                <small class="text-muted">{{ _('Detected (LOG)') }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
         <div class="card text-center">
             <div class="card-body py-3">
-                {% set total_ips = [] %}
-                {% for g in attack_groups %}
-                    {% if total_ips.append(g.unique_ip_count) %}{% endif %}
-                {% endfor %}
-                <h3 class="mb-0 text-info">{{ total_ips|sum if total_ips else 0 }}</h3>
-                <small class="text-muted">{{ _('Source IPs (approx)') }}</small>
+                <h3 class="mb-0 text-info">{{ attack_groups|length }}</h3>
+                <small class="text-muted">{{ _('Attack Types') }}</small>
             </div>
         </div>
     </div>
@@ -90,7 +108,7 @@
 {# Attack Groups Table #}
 <div class="card">
     <div class="card-header">
-        <h5 class="mb-0">{{ _('Blocked Requests by Attack Type') }}</h5>
+        <h5 class="mb-0">{{ _('WAF Events by Attack Type') }}</h5>
     </div>
     <div class="card-body p-0">
         <div class="accordion" id="fpAccordion">
@@ -112,7 +130,12 @@
                                     <i class="bi bi-exclamation-triangle"></i> {{ _('Likely FP') }}
                                 </span>
                                 {% endif %}
-                                <span class="badge bg-danger">{{ group.count }} {{ _('blocked') }}</span>
+                                {% if group.deny_count > 0 %}
+                                <span class="badge bg-danger" title="{{ _('Blocked requests') }}">{{ group.deny_count }} DENY</span>
+                                {% endif %}
+                                {% if group.log_count > 0 %}
+                                <span class="badge bg-warning text-dark" title="{{ _('Detected but not blocked (passive mode)') }}">{{ group.log_count }} LOG</span>
+                                {% endif %}
                                 <span class="badge bg-secondary">{{ group.unique_ip_count }} IPs</span>
                                 <span class="badge bg-secondary">{{ group.unique_url_count }} URLs</span>
                             </div>
@@ -184,8 +207,8 @@
 <div class="card">
     <div class="card-body text-center py-5">
         <i class="bi bi-shield-check display-1 text-success"></i>
-        <h4 class="mt-3">{{ _('No Blocked Requests') }}</h4>
-        <p class="text-muted">{{ _('No DENY actions found in WAF logs for this application in the selected time range. Nothing to analyze for false positives.') }}</p>
+        <h4 class="mt-3">{{ _('No WAF Events') }}</h4>
+        <p class="text-muted">{{ _('No WAF log entries found for this application in the selected time range.') }}</p>
     </div>
 </div>
 {% endif %}

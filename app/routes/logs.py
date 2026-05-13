@@ -259,9 +259,11 @@ def fp_analysis(account_id, app_name):
 
     try:
         client = WaasClient.from_account(account)
+        # Fetch ALL WAF events — both LOG (passive/monitor mode) and DENY (active mode).
+        # Filtering to DENY-only would return nothing for apps in passive mode, which is
+        # the primary use-case for FP analysis (reviewing detections before going active).
         filter_fields = {
             'LogType': [{'condition': 'is', 'value': 'WF'}],
-            'Action': [{'condition': 'is', 'value': 'DENY'}],
         }
         result = client.get_logs(
             app_name,
@@ -293,6 +295,8 @@ def fp_analysis(account_id, app_name):
                 'owasp_api': entry.get('owasp_api_top_ten', '—'),
                 'owasp_risk_score': entry.get('owasp_risk_score', '—'),
                 'count': 0,
+                'deny_count': 0,
+                'log_count': 0,
                 'samples': [],
                 'unique_ips': set(),
                 'unique_urls': set(),
@@ -300,6 +304,11 @@ def fp_analysis(account_id, app_name):
 
         group = attack_groups[group_key]
         group['count'] += 1
+        action = entry.get('Action', '')
+        if action == 'DENY':
+            group['deny_count'] += 1
+        else:
+            group['log_count'] += 1
         if len(group['samples']) < 5:
             group['samples'].append(entry)
         group['unique_ips'].add(entry.get('ClientIP', 'unknown'))
@@ -315,12 +324,17 @@ def fp_analysis(account_id, app_name):
     # Sort by count descending
     sorted_groups = sorted(attack_groups.values(), key=lambda g: g['count'], reverse=True)
 
+    total_deny = sum(1 for e in logs if e.get('Action') == 'DENY')
+    total_log = sum(1 for e in logs if e.get('Action') != 'DENY')
+
     return render_template(
         'logs/fp_analysis.html',
         account=account,
         app_name=app_name,
         attack_groups=sorted_groups,
-        total_blocked=len(logs),
+        total_events=len(logs),
+        total_deny=total_deny,
+        total_log=total_log,
         quick_range=quick_range,
         quick_ranges=QUICK_RANGES,
         error=error,

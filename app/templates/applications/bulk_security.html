@@ -105,7 +105,7 @@
                 var value = accountId + ':' + app.name;
                 html += '<div class="form-check mb-1">' +
                     '<input class="form-check-input app-check" type="checkbox" name="apps" value="' + value + '" data-account-id="' + accountId + '">' +
-                    '<label class="form-check-label">' + app.name + (app.app_group ? ' <span class="badge bg-info">' + app.app_group + '</span>' : '') + '</label>' +
+                    '<label class="form-check-label">' + app.name + (app.app_group ? ' <span class="badge bg-secondary">' + app.app_group + '</span>' : '') + '</label>' +
                     '</div>';
             });
             container.innerHTML = html;

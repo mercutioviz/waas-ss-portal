@@ -47,7 +47,7 @@
                                     {% elif share.permission == 'write' %}
                                     <span class="badge bg-warning text-dark">{{ _('Write') }}</span>
                                     {% else %}
-                                    <span class="badge bg-info">{{ _('Read') }}</span>
+                                    <span class="badge bg-secondary">{{ _('Read') }}</span>
                                     {% endif %}
                                 </td>
                                 <td>{{ share.grantor.display_name if share.grantor else '—' }}</td>

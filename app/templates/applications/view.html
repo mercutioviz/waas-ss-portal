@@ -43,7 +43,7 @@
                     <tr><th style="width:40%">{{ _('Name') }}</th><td>{{ application.get('name', 'N/A') }}</td></tr>
                     <tr><th>{{ _('Group') }}</th><td>
                         {% if application.get('app_group') %}
-                        <span class="badge bg-info">{{ application.get('app_group') }}</span>
+                        <span class="badge bg-secondary">{{ application.get('app_group') }}</span>
                         {% else %}
                         <span class="text-muted">N/A</span>
                         {% endif %}

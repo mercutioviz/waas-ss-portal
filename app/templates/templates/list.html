@@ -63,7 +63,7 @@
                         <td>{{ t.description or '' | truncate(60) }}</td>
                         <td>
                             {% if t.is_global %}
-                            <span class="badge bg-info">{{ _('Global') }}</span>
+                            <span class="badge bg-secondary">{{ _('Global') }}</span>
                             {% else %}
                             <span class="badge bg-secondary">{{ _('Private') }}</span>
                             {% endif %}

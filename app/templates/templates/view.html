@@ -39,7 +39,7 @@
                     <tr><th>{{ _('Owner') }}</th><td>{{ template.user.display_name }}</td></tr>
                     <tr><th>{{ _('Visibility') }}</th><td>
                         {% if template.is_global %}
-                        <span class="badge bg-info">{{ _('Global') }}</span>
+                        <span class="badge bg-secondary">{{ _('Global') }}</span>
                         {% else %}
                         <span class="badge bg-secondary">{{ _('Private') }}</span>
                         {% endif %}

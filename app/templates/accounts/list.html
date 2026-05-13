@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/page.html" import module_info, breadcrumbs %}
+{% from "macros/page.html" import module_info, breadcrumbs, empty_state %}
 {% block title %}{{ _('WaaS Accounts') }} - {{ _('WaaS Portal') }}{% endblock %}
 
 {% block breadcrumbs %}
@@ -75,14 +75,7 @@
     </div>
 </div>
 {% else %}
-<div class="card mb-4">
-    <div class="card-body text-center py-5">
-        <i class="bi bi-key display-1 text-muted"></i>
-        <h4 class="mt-3">{{ _('No Accounts Yet') }}</h4>
-        <p class="text-muted">{{ _('Add a WaaS API account to get started.') }}</p>
-        <a href="{{ url_for('accounts.add_account') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> {{ _('Add Account') }}</a>
-    </div>
-</div>
+{{ empty_state('key', _('No Accounts Yet'), _('Add a WaaS API account to get started.'), cta={'label': _('Add Account'), 'url': url_for('accounts.add_account'), 'icon': 'plus-circle'}) }}
 {% endif %}
 
 {% if shared_accounts %}
@@ -114,7 +107,7 @@
                             {% elif account._permission == 'write' %}
                             <span class="badge bg-warning text-dark">{{ _('Write') }}</span>
                             {% else %}
-                            <span class="badge bg-info">{{ _('Read') }}</span>
+                            <span class="badge bg-secondary">{{ _('Read') }}</span>
                             {% endif %}
                         </td>
                         <td>
